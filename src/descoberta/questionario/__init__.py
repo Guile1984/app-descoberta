@@ -5,6 +5,7 @@ from .condicionais import perguntas_visiveis
 from .modelos import (
     Bloco,
     Faixa,
+    FaixaNota,
     Pergunta,
     Questionario,
     Sinal,
@@ -14,6 +15,7 @@ from .modelos import (
 __all__ = [
     "Bloco",
     "Faixa",
+    "FaixaNota",
     "Pergunta",
     "Questionario",
     "QuestionarioInvalido",

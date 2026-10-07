@@ -100,16 +100,12 @@ blocos:
         texto: Algum concorrente já resolve isso melhor?
     sinais:
       - id: b1.s1
-        peso: 1
         texto: O cliente quer "usar IA" sem conseguir nomear uma dor específica.
       - id: b1.s2
-        peso: 1
         texto: A dor acontece poucas vezes por mês, o que torna o retorno improvável.
       - id: b1.s3
-        peso: 1
         texto: Quem decide não está presente na sessão.
       - id: b1.s4
-        peso: 1
         texto: A expectativa é de 100% de acerto ou zero intervenção humana.
 
   - numero: 2
@@ -149,15 +145,12 @@ blocos:
         texto: Quem seria afetado por mudanças? Há resistência prevista da equipe?
     sinais:
       - id: b2.s1
-        peso: 1
         texto: >-
           Ninguém descreve o processo de forma consistente: primeiro padronizar, depois
           automatizar.
       - id: b2.s2
-        peso: 1
         texto: O conhecimento está concentrado em uma pessoa que não participa da sessão.
       - id: b2.s3
-        peso: 1
         texto: O passo problemático depende de informação que não é registrada em lugar nenhum.
 
   - numero: 3
@@ -203,15 +196,12 @@ blocos:
         texto: O resultado precisa sair na hora ou pode levar minutos/horas?
     sinais:
       - id: b3.s1
-        peso: 1
         texto: Erro inaceitável e sem possibilidade de revisão humana.
       - id: b3.s2
-        peso: 1
         texto: >-
           Exigência de explicação total, com caminho pensado em caixa-preta (deep learning
           ou LLM).
       - id: b3.s3
-        peso: 1
         texto: Expectativa de que a IA "descubra sozinha" o que fazer, sem exemplos.
 
   - numero: 4
@@ -280,16 +270,12 @@ blocos:
         texto: Em que formato e resolução as imagens ficam guardadas?
     sinais:
       - id: b4.s1
-        peso: 1
         texto: '"Temos muitos dados", mas ninguém sabe dizer onde estão.'
       - id: b4.s2
-        peso: 1
         texto: Dados de terceiros sem autorização de uso.
       - id: b4.s3
-        peso: 1
         texto: Rótulos dependem de alguém revisar milhares de casos manualmente.
       - id: b4.s4
-        peso: 1
         texto: Dados pessoais sensíveis sem consentimento ou base legal.
     notas:
       - >-
@@ -339,15 +325,12 @@ blocos:
         texto: Como vão medir o resultado na prática? Quem vai acompanhar?
     sinais:
       - id: b5.s1
-        peso: 1
         texto: Meta de 100% de acerto.
       - id: b5.s2
-        peso: 1
         texto: >-
           O cliente não sabe o valor atual do indicador, então não há como provar a
           melhora.
       - id: b5.s3
-        peso: 1
         texto: Ninguém assume a revisão durante o piloto.
     notas:
       - >-
@@ -414,13 +397,10 @@ blocos:
         texto: Precisa funcionar em outro idioma?
     sinais:
       - id: b6.s1
-        peso: 1
         texto: Exigência de tempo real em local sem internet, com modelo pesado.
       - id: b6.s2
-        peso: 1
         texto: Orçamento mensal menor que o custo estimado de operação.
       - id: b6.s3
-        peso: 1
         texto: Disponibilidade 24/7 exigida, sem orçamento compatível.
     notas:
       - >-
@@ -481,13 +461,10 @@ blocos:
         texto: A empresa já sofreu vazamento ou incidente de segurança?
     sinais:
       - id: b7.s1
-        peso: 1
         texto: Dados sensíveis (saúde, biometria) sem base legal clara.
       - id: b7.s2
-        peso: 1
         texto: Decisão automatizada sobre pessoas, sem revisão humana.
       - id: b7.s3
-        peso: 1
         texto: O cliente quer que a IA assuma a responsabilidade técnica.
     notas:
       - >-
@@ -550,16 +527,12 @@ blocos:
         texto: Quem fará a manutenção quando o projeto terminar?
     sinais:
       - id: b8.s1
-        peso: 1
         texto: Sistema antigo, sem API nem exportação.
       - id: b8.s2
-        peso: 1
         texto: Ninguém na empresa tem senha de administrador.
       - id: b8.s3
-        peso: 1
         texto: O fornecedor do ERP cobra caro ou demora para liberar a integração.
       - id: b8.s4
-        peso: 1
         texto: Não há ninguém para manter a solução depois da entrega.
     notas:
       - >-
@@ -614,16 +587,12 @@ blocos:
         texto: Há outros projetos concorrendo pela atenção da equipe?
     sinais:
       - id: b9.s1
-        peso: 1
         texto: Orçamento indefinido ("quanto custa?" sem nenhuma referência).
       - id: b9.s2
-        peso: 1
         texto: Ninguém do cliente com tempo para validar as entregas.
       - id: b9.s3
-        peso: 1
         texto: Prazo fixo e escopo crescente.
       - id: b9.s4
-        peso: 1
         texto: Expectativa de manutenção gratuita após a entrega.
     notas:
       - >-
@@ -734,6 +703,12 @@ scores:
         rotulo: Pronto para modelar
         min: 11
         max: 15
+    # Nota (0–3) que o score de dados recebe no critério prontidao_dados do score final.
+    conversao_para_nota:
+      - {min: 0, max: 2, nota: 0}
+      - {min: 3, max: 5, nota: 1}
+      - {min: 6, max: 10, nota: 2}
+      - {min: 11, max: 15, nota: 3}
 
   # Bloco 10 — score final de viabilidade (6 critérios × 0–3, máximo 18).
   viabilidade_final:

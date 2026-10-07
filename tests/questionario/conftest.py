@@ -6,11 +6,6 @@ from pathlib import Path
 import pytest
 import yaml
 
-from descoberta.questionario import Questionario, carregar_questionario
-
-RAIZ_PROJETO = Path(__file__).resolve().parents[2]
-CAMINHO_QUESTIONARIO_V1 = RAIZ_PROJETO / "config" / "questionario_v1.yaml"
-
 
 def _bloco(numero: int, perguntas: list[dict] | None = None) -> dict:
     return {
@@ -21,7 +16,7 @@ def _bloco(numero: int, perguntas: list[dict] | None = None) -> dict:
         "saida_esperada": "Saída do bloco.",
         "perguntas": perguntas
         or [{"id": f"b{numero}.o1", "tipo": "obrigatoria", "texto": "Pergunta?"}],
-        "sinais": [{"id": f"b{numero}.s1", "texto": "Sinal de alerta.", "peso": 1}],
+        "sinais": [{"id": f"b{numero}.s1", "texto": "Sinal de alerta."}],
     }
 
 
@@ -73,6 +68,10 @@ QUESTIONARIO_MINIMO = {
                 }
             ],
             "faixas": _faixas_ate_3(),
+            "conversao_para_nota": [
+                {"min": 0, "max": 1, "nota": 0},
+                {"min": 2, "max": 3, "nota": 3},
+            ],
         },
         "viabilidade_final": {
             "criterios": [{"id": "dor_clara", "rotulo": "Dor clara", "blocos_origem": [1]}],
@@ -102,8 +101,3 @@ def escrever_yaml(tmp_path):
         return caminho
 
     return escrever
-
-
-@pytest.fixture(scope="session")
-def questionario_v1() -> Questionario:
-    return carregar_questionario(CAMINHO_QUESTIONARIO_V1)

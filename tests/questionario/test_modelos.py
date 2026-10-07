@@ -155,9 +155,44 @@ def test_referencia_com_linha_de_tamanho_errado(dados_minimos):
     assert "2 colunas" in erro_de(dados_minimos)
 
 
-def test_peso_do_sinal_precisa_ser_positivo(dados_minimos):
-    dados_minimos["blocos"][0]["sinais"][0]["peso"] = 0
+def test_sinal_nao_tem_mais_peso(dados_minimos):
+    dados_minimos["blocos"][0]["sinais"][0]["peso"] = 1
+    assert "peso" in erro_de(dados_minimos)
+
+
+@pytest.mark.parametrize(
+    ("conversao", "trecho"),
+    [
+        ([(0, 1, 0), (3, 3, 3)], "lacuna"),
+        ([(0, 2, 0), (2, 3, 3)], "sobrep"),
+        ([(0, 1, 0), (2, 2, 3)], "máximo 3"),
+        ([(1, 1, 0), (2, 3, 3)], "começar em 0"),
+    ],
+)
+def test_conversao_para_nota_precisa_cobrir_o_score(dados_minimos, conversao, trecho):
+    dados_minimos["scores"]["prontidao_dados"]["conversao_para_nota"] = [
+        {"min": minimo, "max": maximo, "nota": nota} for minimo, maximo, nota in conversao
+    ]
+    mensagem = erro_de(dados_minimos)
+    assert "conversao_para_nota" in mensagem
+    assert trecho in mensagem
+
+
+@pytest.mark.parametrize("nota", [-1, 4])
+def test_conversao_para_nota_fora_de_0_a_3(dados_minimos, nota):
+    dados_minimos["scores"]["prontidao_dados"]["conversao_para_nota"][1]["nota"] = nota
     erro_de(dados_minimos)
+
+
+def test_conversao_para_nota_nao_pode_diminuir(dados_minimos):
+    conversao = dados_minimos["scores"]["prontidao_dados"]["conversao_para_nota"]
+    conversao[0]["nota"], conversao[1]["nota"] = 3, 0
+    assert "não pode diminuir" in erro_de(dados_minimos)
+
+
+def test_conversao_para_nota_e_obrigatoria(dados_minimos):
+    del dados_minimos["scores"]["prontidao_dados"]["conversao_para_nota"]
+    assert "conversao_para_nota" in erro_de(dados_minimos)
 
 
 def test_bloco_por_numero(dados_minimos):

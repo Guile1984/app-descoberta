@@ -100,9 +100,8 @@ def test_condicionais_sao_as_4_de_visao_computacional_no_bloco_4(questionario_v1
     assert all(p.tipo == "obrigatoria" for p in condicionais)
 
 
-def test_sinais_com_peso_1(questionario_v1):
-    pesos = {sinal.peso for bloco in questionario_v1.blocos for sinal in bloco.sinais}
-    assert pesos == {1}
+def test_31_sinais_de_alerta(questionario_v1):
+    assert sum(len(bloco.sinais) for bloco in questionario_v1.blocos) == 31
 
 
 def test_encerramento_com_5_itens(questionario_v1):
@@ -136,6 +135,12 @@ def test_score_de_prontidao_de_dados(questionario_v1):
         (0, 5, "fase_0"),
         (6, 10, "mvp_ressalvas"),
         (11, 15, "pronto"),
+    ]
+    assert [(f.min, f.max, f.nota) for f in score.conversao_para_nota] == [
+        (0, 2, 0),
+        (3, 5, 1),
+        (6, 10, 2),
+        (11, 15, 3),
     ]
 
 

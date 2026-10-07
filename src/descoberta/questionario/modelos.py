@@ -39,7 +39,6 @@ class Pergunta(_Modelo):
 class Sinal(_Modelo):
     id: Id
     texto: Texto
-    peso: int = Field(ge=1)
 
 
 class Referencia(_Modelo):
@@ -91,20 +90,39 @@ class Encerramento(_Modelo):
     itens: list[ItemEncerramento] = Field(min_length=1)
 
 
-class Faixa(_Modelo):
-    """Intervalo fechado [min, max] de pontuação, com o resultado correspondente."""
+class _Intervalo(_Modelo):
+    """Intervalo fechado [min, max] de pontuação."""
 
-    id: Id
-    rotulo: Texto
-    descricao: Texto | None = None
     min: int = Field(ge=0)
     max: int = Field(ge=0)
+
+    @property
+    def nome(self) -> str:
+        return f"{self.min}–{self.max}"
 
     @model_validator(mode="after")
     def _min_ate_max(self):
         if self.min > self.max:
-            raise ValueError(f"faixa '{self.id}': min ({self.min}) maior que max ({self.max})")
+            raise ValueError(f"faixa '{self.nome}': min ({self.min}) maior que max ({self.max})")
         return self
+
+
+class Faixa(_Intervalo):
+    """Faixa de um score, com o resultado correspondente (ex.: "MVP com ressalvas")."""
+
+    id: Id
+    rotulo: Texto
+    descricao: Texto | None = None
+
+    @property
+    def nome(self) -> str:
+        return self.id
+
+
+class FaixaNota(_Intervalo):
+    """Faixa do score de dados (0–15) que vira uma nota (0–3) do score final."""
+
+    nota: int = Field(ge=0, le=NOTA_MAXIMA_POR_CRITERIO)
 
 
 class CriterioProntidao(_Modelo):
@@ -120,20 +138,22 @@ class CriterioViabilidade(_Modelo):
     blocos_origem: list[int] = Field(min_length=1)
 
 
-def _problemas_das_faixas(faixas: list[Faixa], maximo: int) -> list[str]:
+def _problemas_das_faixas(faixas: list[_Intervalo], maximo: int) -> list[str]:
     """Confere se as faixas cobrem 0..maximo sem lacunas nem sobreposições."""
     problemas = [
-        f"id de faixa duplicado '{i}'" for i, n in Counter(f.id for f in faixas).items() if n > 1
+        f"id de faixa duplicado '{i}'"
+        for i, n in Counter(f.id for f in faixas if isinstance(f, Faixa)).items()
+        if n > 1
     ]
     ordenadas = sorted(faixas, key=lambda faixa: faixa.min)
     if ordenadas[0].min != 0:
         problemas.append(f"a primeira faixa deve começar em 0 (começa em {ordenadas[0].min})")
     for anterior, atual in zip(ordenadas, ordenadas[1:], strict=False):
         if atual.min <= anterior.max:
-            problemas.append(f"as faixas '{anterior.id}' e '{atual.id}' se sobrepõem")
+            problemas.append(f"as faixas '{anterior.nome}' e '{atual.nome}' se sobrepõem")
         elif atual.min > anterior.max + 1:
             problemas.append(
-                f"lacuna entre as faixas '{anterior.id}' e '{atual.id}' "
+                f"lacuna entre as faixas '{anterior.nome}' e '{atual.nome}' "
                 f"({anterior.max + 1} a {atual.min - 1} não tem faixa)"
             )
     ultima = max(faixa.max for faixa in faixas)
@@ -159,6 +179,22 @@ class _Score(_Modelo):
 
 class ScoreProntidao(_Score):
     criterios: list[CriterioProntidao] = Field(min_length=1)
+    # Como o score de dados vira a nota do critério "prontidao_dados" do score final.
+    conversao_para_nota: list[FaixaNota] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _conversao_cobre_a_escala(self):
+        problemas = _problemas_das_faixas(self.conversao_para_nota, self.pontuacao_maxima)
+        ordenadas = sorted(self.conversao_para_nota, key=lambda faixa: faixa.min)
+        for anterior, atual in zip(ordenadas, ordenadas[1:], strict=False):
+            if atual.nota < anterior.nota:
+                problemas.append(
+                    f"a nota não pode diminuir quando o score sobe "
+                    f"('{anterior.nome}' vale {anterior.nota}, '{atual.nome}' vale {atual.nota})"
+                )
+        if problemas:
+            raise ValueError("conversao_para_nota: " + "; ".join(problemas))
+        return self
 
 
 class ScoreViabilidade(_Score):
