@@ -38,10 +38,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   como tabela própria.
 
 ### Pendências
-- Migrações de banco (Alembic) antes do primeiro uso com cliente real; hoje as tabelas são
-  criadas com `create_all`, que não altera tabelas existentes.
-- Conferir se os ids gravados existem no questionário da versão da sessão (Sprint 4, na
+- Sprint 4: conferir se os ids gravados existem no questionário da versão da sessão (na
   camada web, que tem o questionário carregado).
+- Sprint 4: quando o tipo de solução da sessão mudar, esconder na tela as respostas das
+  perguntas condicionais que deixaram de valer, sem apagá-las do banco (se o tipo voltar,
+  as respostas reaparecem).
+- Antes do primeiro uso com cliente real:
+  - migrações de banco (Alembic); hoje as tabelas são criadas com `create_all`, que não
+    altera tabelas existentes;
+  - rotina de backup do `data/descoberta.db`;
+  - criptografia do disco do notebook (BitLocker), já que o banco guarda dados pessoais
+    dos clientes sem criptografia própria.
 
 ## [0.3.0] — 2026-10-07 — Sprint 2: Cálculos
 
