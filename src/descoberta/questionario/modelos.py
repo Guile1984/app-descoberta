@@ -223,6 +223,14 @@ class Questionario(_Modelo):
                 return bloco
         raise KeyError(f"o questionário não tem bloco {numero}")
 
+    def pergunta(self, pergunta_id: str) -> tuple[Bloco, Pergunta]:
+        """A pergunta com esse id e o bloco onde ela está."""
+        for bloco in self.blocos:
+            for pergunta in bloco.perguntas:
+                if pergunta.id == pergunta_id:
+                    return bloco, pergunta
+        raise KeyError(f"o questionário não tem a pergunta '{pergunta_id}'")
+
     @model_validator(mode="after")
     def _validar_consistencia(self):
         problemas = [

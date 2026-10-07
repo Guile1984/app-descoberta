@@ -1,0 +1,96 @@
+/* Estilo da app: CSS puro, sem framework, para funcionar sem internet. */
+
+:root {
+  --texto: #1f2328;
+  --discreto: #656d76;
+  --fundo: #ffffff;
+  --fundo-suave: #f6f8fa;
+  --borda: #d0d7de;
+  --destaque: #0b5cad;
+  --ok: #1a7f37;
+  --erro: #c4141c;
+  --aviso-fundo: #fff8c5;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--texto);
+  background: var(--fundo);
+}
+
+body { margin: 0; line-height: 1.45; }
+a { color: var(--destaque); }
+h1 { font-size: 1.5rem; margin: 0.2rem 0; }
+h2 { font-size: 1.25rem; }
+h3 { font-size: 1rem; margin-top: 1.5rem; }
+
+.topo {
+  display: flex; gap: 1.5rem; align-items: center;
+  padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--borda); background: var(--fundo-suave);
+}
+.marca { font-weight: 700; text-decoration: none; color: var(--texto); }
+.conteudo { padding: 1rem 1.25rem; max-width: 1400px; margin: 0 auto; }
+
+.cabecalho-pagina {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;
+}
+.acoes, .linha { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+.discreto { color: var(--discreto); font-size: 0.9rem; margin: 0; }
+.vazio { color: var(--discreto); }
+.erro { color: var(--erro); font-weight: 600; }
+
+.botao {
+  display: inline-block; padding: 0.4rem 0.9rem; border: 1px solid var(--destaque); border-radius: 6px;
+  background: var(--destaque); color: #fff; text-decoration: none; font: inherit; cursor: pointer;
+}
+.botao.secundario { background: var(--fundo); color: var(--destaque); }
+.botao.perigo { background: var(--fundo); color: var(--erro); border-color: var(--erro); }
+
+.tabela { border-collapse: collapse; width: 100%; margin: 0.5rem 0; }
+.tabela th, .tabela td { border: 1px solid var(--borda); padding: 0.4rem 0.6rem; text-align: left; vertical-align: top; }
+.tabela th { background: var(--fundo-suave); }
+.tabela.compacta { font-size: 0.9rem; }
+
+.formulario { display: grid; gap: 0.8rem; max-width: 30rem; }
+.formulario label, .campo { display: grid; gap: 0.25rem; }
+input, textarea, select { font: inherit; padding: 0.35rem 0.5rem; border: 1px solid var(--borda); border-radius: 6px; }
+textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+
+.ficha { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 1rem; }
+.ficha dt { color: var(--discreto); }
+.ficha dd { margin: 0; }
+
+/* --- Sessão --- */
+.preparacao { margin: 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--borda); border-radius: 6px; }
+.preparacao summary { cursor: pointer; font-weight: 600; }
+.caixa { display: inline-flex; gap: 0.4rem; align-items: center; margin-top: 0.5rem; }
+
+.colunas { display: grid; grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr); gap: 1.5rem; }
+@media (max-width: 900px) { .colunas { grid-template-columns: 1fr; } }
+.coluna-apoio { border-left: 1px solid var(--borda); padding-left: 1rem; }
+
+.abas { display: flex; flex-wrap: wrap; gap: 0.25rem; border-bottom: 2px solid var(--borda); }
+.abas a {
+  padding: 0.35rem 0.6rem; border-radius: 6px 6px 0 0; text-decoration: none; color: var(--discreto);
+  font-size: 0.9rem; white-space: nowrap;
+}
+.abas a[aria-current="page"] { background: var(--destaque); color: #fff; }
+
+.objetivo, .saida { margin: 0.3rem 0; }
+.tipo-solucao { margin: 1rem 0; padding: 0.75rem; background: var(--aviso-fundo); border-radius: 6px; }
+
+.pergunta { margin: 1rem 0; }
+.pergunta label { display: block; margin-bottom: 0.25rem; }
+.pergunta.obrigatoria label { font-weight: 600; }
+.id-pergunta { color: var(--discreto); font-size: 0.75rem; font-weight: 400; margin-left: 0.4rem; }
+.selo { font-size: 0.7rem; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso-fundo); font-weight: 400; }
+.aprofundamento { margin: 1rem 0; }
+.aprofundamento summary { cursor: pointer; color: var(--discreto); }
+.notas { color: var(--discreto); }
+
+/* --- Salvamento automático ---
+   Enquanto um pedido está a caminho, o HTMX põe a classe htmx-request no elemento
+   indicado por hx-indicator (o .estado). Aí o CSS esconde o aviso e mostra "Salvando…". */
+.estado { font-size: 0.8rem; min-height: 1.2em; display: inline-block; }
+.estado .salvando { display: none; color: var(--discreto); }
+.estado.htmx-request .salvando { display: inline; }
+.estado.htmx-request .aviso { display: none; }
+.aviso-ok { color: var(--ok); }
+.aviso-erro { color: var(--erro); font-weight: 600; }

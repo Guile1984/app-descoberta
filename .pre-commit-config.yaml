@@ -1,3 +1,6 @@
+# Arquivos de terceiros copiados como estão (o hash precisa bater com o original).
+exclude: ^src/descoberta/web/static/htmx\.min\.js$
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0

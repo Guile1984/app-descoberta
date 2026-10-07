@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}{{ cliente.empresa }} · Descoberta{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>{{ cliente.empresa }}</h1>
+  <div class="acoes">
+    <a class="botao secundario" href="/clientes/{{ cliente.id }}/editar">Editar</a>
+    <button class="botao perigo" hx-post="/clientes/{{ cliente.id }}/excluir"
+            hx-confirm="Excluir {{ cliente.empresa }} e TODAS as sessões dela? Isso não pode ser desfeito.">
+      Excluir
+    </button>
+  </div>
+</div>
+<dl class="ficha">
+  <dt>Contato principal</dt><dd>{{ cliente.nome }}</dd>
+  <dt>Setor</dt><dd>{{ cliente.setor or "—" }}</dd>
+  <dt>Funcionários</dt><dd>{{ cliente.num_funcionarios or "—" }}</dd>
+  <dt>Contato</dt><dd>{{ cliente.contato or "—" }}</dd>
+</dl>
+
+<h2>Sessões</h2>
+{% if erro %}<p class="erro" role="alert">⚠ {{ erro }}</p>{% endif %}
+<form method="post" action="/clientes/{{ cliente.id }}/sessoes" class="linha">
+  <label>Data <input type="date" name="data" value="{{ hoje.isoformat() }}" required></label>
+  <button type="submit" class="botao">Abrir nova sessão</button>
+</form>
+{% if sessoes %}
+<ul class="lista-sessoes">
+  {% for sessao in sessoes %}
+  <li><a href="/sessoes/{{ sessao.id }}">Sessão de {{ sessao.data | data_br }}</a>
+    <span class="discreto">questionário v{{ sessao.versao_questionario }}</span></li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="vazio">Nenhuma sessão ainda.</p>
+{% endif %}
+{% endblock %}

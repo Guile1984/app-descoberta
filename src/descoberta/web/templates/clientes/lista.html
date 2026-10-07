@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <h1>Clientes</h1>
+  <a class="botao" href="/clientes/novo">Novo cliente</a>
+</div>
+{% if clientes %}
+<table class="tabela">
+  <thead><tr><th>Empresa</th><th>Contato principal</th><th>Setor</th><th>Funcionários</th></tr></thead>
+  <tbody>
+    {% for cliente in clientes %}
+    <tr>
+      <td><a href="/clientes/{{ cliente.id }}">{{ cliente.empresa }}</a></td>
+      <td>{{ cliente.nome }}</td>
+      <td>{{ cliente.setor or "—" }}</td>
+      <td>{{ cliente.num_funcionarios or "—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="vazio">Nenhum cliente cadastrado ainda. <a href="/clientes/novo">Cadastre o primeiro.</a></p>
+{% endif %}
+{% endblock %}

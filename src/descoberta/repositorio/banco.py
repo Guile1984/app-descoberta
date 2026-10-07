@@ -14,7 +14,10 @@ CAMINHO_BANCO_PADRAO = Path("data") / "descoberta.db"
 def criar_engine(caminho: Path | str = CAMINHO_BANCO_PADRAO) -> Engine:
     caminho = Path(caminho)
     caminho.parent.mkdir(parents=True, exist_ok=True)
-    engine = create_engine(f"sqlite:///{caminho}")
+    # check_same_thread=False: o FastAPI atende cada pedido numa thread do seu "pool", e
+    # a mesma conexão pode passar de uma thread a outra. Cada pedido usa sua própria Session,
+    # então não há duas threads mexendo na mesma conexão ao mesmo tempo.
+    engine = create_engine(f"sqlite:///{caminho}", connect_args={"check_same_thread": False})
     event.listen(engine, "connect", _ligar_chaves_estrangeiras)
     return engine
 
