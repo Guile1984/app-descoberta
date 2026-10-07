@@ -3,10 +3,17 @@
 import ast
 from pathlib import Path
 
+import pytest
+
 import descoberta
 
 RAIZ_PACOTE = Path(descoberta.__file__).parent
-CAMADAS_PROIBIDAS_NO_DOMINIO = {"web", "repositorio", "llm"}
+
+# Dependências apontam para dentro: cada camada lista as camadas que ela não pode importar.
+CAMADAS_PROIBIDAS = {
+    "dominio": {"web", "repositorio", "llm"},
+    "repositorio": {"web", "llm", "relatorio"},
+}
 
 
 def test_pacote_importavel():
@@ -34,14 +41,14 @@ def modulos_importados(codigo: str, pacote: str) -> set[str]:
     return modulos
 
 
-def violacoes_do_dominio(modulos: set[str]) -> list[str]:
-    violacoes = []
+def violacoes(modulos: set[str], proibidas: set[str]) -> list[str]:
+    encontradas = []
     for modulo in modulos:
         partes = modulo.split(".")
         eh_do_projeto = len(partes) > 1 and partes[0] == "descoberta"
-        if eh_do_projeto and partes[1] in CAMADAS_PROIBIDAS_NO_DOMINIO:
-            violacoes.append(modulo)
-    return sorted(violacoes)
+        if eh_do_projeto and partes[1] in proibidas:
+            encontradas.append(modulo)
+    return sorted(encontradas)
 
 
 def test_detector_encontra_imports_proibidos():
@@ -53,19 +60,21 @@ def test_detector_encontra_imports_proibidos():
         "import math\n"
     )
     modulos = modulos_importados(codigo, "descoberta.dominio")
-    assert violacoes_do_dominio(modulos) == [
+    assert violacoes(modulos, CAMADAS_PROIBIDAS["dominio"]) == [
         "descoberta.llm",
         "descoberta.repositorio",
         "descoberta.web.app",
     ]
 
 
-def test_dominio_nao_importa_camadas_externas():
-    violacoes = []
-    for arquivo in sorted((RAIZ_PACOTE / "dominio").rglob("*.py")):
+@pytest.mark.parametrize("camada", sorted(CAMADAS_PROIBIDAS))
+def test_camada_nao_importa_camadas_externas(camada):
+    proibidas = CAMADAS_PROIBIDAS[camada]
+    encontradas = []
+    for arquivo in sorted((RAIZ_PACOTE / camada).rglob("*.py")):
         # O pacote de um arquivo é a pasta onde ele está (vale também para __init__.py).
         pacote = ".".join(arquivo.relative_to(RAIZ_PACOTE.parent).parent.parts)
         codigo = arquivo.read_text(encoding="utf-8")
-        for modulo in violacoes_do_dominio(modulos_importados(codigo, pacote)):
-            violacoes.append(f"{arquivo.name}: {modulo}")
-    assert not violacoes, f"dominio não pode importar web/repositorio/llm: {violacoes}"
+        for modulo in violacoes(modulos_importados(codigo, pacote), proibidas):
+            encontradas.append(f"{arquivo.name}: {modulo}")
+    assert not encontradas, f"{camada} não pode importar {sorted(proibidas)}: {encontradas}"

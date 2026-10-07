@@ -13,7 +13,9 @@ from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_vali
 NOTA_MAXIMA_POR_CRITERIO = 3
 BLOCO_TIPO_SOLUCAO = 3  # o bloco 3 define o tipo de solução, que abre as condicionais
 
-Id = Annotated[str, StringConstraints(pattern=r"^[a-z0-9_.]+$")]
+PADRAO_ID = r"^[a-z0-9_.]+$"  # letras minúsculas sem acento, números, "_" e "."
+
+Id = Annotated[str, StringConstraints(pattern=PADRAO_ID)]
 Texto = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 TipoPergunta = Literal["obrigatoria", "aprofundamento"]
 

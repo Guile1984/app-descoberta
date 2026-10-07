@@ -2,6 +2,54 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.4.0] — 2026-10-07 — Sprint 3: Persistência
+
+### Adicionado
+- Dependência `sqlmodel` (traz o SQLAlchemy): persistência em SQLite, como definido na stack.
+- `descoberta.repositorio`, com 8 tabelas: `Cliente`, `Sessao`, `Resposta`, `SinalMarcado`,
+  `Anotacao`, `Metricas` (1 por sessão), `NotaCriterio` e `Relatorio`.
+  - Ids do questionário (`pergunta_id`, `sinal_id`, `criterio_id`, `tipo_solucao`)
+    guardados como texto, exatamente como no YAML; formato inválido (ex.: `"B2.S3"`) é
+    recusado. A sessão registra a `versao_questionario`, que não pode ser alterada depois.
+  - Métricas em campos numéricos próprios, com os mesmos nomes dos parâmetros de `dominio`.
+    Dinheiro, horas e quantidades em `Decimal`, gravados como texto no SQLite
+    (`DecimalTexto`) para voltar idênticos; `float`, negativos e não finitos são recusados
+    (reaproveita `como_decimal()`).
+  - Notas dos scores numa tabela própria (critério → nota 0–3), sem escrever os critérios do
+    YAML no código. A nota de `prontidao_dados` do score final não é gravada: é derivada.
+  - Funções de CRUD que validam a entrada e gravam numa transação própria (pensadas para o
+    salvamento automático): resposta vazia apaga a resposta; marcar um sinal duas vezes não
+    duplica; atualização parcial das métricas; relatório por LLM exige modelo e versão do prompt.
+  - Chaves estrangeiras ligadas no SQLite (`PRAGMA foreign_keys=ON`) com exclusão em
+    cascata: excluir um cliente apaga suas sessões e tudo delas.
+  - Banco padrão em `data/descoberta.db` (fora do Git).
+- Testes em banco temporário (arquivo SQLite em `tmp_path`), incluindo o caso Roberto
+  gravado, relido do zero e recalculado (60 h/mês, score de dados 4, payback ≈ 7,7,
+  score final 12, sinais por bloco).
+- Regra de arquitetura: `repositorio` não importa `web`, `llm` nem `relatorio`.
+
+### Alterado
+- Horários (`criado_em`, `marcado_em`…) gravados com fuso, em UTC, que é o padrão do
+  SQLModel 0.0.48; a tela converte para a hora local ao mostrar. (O plano previa hora local.)
+- Entradas do caso Roberto viraram a fixture `caso_roberto` (`tests/conftest.py`), usada
+  pelos testes de `dominio` e de `repositorio`.
+- `PADRAO_ID` exposto em `questionario.modelos` para o repositório validar ids.
+- Especificação: campos de contexto prévio e amostra de dados na sessão; notas dos scores
+  como tabela própria.
+
+### Pendências
+- Sprint 4: conferir se os ids gravados existem no questionário da versão da sessão (na
+  camada web, que tem o questionário carregado).
+- Sprint 4: quando o tipo de solução da sessão mudar, esconder na tela as respostas das
+  perguntas condicionais que deixaram de valer, sem apagá-las do banco (se o tipo voltar,
+  as respostas reaparecem).
+- Antes do primeiro uso com cliente real:
+  - migrações de banco (Alembic); hoje as tabelas são criadas com `create_all`, que não
+    altera tabelas existentes;
+  - rotina de backup do `data/descoberta.db`;
+  - criptografia do disco do notebook (BitLocker), já que o banco guarda dados pessoais
+    dos clientes sem criptografia própria.
+
 ## [0.3.0] — 2026-10-07 — Sprint 2: Cálculos
 
 ### Adicionado
