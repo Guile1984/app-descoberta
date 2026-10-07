@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.egg-info/
+
+# Ferramentas
+.pytest_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Dados locais (LGPD: nunca versionar)
+*.db
+*.sqlite
+*.sqlite3
+data/
+exports/
+
+# Segredos
+.env
+
+# Editores e SO
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
