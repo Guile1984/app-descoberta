@@ -1,0 +1,22 @@
+{#
+  Salvamento automático de um campo, em duas partes:
+
+  - atributos(url, alvo, gatilho): vão dentro da tag do campo. O HTMX envia o valor para
+    `url` quando o `gatilho` acontece e coloca a resposta do servidor ("Salvo às…") dentro
+    do aviso — nunca no próprio campo, para o cursor não sair do lugar.
+  - estado(alvo): o "Salvando…" e o aviso, ao lado do campo. Enquanto o pedido está a
+    caminho, o HTMX põe a classe htmx-request no estado (hx-indicator), e o CSS troca o
+    aviso por "Salvando…", sem JavaScript.
+
+  O único JavaScript é o aviso de falha (hx-on::after-request): se o pedido não chegou ao
+  servidor ou deu erro inesperado, o aviso vira "Não salvo". O 422 (dado recusado) já vem
+  com a mensagem do servidor, por isso fica de fora.
+#}
+{% macro atributos(url, alvo, gatilho="input changed delay:800ms, blur changed") -%}
+hx-post="{{ url }}" hx-trigger="{{ gatilho }}" hx-target="#aviso-{{ alvo }}" hx-indicator="#estado-{{ alvo }}" hx-sync="this:queue last"
+hx-on::after-request="if (!event.detail.successful &amp;&amp; event.detail.xhr.status !== 422) document.getElementById('aviso-{{ alvo }}').innerHTML = '&lt;span class=&quot;aviso-erro&quot;&gt;⚠ Não salvo: a app não respondeu. Copie o texto antes de sair da página.&lt;/span&gt;'"
+{%- endmacro %}
+
+{% macro estado(alvo) -%}
+<span class="estado" id="estado-{{ alvo }}"><span class="salvando">Salvando…</span><span class="aviso" id="aviso-{{ alvo }}" role="status" aria-live="polite"></span></span>
+{%- endmacro %}

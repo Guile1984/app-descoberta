@@ -1,7 +1,7 @@
 """Carrega e valida o questionário (YAML) e resolve as perguntas condicionais."""
 
 from .carregador import QuestionarioInvalido, carregar_questionario
-from .condicionais import perguntas_visiveis
+from .condicionais import pergunta_visivel, perguntas_visiveis
 from .modelos import (
     Bloco,
     Faixa,
@@ -22,5 +22,6 @@ __all__ = [
     "Sinal",
     "TipoSolucao",
     "carregar_questionario",
+    "pergunta_visivel",
     "perguntas_visiveis",
 ]

@@ -1,0 +1,87 @@
+{#
+  Painel de um bloco, com a barra de abas. É o pedaço que o HTMX troca ao clicar numa aba:
+  hx-get busca este painel, hx-target diz onde ele entra (#conteudo-bloco) e hx-push-url
+  atualiza o endereço (?bloco=N), para o F5 reabrir na mesma aba. O href continua lá:
+  sem HTMX, o link funciona como um link comum.
+#}
+{% from "_salvamento.html" import atributos, estado %}
+{% macro pergunta_com_resposta(pergunta) %}
+<div class="pergunta {{ pergunta.tipo }}">
+  <label for="resposta-{{ pergunta.id | id_html }}">
+    {{ pergunta.texto }}
+    {% if pergunta.condicao %}<span class="selo">condicional</span>{% endif %}
+    <span class="id-pergunta">{{ pergunta.id }}</span>
+  </label>
+  <textarea id="resposta-{{ pergunta.id | id_html }}" name="texto" rows="2"
+            {{ atributos("/sessoes/%d/respostas/%s" % (sessao.id, pergunta.id), pergunta.id | id_html) }}>{{ respostas.get(pergunta.id, "") }}</textarea>
+  {{ estado(pergunta.id | id_html) }}
+</div>
+{% endmacro %}
+
+<nav class="abas" aria-label="Blocos do questionário">
+  {% for b in questionario.blocos %}
+  <a href="/sessoes/{{ sessao.id }}?bloco={{ b.numero }}"
+     hx-get="/sessoes/{{ sessao.id }}?bloco={{ b.numero }}" hx-target="#conteudo-bloco" hx-push-url="true"
+     title="{{ b.titulo }}" {% if b.numero == bloco.numero %}aria-current="page"{% endif %}>
+    {{ b.numero }}. {{ b.titulo }}
+  </a>
+  {% endfor %}
+</nav>
+
+<div class="painel-bloco">
+  <h2>{{ bloco.numero }}. {{ bloco.titulo }}</h2>
+  <p class="objetivo"><strong>Objetivo:</strong> {{ bloco.objetivo }}</p>
+  <p class="saida"><strong>Saída esperada:</strong> {{ bloco.saida_esperada }}</p>
+
+  {% if bloco.numero == 3 %}
+  <div class="tipo-solucao">
+    <label>Tipo de solução
+      <select name="valor" {{ atributos("/sessoes/%d/campos/tipo_solucao" % sessao.id, "tipo_solucao", "change") }}>
+        <option value="">Em aberto</option>
+        {% for tipo in questionario.tipos_solucao %}
+        <option value="{{ tipo.id }}" {% if sessao.tipo_solucao == tipo.id %}selected{% endif %}>{{ tipo.rotulo }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {{ estado("tipo_solucao") }}
+    <table class="tabela compacta">
+      <thead><tr><th>Situação</th><th>Tipo de solução</th></tr></thead>
+      <tbody>
+        {% for tipo in questionario.tipos_solucao %}
+        <tr><td>{{ tipo.situacao }}</td><td>{{ tipo.rotulo }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="discreto">O tipo escolhido abre perguntas específicas nos blocos seguintes.</p>
+  </div>
+  {% endif %}
+
+  {% for pergunta in obrigatorias %}{{ pergunta_com_resposta(pergunta) }}{% endfor %}
+
+  {% if aprofundamento %}
+  <details class="aprofundamento">
+    <summary>Aprofundamento ({{ aprofundamento | length }})</summary>
+    {% for pergunta in aprofundamento %}{{ pergunta_com_resposta(pergunta) }}{% endfor %}
+  </details>
+  {% endif %}
+
+  {% if bloco.secoes_relatorio %}
+  <h3>Seções do relatório</h3>
+  <ol>{% for secao in bloco.secoes_relatorio %}<li>{{ secao }}</li>{% endfor %}</ol>
+  {% endif %}
+
+  {% if bloco.notas %}
+  <h3>Notas</h3>
+  <ul class="notas">{% for nota in bloco.notas %}<li>{{ nota }}</li>{% endfor %}</ul>
+  {% endif %}
+
+  {% for referencia in bloco.referencias %}
+  <h3>{{ referencia.titulo }}</h3>
+  <table class="tabela compacta">
+    <thead><tr>{% for coluna in referencia.colunas %}<th>{{ coluna }}</th>{% endfor %}</tr></thead>
+    <tbody>
+      {% for linha in referencia.linhas %}<tr>{% for celula in linha %}<td>{{ celula }}</td>{% endfor %}</tr>{% endfor %}
+    </tbody>
+  </table>
+  {% endfor %}
+</div>

@@ -2,7 +2,7 @@
 
 import pytest
 
-from descoberta.questionario import perguntas_visiveis
+from descoberta.questionario import pergunta_visivel, perguntas_visiveis
 
 IDS_VISAO_COMPUTACIONAL = ["b4.vc1", "b4.vc2", "b4.vc3", "b4.vc4"]
 
@@ -47,3 +47,35 @@ def test_tipo_de_solucao_inexistente_gera_erro(questionario_v1):
 def test_bloco_inexistente_gera_erro(questionario_v1):
     with pytest.raises(KeyError):
         perguntas_visiveis(questionario_v1, 11, None)
+
+
+# --- Busca de uma pergunta pelo id (usada pela tela para conferir o que chega) ---
+
+
+def test_pergunta_encontrada_pelo_id_com_o_seu_bloco(questionario_v1):
+    bloco, pergunta = questionario_v1.pergunta("b4.vc2")
+    assert bloco.numero == 4
+    assert pergunta.id == "b4.vc2"
+
+
+def test_pergunta_inexistente_gera_erro(questionario_v1):
+    with pytest.raises(KeyError, match="b4.o99"):
+        questionario_v1.pergunta("b4.o99")
+
+
+@pytest.mark.parametrize(
+    ("pergunta_id", "tipo", "visivel"),
+    [
+        ("b1.o1", None, True),
+        ("b4.vc1", "visao_computacional", True),
+        ("b4.vc1", "llm_rag", False),
+        ("b4.vc1", None, False),
+    ],
+)
+def test_pergunta_visivel(questionario_v1, pergunta_id, tipo, visivel):
+    assert pergunta_visivel(questionario_v1, pergunta_id, tipo) is visivel
+
+
+def test_pergunta_visivel_com_tipo_inexistente_gera_erro(questionario_v1):
+    with pytest.raises(ValueError, match="visao"):
+        pergunta_visivel(questionario_v1, "b1.o1", "visao")

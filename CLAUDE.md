@@ -24,7 +24,7 @@ O LLM só é usado depois da sessão, para o rascunho do relatório.
 
 ## Stack
 - Python 3.12+, gerenciado com uv
-- FastAPI + Jinja2 + HTMX (JavaScript mínimo, apenas para atalhos de teclado)
+- FastAPI + Jinja2 + HTMX (JS mínimo: atalhos de teclado e avisos de falha de salvamento)
 - SQLite + SQLModel
 - Pydantic para validar o questionário (YAML)
 - Exportação: Markdown, DOCX, PDF

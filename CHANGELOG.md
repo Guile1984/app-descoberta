@@ -2,6 +2,57 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.5.0] — 2026-10-07 — Sprint 4: Web básica
+
+### Adicionado
+- Dependências `fastapi`, `jinja2`, `uvicorn` (sem extras) e `python-multipart` (leitura de
+  formulários HTML); `httpx2` no grupo dev, exigido pelo `TestClient` (o Starlette 1.7
+  marca o `httpx` antigo como obsoleto).
+- htmx 2.0.4 copiado para `src/descoberta/web/static/htmx.min.js` (sem CDN, para funcionar
+  sem internet). Integridade conferida com o SRI oficial
+  `sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+`.
+- `descoberta.web`: app FastAPI com `criar_app()` (banco e pasta de questionários
+  configuráveis; banco pela variável `DESCOBERTA_BANCO`) e telas em Jinja2 + HTMX:
+  - clientes: lista, cadastro, edição e exclusão (com confirmação; apaga as sessões em
+    cascata). Formulários comuns, com erro em português e sem perder o que foi digitado;
+  - sessão: abertura com a versão mais recente do questionário; página com cabeçalho,
+    status, preparação (contexto prévio e amostra recebida), 10 abas por bloco (objetivo,
+    saída esperada, notas, tabelas de referência, seções do relatório no bloco 10),
+    obrigatórias em destaque e aprofundamento recolhido; tipo de solução no bloco 3; coluna
+    direita reservada para o Sprint 5;
+  - abas trocam só o painel (`hx-get` + `hx-push-url`); F5 reabre na mesma aba;
+  - salvamento automático de respostas e campos da sessão: envio 800 ms depois de parar de
+    digitar ou ao sair do campo, em ordem (`hx-sync`); aviso "Salvo às…", indicador
+    "Salvando…" só com CSS (classe `htmx-request`) e aviso "⚠ Não salvo" quando a app não
+    responde (`hx-on::after-request`, a exceção de JS aprovada) ou recusa o valor (422);
+  - histórico do HTMX sem cópias das páginas no navegador (`historyCacheSize: 0`): dados de
+    clientes não ficam no `localStorage`.
+- `web.catalogo`: carrega todos os `config/questionario_v{n}.yaml` ao ligar a app (YAML com
+  erro impede a app de subir) e confere se a versão do nome bate com a do arquivo.
+- `Questionario.pergunta(id)` e `pergunta_visivel()` na camada do questionário.
+- `uv run python -m descoberta.demo`: cria `data/demo.db` com o caso Roberto (visão
+  computacional; respostas só com os fatos levantados, incluindo as 4 condicionais
+  `b4.vc*`; métricas, notas e sinais do caso de referência). Recusa o banco real.
+- Testes da camada web com `TestClient` em banco temporário, incluindo: só o fragmento
+  volta no salvamento, HTML escapado, nenhum recurso externo carregado.
+
+### Alterado
+- `criar_engine()` usa `check_same_thread=False`: o FastAPI atende pedidos em várias
+  threads; cada pedido tem sua própria Session.
+- CLAUDE.md: "JS mínimo: atalhos de teclado e avisos de falha de salvamento".
+
+### Pendências resolvidas do Sprint 3
+- Ids conferidos no questionário da versão da sessão: pergunta inexistente → 404; tipo de
+  solução inexistente → 422; resposta para condicional invisível → 422.
+- Mudança do tipo de solução esconde as condicionais que deixaram de valer sem apagar as
+  respostas; se o tipo voltar, elas reaparecem.
+
+### Pendências
+- Sprint 6: o relatório deve ignorar respostas de condicionais ocultas pelo tipo de solução
+  atual (elas continuam no banco).
+- Sprint 5: mostrar e editar métricas, notas e sinais (o banco de demonstração já os tem).
+- Continuam valendo as pendências "antes do primeiro uso com cliente real" do Sprint 3.
+
 ## [0.4.0] — 2026-10-07 — Sprint 3: Persistência
 
 ### Adicionado

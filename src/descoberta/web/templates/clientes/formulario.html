@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block titulo %}Cliente · Descoberta{% endblock %}
+{% block conteudo %}
+<h1>{{ "Novo cliente" if acao == "/clientes" else "Editar cliente" }}</h1>
+{% if erro %}<p class="erro" role="alert">⚠ {{ erro }}</p>{% endif %}
+<form method="post" action="{{ acao }}" class="formulario">
+  <label>Nome do contato *
+    <input name="nome" value="{{ valores.nome or '' }}" required autofocus>
+  </label>
+  <label>Empresa *
+    <input name="empresa" value="{{ valores.empresa or '' }}" required>
+  </label>
+  <label>Setor
+    <input name="setor" value="{{ valores.setor or '' }}">
+  </label>
+  <label>Nº de funcionários
+    <input name="num_funcionarios" value="{{ valores.num_funcionarios if valores.num_funcionarios is not none else '' }}" inputmode="numeric">
+  </label>
+  <label>Contato (telefone ou e-mail)
+    <input name="contato" value="{{ valores.contato or '' }}">
+  </label>
+  <div class="acoes">
+    <button type="submit" class="botao">Salvar</button>
+    <a href="{{ '/' if acao == '/clientes' else acao }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

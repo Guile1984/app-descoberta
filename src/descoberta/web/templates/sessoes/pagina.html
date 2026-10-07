@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_salvamento.html" import atributos, estado %}
+{% block titulo %}{{ cliente.empresa }} · {{ sessao.data | data_br }} · Descoberta{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <p class="discreto"><a href="/clientes/{{ cliente.id }}">{{ cliente.empresa }}</a> · {{ cliente.nome }}</p>
+    <h1>Sessão de {{ sessao.data | data_br }}</h1>
+    <p class="discreto">{{ questionario.titulo }} · versão {{ sessao.versao_questionario }}</p>
+  </div>
+  <div class="acoes">
+    <label>Status
+      <select name="valor" {{ atributos("/sessoes/%d/campos/status" % sessao.id, "status", "change") }}>
+        {% for valor, rotulo in rotulos_status.items() %}
+        <option value="{{ valor }}" {% if sessao.status == valor %}selected{% endif %}>{{ rotulo }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    {{ estado("status") }}
+    <button class="botao perigo" hx-post="/sessoes/{{ sessao.id }}/excluir"
+            hx-confirm="Excluir esta sessão e tudo o que foi registrado nela? Isso não pode ser desfeito.">
+      Excluir sessão
+    </button>
+  </div>
+</div>
+
+<details class="preparacao" {% if sessao.status == "preparacao" %}open{% endif %}>
+  <summary>Preparação</summary>
+  <label class="campo">Contexto prévio
+    <textarea name="valor" rows="3" {{ atributos("/sessoes/%d/campos/contexto_previo" % sessao.id, "contexto_previo") }}>{{ sessao.contexto_previo or "" }}</textarea>
+  </label>
+  {{ estado("contexto_previo") }}
+  <label class="caixa">
+    <input type="checkbox" name="valor" value="sim" {% if sessao.amostra_dados_recebida %}checked{% endif %}
+           {{ atributos("/sessoes/%d/campos/amostra_dados_recebida" % sessao.id, "amostra", "change") }}>
+    Amostra de dados recebida
+  </label>
+  {{ estado("amostra") }}
+</details>
+
+<div class="colunas">
+  <section id="conteudo-bloco" class="coluna-perguntas">
+    {% include "sessoes/_bloco.html" %}
+  </section>
+  <aside class="coluna-apoio">
+    <p class="discreto">Sinais de alerta, anotações e cálculos ao vivo chegam no Sprint 5.</p>
+  </aside>
+</div>
+{% endblock %}
