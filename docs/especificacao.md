@@ -68,11 +68,12 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Entidade | Campos principais |
 | --- | --- |
 | Cliente | nome, empresa, setor, nº de funcionários, contato |
-| Sessão | cliente, data, versão do questionário, tipo de solução, status |
+| Sessão | cliente, data, versão do questionário, tipo de solução, status, contexto prévio, amostra de dados recebida |
 | Resposta | sessão, id da pergunta, texto |
 | Sinal marcado | sessão, id do sinal, observação |
 | Anotação livre | sessão, bloco (opcional), texto, horário |
-| Métricas | sessão, horas por ocorrência, frequência (quantidade e período), custo da hora, horas economizadas por mês, outros ganhos mensais, investimento, custo de operação (chamadas por dia, custo por chamada, custo fixo mensal), notas dos scores |
+| Métricas | sessão, horas por ocorrência, frequência (quantidade e período), custo da hora, horas economizadas por mês, outros ganhos mensais, investimento, custo de operação (chamadas por dia, custo por chamada, custo fixo mensal) |
+| Nota de critério | sessão, id do critério, nota (0–3) |
 | Relatório | sessão, origem (template/LLM), conteúdo, modelo, versão do prompt, data |
 
 Um cliente tem várias sessões; uma sessão tem muitas respostas, sinais e anotações, e um conjunto de métricas. Métricas ficam em campos numéricos próprios, nunca extraídas do texto.
