@@ -92,6 +92,22 @@ class Encerramento(_Modelo):
     itens: list[ItemEncerramento] = Field(min_length=1)
 
 
+class Duracao(_Modelo):
+    """Duração-alvo da sessão: o cronômetro muda de cor no aviso e de novo no limite."""
+
+    aviso_minutos: int = Field(ge=1)
+    limite_minutos: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def _aviso_antes_do_limite(self):
+        if self.aviso_minutos >= self.limite_minutos:
+            raise ValueError(
+                f"o aviso ({self.aviso_minutos} min) precisa vir antes do limite "
+                f"({self.limite_minutos} min)"
+            )
+        return self
+
+
 class _Intervalo(_Modelo):
     """Intervalo fechado [min, max] de pontuação."""
 
@@ -165,6 +181,7 @@ def _problemas_das_faixas(faixas: list[_Intervalo], maximo: int) -> list[str]:
 
 
 class _Score(_Modelo):
+    bloco: int = Field(ge=1)  # bloco onde as notas do score são dadas durante a sessão
     faixas: list[Faixa] = Field(min_length=1)
 
     @property
@@ -181,7 +198,9 @@ class _Score(_Modelo):
 
 class ScoreProntidao(_Score):
     criterios: list[CriterioProntidao] = Field(min_length=1)
-    # Como o score de dados vira a nota do critério "prontidao_dados" do score final.
+    # Critério do score final cuja nota não é dada à mão: sai deste score pela conversão.
+    criterio_final: Id
+    # Como o score de dados vira a nota desse critério do score final.
     conversao_para_nota: list[FaixaNota] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -212,6 +231,7 @@ class Questionario(_Modelo):
     versao: int = Field(ge=1)
     titulo: Texto
     orientacoes: list[Texto] = []
+    duracao: Duracao
     tipos_solucao: list[TipoSolucao] = Field(min_length=1)
     blocos: list[Bloco] = Field(min_length=1)
     encerramento: Encerramento
@@ -231,6 +251,12 @@ class Questionario(_Modelo):
                     return bloco, pergunta
         raise KeyError(f"o questionário não tem a pergunta '{pergunta_id}'")
 
+    def item_encerramento(self, item_id: str) -> ItemEncerramento:
+        for item in self.encerramento.itens:
+            if item.id == item_id:
+                return item
+        raise KeyError(f"o encerramento não tem o item '{item_id}'")
+
     @model_validator(mode="after")
     def _validar_consistencia(self):
         problemas = [
@@ -238,6 +264,7 @@ class Questionario(_Modelo):
             *self._problemas_de_ids(),
             *self._problemas_de_condicoes(),
             *self._problemas_de_blocos_origem(),
+            *self._problemas_dos_scores(),
         ]
         if problemas:
             raise ValueError("; ".join(problemas))
@@ -293,4 +320,22 @@ class Questionario(_Modelo):
                 problemas.append(
                     f"critério '{criterio.id}': blocos de origem inexistentes {inexistentes}"
                 )
+        return problemas
+
+    def _problemas_dos_scores(self) -> list[str]:
+        numeros = {bloco.numero for bloco in self.blocos}
+        problemas = [
+            f"score '{nome}': bloco {score.bloco} inexistente"
+            for nome, score in (
+                ("prontidao_dados", self.scores.prontidao_dados),
+                ("viabilidade_final", self.scores.viabilidade_final),
+            )
+            if score.bloco not in numeros
+        ]
+        criterio_final = self.scores.prontidao_dados.criterio_final
+        if criterio_final not in {c.id for c in self.scores.viabilidade_final.criterios}:
+            problemas.append(
+                f"prontidao_dados.criterio_final: '{criterio_final}' não é critério "
+                "do score viabilidade_final"
+            )
         return problemas

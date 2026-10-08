@@ -21,6 +21,7 @@ dev = [
     "pre-commit",
     "pytest",
     "pytest-cov",
+    "pytest-playwright>=0.9.0",
     "ruff",
 ]
 
@@ -41,6 +42,9 @@ select = ["E", "F", "I", "UP", "B", "SIM", "PT"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+    "e2e: testes no navegador (Playwright); para pular: uv run pytest -m \"not e2e\"",
+]
 
 [tool.coverage.run]
 source = ["descoberta"]

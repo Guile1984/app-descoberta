@@ -160,3 +160,18 @@ def test_score_final_de_viabilidade(questionario_v1):
         (9, 13, "seguir_fase_0"),
         (14, 18, "seguir"),
     ]
+
+
+def test_duracao_alvo_de_60_a_90_minutos(questionario_v1):
+    # Aviso discreto aos 75 min e limite aos 90 min (fim da duração-alvo do modelo).
+    assert questionario_v1.duracao.aviso_minutos == 75
+    assert questionario_v1.duracao.limite_minutos == 90
+
+
+def test_scores_ficam_nos_blocos_4_e_10(questionario_v1):
+    assert questionario_v1.scores.prontidao_dados.bloco == 4
+    assert questionario_v1.scores.viabilidade_final.bloco == 10
+
+
+def test_score_de_dados_vira_a_nota_prontidao_dados(questionario_v1):
+    assert questionario_v1.scores.prontidao_dados.criterio_final == "prontidao_dados"

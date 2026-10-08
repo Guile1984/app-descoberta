@@ -1,7 +1,7 @@
 """Peças que as rotas recebem prontas do FastAPI (banco, catálogo) e respostas comuns."""
 
 from collections.abc import Iterator
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -14,6 +14,7 @@ from descoberta.questionario import Questionario
 from descoberta.repositorio import Sessao, obter_sessao
 
 from .catalogo import Catalogo
+from .numeros import moeda, numero, numero_campo
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
@@ -28,8 +29,19 @@ def _data_br(dia: date) -> str:
     return dia.strftime("%d/%m/%Y")
 
 
+def _hora_local(horario: datetime) -> str:
+    # Horários são gravados em UTC (o SQLite devolve sem fuso); a tela mostra a hora local.
+    if horario.tzinfo is None:
+        horario = horario.replace(tzinfo=UTC)
+    return horario.astimezone().strftime("%H:%M")
+
+
 templates.env.filters["id_html"] = _id_html
 templates.env.filters["data_br"] = _data_br
+templates.env.filters["hora_local"] = _hora_local
+templates.env.filters["moeda"] = moeda
+templates.env.filters["numero"] = numero
+templates.env.filters["numero_campo"] = numero_campo
 
 
 def abrir_banco(request: Request) -> Iterator[Session]:
@@ -74,15 +86,23 @@ def redirecionar(request: Request, url: str) -> Response:
     return RedirectResponse(url, status_code=303)
 
 
-def aviso(request: Request, erro: str | None = None) -> HTMLResponse:
-    """O pedacinho de HTML que aparece ao lado do campo: "Salvo às…" ou "Não salvo: …"."""
-    return html(
+def aviso(request: Request, erro: str | None = None, evento: str | None = None) -> HTMLResponse:
+    """O pedacinho de HTML que aparece ao lado do campo: "Salvo às…" ou "Não salvo: …".
+
+    `evento`: quando o valor foi salvo, o cabeçalho HX-Trigger faz o HTMX disparar esse
+    evento na página. As partes da tela que dependem do valor (cálculos, pendências)
+    escutam o evento (hx-trigger="calculos-mudaram from:body") e se recarregam sozinhas.
+    """
+    resposta = html(
         request,
         "_aviso.html",
         status_code=422 if erro else 200,
         erro=erro,
         hora=datetime.now().strftime("%H:%M:%S"),
     )
+    if evento and not erro:
+        resposta.headers["HX-Trigger"] = evento
+    return resposta
 
 
 def exigir_sessao(

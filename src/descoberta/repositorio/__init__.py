@@ -13,10 +13,12 @@ from .clientes import (
     listar_clientes,
     obter_cliente,
 )
+from .cronometro import alternar_cronometro, obter_cronometro, tempo_do_cronometro
 from .metricas import notas_da_sessao, obter_metricas, salvar_metricas, salvar_nota
 from .modelos import (
     Anotacao,
     Cliente,
+    Cronometro,
     Metricas,
     NotaCriterio,
     OrigemRelatorio,
@@ -29,6 +31,7 @@ from .modelos import (
 from .registros import (
     adicionar_anotacao,
     anotacoes_da_sessao,
+    anotar_sinal,
     desmarcar_sinal,
     editar_anotacao,
     excluir_anotacao,
@@ -50,6 +53,7 @@ __all__ = [
     "CAMINHO_BANCO_PADRAO",
     "Anotacao",
     "Cliente",
+    "Cronometro",
     "Metricas",
     "NotaCriterio",
     "OrigemRelatorio",
@@ -60,7 +64,9 @@ __all__ = [
     "SinalMarcado",
     "StatusSessao",
     "adicionar_anotacao",
+    "alternar_cronometro",
     "anotacoes_da_sessao",
+    "anotar_sinal",
     "atualizar_cliente",
     "atualizar_sessao",
     "criar_cliente",
@@ -78,6 +84,7 @@ __all__ = [
     "marcar_sinal",
     "notas_da_sessao",
     "obter_cliente",
+    "obter_cronometro",
     "obter_metricas",
     "obter_relatorio",
     "obter_sessao",
@@ -87,4 +94,5 @@ __all__ = [
     "salvar_relatorio",
     "salvar_resposta",
     "sinais_marcados",
+    "tempo_do_cronometro",
 ]

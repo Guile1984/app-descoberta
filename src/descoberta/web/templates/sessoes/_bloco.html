@@ -12,24 +12,16 @@
     {% if pergunta.condicao %}<span class="selo">condicional</span>{% endif %}
     <span class="id-pergunta">{{ pergunta.id }}</span>
   </label>
-  <textarea id="resposta-{{ pergunta.id | id_html }}" name="texto" rows="2"
+  <textarea id="resposta-{{ pergunta.id | id_html }}" name="texto" rows="2"{% if pergunta.tipo == "obrigatoria" %} data-obrigatoria{% endif %}
             {{ atributos("/sessoes/%d/respostas/%s" % (sessao.id, pergunta.id), pergunta.id | id_html) }}>{{ respostas.get(pergunta.id, "") }}</textarea>
   {{ estado(pergunta.id | id_html) }}
 </div>
 {% endmacro %}
 
-<nav class="abas" aria-label="Blocos do questionário">
-  {% for b in questionario.blocos %}
-  <a href="/sessoes/{{ sessao.id }}?bloco={{ b.numero }}"
-     hx-get="/sessoes/{{ sessao.id }}?bloco={{ b.numero }}" hx-target="#conteudo-bloco" hx-push-url="true"
-     title="{{ b.titulo }}" {% if b.numero == bloco.numero %}aria-current="page"{% endif %}>
-    {{ b.numero }}. {{ b.titulo }}
-  </a>
-  {% endfor %}
-</nav>
+{% include "sessoes/_abas.html" %}
 
 <div class="painel-bloco">
-  <h2>{{ bloco.numero }}. {{ bloco.titulo }}</h2>
+  <h2 id="titulo-painel" tabindex="-1">{{ bloco.numero }}. {{ bloco.titulo }}</h2>
   <p class="objetivo"><strong>Objetivo:</strong> {{ bloco.objetivo }}</p>
   <p class="saida"><strong>Saída esperada:</strong> {{ bloco.saida_esperada }}</p>
 
@@ -57,6 +49,8 @@
   {% endif %}
 
   {% for pergunta in obrigatorias %}{{ pergunta_com_resposta(pergunta) }}{% endfor %}
+
+  {% include "sessoes/_numeros_do_bloco.html" %}
 
   {% if aprofundamento %}
   <details class="aprofundamento">

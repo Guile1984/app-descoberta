@@ -6,9 +6,9 @@
 Rodar de novo recria o arquivo do zero. O banco real (data/descoberta.db) nunca é tocado.
 
 As respostas usam só os fatos levantados com o cliente; perguntas sem informação ficam em
-branco. Os números (métricas, notas e sinais) são os do caso de referência dos testes
-(`tests/conftest.py`), incluindo as hipóteses registradas lá (custo da hora de R$ 100 e
-30 h economizadas por mês).
+branco. Há também três anotações livres. Os números (métricas, notas e sinais) são os do
+caso de referência dos testes (`tests/conftest.py`), incluindo as hipóteses registradas lá
+(custo da hora de R$ 100 e 30 h economizadas por mês).
 """
 
 import sys
@@ -20,6 +20,7 @@ from sqlmodel import Session
 from descoberta.repositorio import (
     CAMINHO_BANCO_PADRAO,
     StatusSessao,
+    adicionar_anotacao,
     criar_cliente,
     criar_engine,
     criar_sessao,
@@ -66,6 +67,13 @@ NOTAS = {
 }
 
 SINAIS = ["b1.s4", "b2.s2", "b2.s3", "b8.s4", "b9.s1"]
+
+# Anotações livres do consultor: (texto, bloco ou None para anotação geral).
+ANOTACOES = [
+    ("Marcos não participou: validar com ele o critério de gravidade das fissuras.", 2),
+    ("Pedir uma amostra com os 40 casos graves (fotos + laudo) para avaliar a qualidade.", 4),
+    ("Roberto prefere fases; não falar em valor fechado antes do relatório.", None),
+]
 
 RESPOSTAS = {
     # Bloco 1 — Problema de negócio
@@ -175,6 +183,8 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO) -> int:
                 marcar_sinal(session, sessao.id, sinal_id)
             for pergunta_id, texto in RESPOSTAS.items():
                 salvar_resposta(session, sessao.id, pergunta_id, texto)
+            for texto, bloco in ANOTACOES:
+                adicionar_anotacao(session, sessao.id, texto, bloco=bloco)
             return sessao.id
     finally:
         engine.dispose()  # no Windows, o arquivo só pode ser apagado depois de fechado

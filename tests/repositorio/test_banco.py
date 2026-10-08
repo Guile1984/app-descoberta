@@ -3,7 +3,7 @@ from datetime import date, timedelta
 import pytest
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session
+from sqlmodel import Session, SQLModel
 
 from descoberta.repositorio import (
     Sessao,
@@ -22,11 +22,24 @@ TABELAS = {
     "metricas",
     "nota_criterio",
     "relatorio",
+    "cronometro",
 }
 
 
 def test_cria_todas_as_tabelas(engine):
     assert set(inspect(engine).get_table_names()) == TABELAS
+
+
+def test_banco_antigo_ganha_a_tabela_do_cronometro(tmp_path):
+    # Bancos criados antes do Sprint 5 (como o data/demo.db) não têm a tabela cronometro.
+    # O create_all cria a tabela que falta sem mexer nas outras: não precisa de migração.
+    engine = criar_engine(tmp_path / "antigo.db")
+    tabelas_antigas = [t for t in SQLModel.metadata.sorted_tables if t.name != "cronometro"]
+    SQLModel.metadata.create_all(engine, tables=tabelas_antigas)
+    assert "cronometro" not in inspect(engine).get_table_names()
+    criar_tabelas(engine)
+    assert set(inspect(engine).get_table_names()) == TABELAS
+    engine.dispose()
 
 
 def test_cria_a_pasta_do_banco_se_nao_existir(tmp_path):

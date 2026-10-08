@@ -1,0 +1,24 @@
+{#
+  Um sinal de alerta: botão que liga e desliga (aria-pressed diz ao leitor de tela se está
+  marcado). Enter ou Espaço também "clicam". O botão manda o estado que quer
+  (hx-vals: marcar 1 ou 0), e o servidor devolve o botão novo, que entra no lugar deste.
+  Marcado, aparece o campo de observação, que salva sozinho.
+#}
+{% from "_salvamento.html" import atributos, estado %}
+{% set marcado = marcados.get(sinal.id) %}
+{% set alvo = "obs-" ~ (sinal.id | id_html) %}
+<div class="sinal{% if marcado %} marcado{% endif %}" id="sinal-{{ sinal.id | id_html }}">
+  <button type="button" class="botao-sinal" aria-pressed="{{ 'true' if marcado else 'false' }}"
+          hx-post="/sessoes/{{ sessao.id }}/sinais/{{ sinal.id }}" hx-vals='{"marcar": "{{ '0' if marcado else '1' }}"}'
+          hx-target="#sinal-{{ sinal.id | id_html }}" hx-swap="outerHTML">
+    <span class="caixa-sinal" aria-hidden="true">{{ "☑" if marcado else "☐" }}</span> {{ sinal.texto }}
+  </button>
+  {% if marcado %}
+  <label class="observacao">
+    <span class="discreto">Observação</span>
+    <input name="valor" autocomplete="off" value="{{ marcado.observacao or '' }}"
+           {{ atributos("/sessoes/%d/sinais/%s/observacao" % (sessao.id, sinal.id), alvo) }}>
+  </label>
+  {{ estado(alvo) }}
+  {% endif %}
+</div>

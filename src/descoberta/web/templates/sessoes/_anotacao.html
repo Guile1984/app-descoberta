@@ -1,0 +1,18 @@
+{# Uma anotação da lista: em leitura (com Editar e Excluir) ou em edição. #}
+{% set url = "/sessoes/%d/anotacoes/%d" % (sessao.id, anotacao.id) %}
+<li class="anotacao" id="anotacao-{{ anotacao.id }}">
+  <span class="discreto">{{ anotacao.criado_em | hora_local }} · {{ "Bloco %d" % anotacao.bloco if anotacao.bloco else "Geral" }}</span>
+  {% if editando %}
+  <form hx-post="{{ url }}" hx-target="#anotacao-{{ anotacao.id }}" hx-swap="outerHTML">
+    <textarea name="texto" rows="2" aria-label="Editar anotação">{{ texto if texto is defined else anotacao.texto }}</textarea>
+    {% if erro %}<p class="aviso-erro" role="alert">⚠ Não salvo: {{ erro }}</p>{% endif %}
+    <button type="submit" class="botao secundario">Salvar</button>
+    <button type="button" class="botao secundario" hx-get="{{ url }}" hx-target="#anotacao-{{ anotacao.id }}" hx-swap="outerHTML">Cancelar</button>
+  </form>
+  {% else %}
+  <p class="texto-anotacao">{{ anotacao.texto }}</p>
+  <button type="button" class="link" hx-get="{{ url }}/editar" hx-target="#anotacao-{{ anotacao.id }}" hx-swap="outerHTML">Editar</button>
+  <button type="button" class="link perigo" hx-post="{{ url }}/excluir" hx-target="#anotacao-{{ anotacao.id }}" hx-swap="outerHTML"
+          hx-confirm="Excluir esta anotação?">Excluir</button>
+  {% endif %}
+</li>

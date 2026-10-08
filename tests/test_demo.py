@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 from sqlmodel import Session
 
-from descoberta.demo import RESPOSTAS, main, popular_demo
+from descoberta.demo import ANOTACOES, RESPOSTAS, main, popular_demo
 from descoberta.dominio.payback import economia_mes, payback_meses
 from descoberta.dominio.scores import (
     nota_prontidao_para_viabilidade,
@@ -15,6 +15,7 @@ from descoberta.dominio.scores import (
 from descoberta.questionario import pergunta_visivel
 from descoberta.repositorio import (
     CAMINHO_BANCO_PADRAO,
+    anotacoes_da_sessao,
     criar_engine,
     listar_clientes,
     listar_sessoes,
@@ -112,3 +113,9 @@ def test_comando_cria_o_banco_e_explica_como_abrir(tmp_path, capsys):
     main([str(caminho)])
     assert caminho.exists()
     assert "DESCOBERTA_BANCO" in capsys.readouterr().out
+
+
+def test_anotacoes_de_exemplo(banco_demo):
+    _, sessao = _sessao(banco_demo)
+    gravadas = [(a.texto, a.bloco) for a in anotacoes_da_sessao(banco_demo, sessao.id)]
+    assert gravadas == ANOTACOES

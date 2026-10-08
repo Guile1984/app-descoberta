@@ -1,0 +1,71 @@
+{#
+  Painel de cálculos ao vivo. Os valores vêm prontos de dominio.painel (nenhuma conta é
+  feita aqui, só a formatação). Ele se recarrega sozinho quando um número, uma nota ou um
+  sinal muda: o servidor dispara "calculos-mudaram" ou "sinais-mudaram" e este hx-trigger
+  escuta os dois.
+#}
+{% macro falta(calculo) -%}
+<span class="falta">falta: {% for nome in calculo.faltando %}{{ rotulos.get(nome, nome) }}{% if not loop.last %}, {% endif %}{% endfor %}</span>
+{%- endmacro %}
+
+{% macro score(parcial) -%}
+{% if parcial.resultado %}
+<strong>{{ parcial.pontuacao }} de {{ parcial.maximo }}</strong> · <span class="faixa">{{ parcial.resultado.faixa.rotulo }}</span>
+{% if parcial.resultado.faixa.descricao %}<br><span class="discreto">{{ parcial.resultado.faixa.descricao }}</span>{% endif %}
+{% else %}
+{{ parcial.pontuacao }} de {{ parcial.maximo }} até agora · {{ falta(parcial) }}
+{% endif %}
+{%- endmacro %}
+
+  <h2>Cálculos <span class="discreto">Alt+C</span></h2>
+  {% if erro_calculo %}
+  <p class="aviso-erro">⚠ Não foi possível calcular: {{ erro_calculo }}</p>
+  {% elif painel %}
+  {% set p = painel %}
+  <dl class="calculos">
+    <dt>Custo da dor <span class="discreto">bloco 1</span></dt>
+    <dd>
+      {% if p.custo_dor_mes.valor is not none %}
+      <strong>{{ p.custo_dor_mes.valor | moeda }}/mês</strong><br>
+      <span class="discreto">{{ p.ocorrencias_mes.valor | numero }} ocorrências/mês · {{ p.horas_dor_mes.valor | numero }} h/mês</span>
+      {% elif p.horas_dor_mes.valor is not none %}
+      {{ p.horas_dor_mes.valor | numero }} h/mês · {{ falta(p.custo_dor_mes) }}
+      {% else %}
+      — {{ falta(p.custo_dor_mes) }}
+      {% endif %}
+    </dd>
+
+    <dt>Custo de operação <span class="discreto">bloco 6</span></dt>
+    <dd>{% if p.operacao_mes.valor is not none %}<strong>{{ p.operacao_mes.valor | moeda }}/mês</strong>{% else %}— {{ falta(p.operacao_mes) }}{% endif %}</dd>
+
+    <dt>Economia <span class="discreto">bloco 9</span></dt>
+    <dd>{% if p.economia_mes.valor is not none %}<strong>{{ p.economia_mes.valor | moeda }}/mês</strong>{% else %}— {{ falta(p.economia_mes) }}{% endif %}</dd>
+
+    <dt>Payback</dt>
+    <dd>
+      {% if p.payback.meses is not none %}
+      <strong{% if p.payback.dificil_de_aprovar %} class="alerta"{% endif %}>{{ p.payback.meses | numero }} meses</strong>
+      {% if p.payback.dificil_de_aprovar %}<br><span class="alerta">acima de 12 meses: difícil de aprovar numa PME</span>{% endif %}
+      {% elif p.payback.nunca_se_paga %}
+      <strong class="alerta">não se paga</strong><br><span class="discreto">a economia não supera o custo de operação</span>
+      {% else %}
+      — {{ falta(p.payback) }}
+      {% endif %}
+    </dd>
+
+    <dt>Score de dados <span class="discreto">bloco {{ questionario.scores.prontidao_dados.bloco }}</span></dt>
+    <dd>{{ score(p.score_dados) }}</dd>
+
+    <dt>Score final <span class="discreto">bloco {{ questionario.scores.viabilidade_final.bloco }}</span></dt>
+    <dd>{{ score(p.score_final) }}</dd>
+
+    {% set total_sinais = p.sinais_por_bloco.values() | sum %}
+    <dt>Sinais de alerta</dt>
+    <dd>
+      <strong>{{ total_sinais }} {{ "sinal" if total_sinais == 1 else "sinais" }}</strong>
+      {% if total_sinais %}<br><span class="discreto">
+        {% for numero, quantos in p.sinais_por_bloco.items() if quantos %}bloco {{ numero }}: {{ quantos }}{% if not loop.last %} · {% endif %}{% endfor %}
+      </span>{% endif %}
+    </dd>
+  </dl>
+  {% endif %}

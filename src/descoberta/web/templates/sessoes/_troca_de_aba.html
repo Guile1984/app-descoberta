@@ -1,0 +1,12 @@
+{#
+  Resposta ao clique numa aba (ou Alt+número). O painel entra em #conteudo-bloco (o
+  hx-target da aba). Os outros dois pedaços têm hx-swap-oob="true" ("troca fora da área
+  principal"): o HTMX procura na página o elemento com o mesmo id e troca só ele.
+  Assim os sinais e o bloco da anotação acompanham a aba, sem redesenhar a coluna da
+  direita inteira — uma anotação que esteja sendo digitada não se perde.
+#}
+{% include "sessoes/_painel.html" %}
+{% with oob = true %}
+{% include "sessoes/_sinais.html" %}
+<input type="hidden" id="anotacao-bloco" name="bloco" value="{{ bloco.numero if bloco else '' }}" hx-swap-oob="true">
+{% endwith %}

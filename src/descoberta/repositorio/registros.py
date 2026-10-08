@@ -3,6 +3,7 @@
 from sqlmodel import Session, col, select
 
 from ._comum import (
+    RegistroNaoEncontrado,
     exigir,
     exigir_sessao,
     gravar,
@@ -73,6 +74,15 @@ def marcar_sinal(
         sinal = SinalMarcado(sessao_id=sessao_id, sinal_id=sinal_id, observacao=observacao)
     elif observacao is not None:
         sinal.observacao = observacao
+    return gravar(session, sinal)
+
+
+def anotar_sinal(session: Session, sessao_id: int, sinal_id: str, observacao: str | None):
+    """Troca a observação de um sinal já marcado; texto em branco apaga a observação."""
+    sinal = _sinal(session, sessao_id, id_questionario("sinal_id", sinal_id))
+    if sinal is None:
+        raise RegistroNaoEncontrado(f"sinal {sinal_id} não está marcado na sessão {sessao_id}")
+    sinal.observacao = texto_opcional("observacao", observacao)
     return gravar(session, sinal)
 
 

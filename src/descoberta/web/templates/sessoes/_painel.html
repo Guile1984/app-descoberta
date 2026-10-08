@@ -1,0 +1,6 @@
+{# O painel da aba aberta: um bloco do questionário ou o encerramento. #}
+{% if aba == "encerramento" %}
+  {% include "sessoes/_encerramento.html" %}
+{% else %}
+  {% include "sessoes/_bloco.html" %}
+{% endif %}

@@ -1,20 +1,21 @@
-"""Página da sessão (abas por bloco) e salvamento automático dos campos da sessão."""
+"""Página da sessão (abas por bloco e encerramento), partes que se atualizam sozinhas e
+salvamento automático dos campos da sessão."""
 
 from collections.abc import Callable
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Form, HTTPException, Query, Request
 
-from descoberta.questionario import Questionario, perguntas_visiveis
+from descoberta.questionario import Questionario
 from descoberta.repositorio import (
-    Sessao,
     StatusSessao,
     atualizar_sessao,
     excluir_sessao,
     obter_cliente,
-    respostas_da_sessao,
 )
 
+from ..atalhos import ATALHOS, atalhos_para_js
+from ..contexto import contexto_da_aba, contexto_da_sessao
 from ..dependencias import (
     Banco,
     CatalogoDep,
@@ -24,8 +25,11 @@ from ..dependencias import (
     html,
     redirecionar,
 )
+from .cronometro import contexto_do_cronometro
 
 router = APIRouter()
+
+ENCERRAMENTO = "encerramento"
 
 ROTULOS_STATUS = {
     StatusSessao.preparacao: "Preparação",
@@ -34,18 +38,33 @@ ROTULOS_STATUS = {
 }
 
 
-def _contexto_do_bloco(
-    banco: Banco, sessao: Sessao, questionario: Questionario, numero: int
-) -> dict[str, Any]:
-    perguntas = perguntas_visiveis(questionario, numero, sessao.tipo_solucao)
-    return {
-        "sessao": sessao,
-        "questionario": questionario,
-        "bloco": questionario.bloco(numero),
-        "obrigatorias": [p for p in perguntas if p.tipo == "obrigatoria"],
-        "aprofundamento": [p for p in perguntas if p.tipo == "aprofundamento"],
-        "respostas": respostas_da_sessao(banco, sessao.id),
-    }
+def _aba(questionario: Questionario, valor: str) -> int | str:
+    """ "3" → bloco 3; "encerramento" → encerramento; o resto não existe."""
+    if valor == ENCERRAMENTO:
+        return valor
+    if valor.isdigit() and 1 <= int(valor) <= len(questionario.blocos):
+        return int(valor)
+    raise HTTPException(404, f"O questionário não tem a aba '{valor}'.")
+
+
+def _pagina_ou_painel(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id, aba):
+    sessao, questionario = exigir_sessao(banco, catalogo, sessao_id)
+    aba = _aba(questionario, str(aba))
+    contexto = contexto_da_aba(contexto_da_sessao(banco, sessao, questionario), aba)
+    # Clique numa aba (HTMX): só o painel, mais os pedaços da coluna direita que dependem
+    # da aba (hx-swap-oob). F5 ou link direto: a página inteira.
+    if eh_pedido_htmx(request):
+        return html(request, "sessoes/_troca_de_aba.html", **contexto)
+    return html(
+        request,
+        "sessoes/pagina.html",
+        cliente=obter_cliente(banco, sessao.cliente_id),
+        rotulos_status=ROTULOS_STATUS,
+        atalhos=ATALHOS,
+        atalhos_js=atalhos_para_js(),
+        **contexto_do_cronometro(banco, sessao.id, questionario),
+        **contexto,
+    )
 
 
 @router.get("/sessoes/{sessao_id}")
@@ -56,19 +75,43 @@ def pagina(
     sessao_id: int,
     bloco: Annotated[int, Query(ge=1)] = 1,
 ):
+    return _pagina_ou_painel(request, banco, catalogo, sessao_id, bloco)
+
+
+@router.get("/sessoes/{sessao_id}/encerramento")
+def encerramento(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int):
+    return _pagina_ou_painel(request, banco, catalogo, sessao_id, ENCERRAMENTO)
+
+
+# --- Partes da página que se recarregam sozinhas quando um evento chega ---
+# Devolvem só o conteúdo: a moldura (com o hx-trigger) fica na página.
+
+
+def _parte(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id, template, aba="1"):
     sessao, questionario = exigir_sessao(banco, catalogo, sessao_id)
-    if bloco > len(questionario.blocos):
-        raise HTTPException(404, f"O questionário não tem o bloco {bloco}.")
-    contexto = _contexto_do_bloco(banco, sessao, questionario, bloco)
-    # Clique numa aba (HTMX): só o painel do bloco. F5 ou link direto: a página inteira.
-    if eh_pedido_htmx(request):
-        return html(request, "sessoes/_bloco.html", **contexto)
-    return html(
-        request,
-        "sessoes/pagina.html",
-        cliente=obter_cliente(banco, sessao.cliente_id),
-        rotulos_status=ROTULOS_STATUS,
-        **contexto,
+    contexto = contexto_da_sessao(banco, sessao, questionario)
+    return html(request, template, **contexto_da_aba(contexto, _aba(questionario, aba)))
+
+
+@router.get("/sessoes/{sessao_id}/abas")
+def abas(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int, atual: str = "1"):
+    return _parte(request, banco, catalogo, sessao_id, "sessoes/_abas_conteudo.html", atual)
+
+
+@router.get("/sessoes/{sessao_id}/pendencias")
+def pendencias(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int):
+    return _parte(request, banco, catalogo, sessao_id, "sessoes/_pendencias_conteudo.html")
+
+
+@router.get("/sessoes/{sessao_id}/calculos")
+def calculos(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int):
+    return _parte(request, banco, catalogo, sessao_id, "sessoes/_calculos_conteudo.html")
+
+
+@router.get("/sessoes/{sessao_id}/encerramento/resumo")
+def resumo(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int):
+    return _parte(
+        request, banco, catalogo, sessao_id, "sessoes/_resumo_leitura_conteudo.html", ENCERRAMENTO
     )
 
 
@@ -102,6 +145,9 @@ _CAMPOS: dict[str, Callable[[Questionario, str | None], Any]] = {
     "tipo_solucao": _tipo_solucao,
 }
 
+# O tipo de solução mostra ou esconde condicionais: muda as obrigatórias pendentes.
+_EVENTOS = {"tipo_solucao": "pendencias-mudaram"}
+
 
 @router.post("/sessoes/{sessao_id}/campos/{campo}")
 def salvar_campo(
@@ -119,4 +165,4 @@ def salvar_campo(
         atualizar_sessao(banco, sessao_id, **{campo: _CAMPOS[campo](questionario, valor)})
     except (ValueError, TypeError) as erro:
         return aviso(request, str(erro))
-    return aviso(request)
+    return aviso(request, evento=_EVENTOS.get(campo))

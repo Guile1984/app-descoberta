@@ -1,0 +1,20 @@
+{#
+  Barra de abas. Cada aba mostra quantas obrigatórias faltam no bloco. Quando uma resposta
+  é salva, o servidor dispara "pendencias-mudaram" e a barra se recarrega sozinha
+  (hx-get + hx-trigger), já com a aba aberta marcada.
+  data-aba e data-pendentes: o atalho Alt+P usa para achar o próximo bloco com pendências.
+#}
+  {% for b in questionario.blocos %}
+  {% set faltam = pendentes[b.numero] | length %}
+  <a href="/sessoes/{{ sessao.id }}?bloco={{ b.numero }}" data-aba="{{ b.numero }}" data-pendentes="{{ faltam }}"
+     hx-get="/sessoes/{{ sessao.id }}?bloco={{ b.numero }}" hx-target="#conteudo-bloco" hx-swap="innerHTML" hx-push-url="true"
+     title="{{ b.titulo }}{% if faltam %} — {{ faltam }} obrigatória(s) sem resposta{% endif %}"
+     {% if b.numero == aba %}aria-current="page"{% endif %}>
+    {{ b.numero }}. {{ b.titulo }}{% if faltam %} <span class="contador">{{ faltam }}</span>{% endif %}
+  </a>
+  {% endfor %}
+  <a href="/sessoes/{{ sessao.id }}/encerramento" data-aba="encerramento" data-pendentes="0"
+     hx-get="/sessoes/{{ sessao.id }}/encerramento" hx-target="#conteudo-bloco" hx-swap="innerHTML" hx-push-url="true"
+     {% if aba == "encerramento" %}aria-current="page"{% endif %}>
+    Encerramento
+  </a>

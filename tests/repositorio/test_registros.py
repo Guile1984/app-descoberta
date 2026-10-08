@@ -8,6 +8,7 @@ from descoberta.repositorio import (
     Resposta,
     adicionar_anotacao,
     anotacoes_da_sessao,
+    anotar_sinal,
     desmarcar_sinal,
     editar_anotacao,
     excluir_anotacao,
@@ -182,3 +183,20 @@ def test_editar_anotacao_inexistente(session):
 def test_resposta_precisa_ser_texto(session, sessao):
     with pytest.raises(TypeError, match="texto"):
         salvar_resposta(session, sessao.id, "b1.o1", None)
+
+
+# --- Observação do sinal (Sprint 5) ---
+
+
+def test_anotar_sinal_grava_e_apaga_a_observacao(session, sessao):
+    marcar_sinal(session, sessao.id, "b9.s1", observacao="Antiga")
+    anotar_sinal(session, sessao.id, "b9.s1", "  Nova  ")
+    assert sinais_marcados(session, sessao.id)[0].observacao == "Nova"
+    anotar_sinal(session, sessao.id, "b9.s1", "")
+    assert sinais_marcados(session, sessao.id)[0].observacao is None
+
+
+def test_anotar_sinal_nao_marcado_gera_erro(session, sessao):
+    with pytest.raises(RegistroNaoEncontrado):
+        anotar_sinal(session, sessao.id, "b9.s1", "x")
+    assert sinais_marcados(session, sessao.id) == []

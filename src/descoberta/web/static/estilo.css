@@ -79,6 +79,7 @@ textarea { width: 100%; box-sizing: border-box; resize: vertical; }
 .pergunta { margin: 1rem 0; }
 .pergunta label { display: block; margin-bottom: 0.25rem; }
 .pergunta.obrigatoria label { font-weight: 600; }
+.pergunta label .discreto { font-weight: 400; }
 .id-pergunta { color: var(--discreto); font-size: 0.75rem; font-weight: 400; margin-left: 0.4rem; }
 .selo { font-size: 0.7rem; padding: 0.05rem 0.4rem; border-radius: 999px; background: var(--aviso-fundo); font-weight: 400; }
 .aprofundamento { margin: 1rem 0; }
@@ -94,3 +95,80 @@ textarea { width: 100%; box-sizing: border-box; resize: vertical; }
 .estado.htmx-request .aviso { display: none; }
 .aviso-ok { color: var(--ok); }
 .aviso-erro { color: var(--erro); font-weight: 600; }
+
+/* --- Sessão ao vivo (Sprint 5) --- */
+:root {
+  --atencao-fundo: #fff1c2;
+  --atencao-texto: #7a4d00;
+  --limite-fundo: #ffe1e0;
+}
+
+.painel-topo { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+
+/* Cronômetro: muda de cor no aviso e no limite do YAML, sem som nem janela. */
+.cronometro {
+  display: inline-flex; gap: 0.5rem; align-items: center;
+  padding: 0.25rem 0.6rem; border: 1px solid var(--borda); border-radius: 6px;
+}
+.cronometro .tempo { font-variant-numeric: tabular-nums; font-size: 1.2rem; font-weight: 700; }
+.cronometro.atencao { background: var(--atencao-fundo); border-color: var(--atencao-texto); color: var(--atencao-texto); }
+.cronometro.limite { background: var(--limite-fundo); border-color: var(--erro); color: var(--erro); }
+
+.pendencias { margin: 0; font-size: 0.9rem; color: var(--atencao-texto); }
+.pendencias .completo { color: var(--ok); }
+.abas .contador {
+  display: inline-block; min-width: 1.2em; padding: 0 0.3rem; border-radius: 999px;
+  background: var(--aviso-fundo); color: var(--texto); font-size: 0.75rem; text-align: center;
+}
+
+/* Coluna da direita: sinais, anotações e cálculos. */
+.apoio { margin-bottom: 1.25rem; }
+.apoio h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+.apoio h2 .discreto { font-weight: 400; font-size: 0.8rem; }
+
+.sinal { margin-bottom: 0.4rem; }
+.botao-sinal {
+  display: flex; gap: 0.4rem; width: 100%; text-align: left; font: inherit; font-size: 0.9rem;
+  padding: 0.35rem 0.5rem; border: 1px solid var(--borda); border-radius: 6px; background: var(--fundo); cursor: pointer;
+}
+.botao-sinal[aria-pressed="true"] { background: var(--limite-fundo); border-color: var(--erro); }
+.observacao { display: grid; margin: 0.25rem 0 0 1.5rem; font-size: 0.85rem; }
+.lista-sinais { padding-left: 1.2rem; font-size: 0.9rem; }
+
+.lista-anotacoes { list-style: none; padding: 0; margin: 0.5rem 0 0; }
+.anotacao { padding: 0.4rem 0; border-top: 1px solid var(--borda); font-size: 0.9rem; }
+.texto-anotacao { margin: 0.15rem 0; white-space: pre-wrap; }
+#form-anotacao { display: grid; gap: 0.3rem; }
+.link {
+  background: none; border: none; padding: 0; color: var(--destaque); font: inherit; font-size: 0.8rem;
+  cursor: pointer; text-decoration: underline;
+}
+.link.perigo { color: var(--erro); }
+
+.calculos { display: grid; grid-template-columns: max-content 1fr; gap: 0.4rem 0.75rem; margin: 0; font-size: 0.9rem; }
+.calculos dt { color: var(--discreto); }
+.calculos dd { margin: 0; }
+.falta { color: var(--discreto); font-style: italic; }
+.alerta { color: var(--erro); font-weight: 600; }
+.faixa { font-weight: 600; }
+
+/* Números do bloco (métricas e notas dos scores). */
+.numeros { margin: 1rem 0; padding: 0.5rem 0.75rem; border: 1px solid var(--borda); border-radius: 6px; }
+.numeros legend { font-weight: 600; padding: 0 0.3rem; }
+.campo-numero { display: grid; grid-template-columns: minmax(12rem, 1fr) auto auto; gap: 0.5rem; align-items: center; margin: 0.3rem 0; }
+.com-unidade { display: inline-flex; gap: 0.3rem; align-items: center; }
+.com-unidade input { width: 9rem; text-align: right; }
+.unidade { color: var(--discreto); }
+.derivada { font-weight: 600; }
+
+.resumo-leitura { margin-top: 1.5rem; padding: 0.75rem 1rem; background: var(--fundo-suave); border-left: 4px solid var(--destaque); }
+.resumo-leitura h3 { margin-top: 0; }
+.recomendacao { border-top: 1px solid var(--borda); padding-top: 0.5rem; }
+
+/* Ajuda dos atalhos. */
+#ajuda-atalhos { max-width: 40rem; border: 1px solid var(--borda); border-radius: 8px; }
+#ajuda-atalhos::backdrop { background: rgb(0 0 0 / 0.3); }
+kbd { font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; white-space: nowrap; }
+
+/* Foco sempre visível: a sessão inteira pode ser conduzida pelo teclado. */
+:focus-visible { outline: 3px solid var(--destaque); outline-offset: 2px; }

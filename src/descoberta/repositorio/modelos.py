@@ -121,6 +121,18 @@ class Metricas(SQLModel, table=True):
     custo_fixo_mes: Decimal | None = _dinheiro_ou_quantidade()
 
 
+class Cronometro(SQLModel, table=True):
+    """Tempo da sessão: soma dos trechos já pausados mais o trecho que está rodando.
+
+    Tabela própria (e não colunas novas em Sessao) porque o create_all cria tabelas novas
+    num banco que já existe, mas não acrescenta colunas às antigas.
+    """
+
+    sessao_id: int = Field(primary_key=True, foreign_key="sessao.id", ondelete="CASCADE")
+    acumulado_segundos: int = 0
+    rodando_desde: datetime | None = None  # None: pausado (ou nunca iniciado)
+
+
 class NotaCriterio(SQLModel, table=True):
     """Nota 0–3 de um critério de score (os ids de critério são únicos no questionário)."""
 

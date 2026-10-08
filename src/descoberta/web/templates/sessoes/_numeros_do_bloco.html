@@ -1,0 +1,84 @@
+{#
+  Números levantados neste bloco: métricas (custo da dor, operação, retorno) e notas dos
+  scores. Cada campo salva sozinho, como as respostas; ao salvar, o servidor dispara
+  "calculos-mudaram" e o painel de cálculos da direita se recarrega.
+#}
+{% from "_salvamento.html" import atributos, estado %}
+{% set campos = campos_do_bloco(bloco.numero) %}
+{% set score_dados = questionario.scores.prontidao_dados %}
+{% set score_final = questionario.scores.viabilidade_final %}
+
+{% if campos %}
+<fieldset class="numeros">
+  <legend>Números do bloco</legend>
+  {% for campo in campos %}
+  {% set alvo = "metrica-" ~ campo.nome %}
+  {% set valor = metricas[campo.nome] if metricas else None %}
+  <div class="campo-numero">
+    <label for="{{ alvo }}">{{ campo.rotulo }}</label>
+    {% if campo.nome == "frequencia_periodo" %}
+    <select id="{{ alvo }}" name="valor" {{ atributos("/sessoes/%d/metricas/%s" % (sessao.id, campo.nome), alvo, "change") }}>
+      <option value="">—</option>
+      {% for chave, rotulo in periodos.items() %}
+      <option value="{{ chave }}" {% if valor == chave %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+    {% else %}
+    <span class="com-unidade">
+      {% if campo.unidade == "R$" %}<span class="unidade">R$</span>{% endif %}
+      <input id="{{ alvo }}" name="valor" inputmode="decimal" autocomplete="off" value="{{ valor | numero_campo }}"
+             {{ atributos("/sessoes/%d/metricas/%s" % (sessao.id, campo.nome), alvo) }}>
+      {% if campo.unidade == "h" %}<span class="unidade">h</span>{% endif %}
+    </span>
+    {% endif %}
+    {{ estado(alvo) }}
+  </div>
+  {% endfor %}
+  <p class="discreto">Use vírgula para decimais (7,5) e ponto para milhar (20.000).</p>
+</fieldset>
+{% endif %}
+
+{% macro nota(criterio, ancoras="") %}
+{% set alvo = "nota-" ~ criterio.id %}
+<div class="campo-numero">
+  <label for="{{ alvo }}">{{ criterio.rotulo }}{% if ancoras %} <span class="discreto">({{ ancoras }})</span>{% endif %}</label>
+  <select id="{{ alvo }}" name="valor" {{ atributos("/sessoes/%d/notas/%s" % (sessao.id, criterio.id), alvo, "change") }}>
+    <option value="">—</option>
+    {% for n in range(4) %}
+    <option value="{{ n }}" {% if notas.get(criterio.id) == n %}selected{% endif %}>{{ n }}</option>
+    {% endfor %}
+  </select>
+  {{ estado(alvo) }}
+</div>
+{% endmacro %}
+
+{% if bloco.numero == score_dados.bloco %}
+<fieldset class="numeros">
+  <legend>Score de prontidão de dados (0 a 3 por critério)</legend>
+  {% for criterio in score_dados.criterios %}
+  {{ nota(criterio, "0 = " ~ criterio.ancora_0 ~ "; 3 = " ~ criterio.ancora_3) }}
+  {% endfor %}
+</fieldset>
+{% endif %}
+
+{% if bloco.numero == score_final.bloco %}
+<fieldset class="numeros">
+  <legend>Score final de viabilidade (0 a 3 por critério)</legend>
+  {% for criterio in score_final.criterios %}
+    {% if criterio.id == score_dados.criterio_final %}
+    <div class="campo-numero">
+      <span>{{ criterio.rotulo }}</span>
+      <span class="derivada">
+        {% if painel and painel.nota_prontidao is not none %}
+        {{ painel.nota_prontidao }} (score de dados {{ painel.score_dados.pontuacao }} de {{ painel.score_dados.maximo }})
+        {% else %}
+        — complete o score de dados no bloco {{ score_dados.bloco }}
+        {% endif %}
+      </span>
+    </div>
+    {% else %}
+    {{ nota(criterio, "blocos " ~ criterio.blocos_origem | join(", ")) }}
+    {% endif %}
+  {% endfor %}
+</fieldset>
+{% endif %}

@@ -1,0 +1,26 @@
+{#
+  Resumo pronto para ler ao cliente: o que foi escrito em cada item do encerramento, com a
+  recomendação preliminar tirada do painel de cálculos (faixa do score final e payback).
+#}
+{% set p = painel %}
+  <h3>Para ler ao cliente</h3>
+  {% if total_pendentes %}
+  <p class="alerta">Antes de encerrar: {{ total_pendentes }} {{ "obrigatória pendente" if total_pendentes == 1 else "obrigatórias pendentes" }} (Alt+P vai até elas).</p>
+  {% endif %}
+  {% for item in questionario.encerramento.itens %}
+  <p>
+    <strong>{{ item.titulo }}:</strong>
+    {% if respostas.get(item.id) %}{{ respostas[item.id] }}{% else %}<span class="falta">(a preencher)</span>{% endif %}
+  </p>
+  {% endfor %}
+  {% if p %}
+  <p class="recomendacao">
+    <strong>Indicação dos cálculos:</strong>
+    {% if p.score_final.resultado %}
+    {{ p.score_final.resultado.faixa.rotulo }} (score final {{ p.score_final.pontuacao }} de {{ p.score_final.maximo }})
+    {% else %}
+    score final incompleto ({{ p.score_final.pontuacao }} de {{ p.score_final.maximo }} até agora)
+    {% endif %}
+    {% if p.payback.meses is not none %} · payback estimado de {{ p.payback.meses | numero }} meses{% elif p.payback.nunca_se_paga %} · o projeto não se paga com os números atuais{% endif %}
+  </p>
+  {% endif %}
