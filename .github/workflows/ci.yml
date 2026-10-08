@@ -17,10 +17,13 @@ jobs:
       - name: Instalar dependências
         run: uv sync --locked
 
+      - name: Instalar o navegador dos testes e2e (Playwright)
+        run: uv run playwright install --with-deps chromium
+
       - name: Lint (ruff)
         run: |
           uv run ruff check .
           uv run ruff format --check .
 
-      - name: Testes (pytest)
+      - name: Testes (pytest, incluindo os e2e no navegador)
         run: uv run pytest --cov=descoberta

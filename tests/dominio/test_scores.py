@@ -5,7 +5,9 @@ import pytest
 from descoberta.dominio.scores import (
     nota_prontidao_para_viabilidade,
     score_prontidao,
+    score_prontidao_parcial,
     score_viabilidade,
+    score_viabilidade_parcial,
 )
 
 CRITERIOS_DADOS = ["disponibilidade", "volume", "rotulos", "qualidade", "acesso_legal"]
@@ -92,3 +94,41 @@ def test_criterio_desconhecido_e_recusado(questionario_v1):
     com_extra = notas(CRITERIOS_FINAIS, 1, 1, 1, 1, 1, 1) | {"prazo": 2}
     with pytest.raises(ValueError, match="desconhecido.*prazo"):
         score_viabilidade(com_extra, questionario_v1)
+
+
+# --- Score parcial: durante a sessão as notas vão chegando aos poucos ---
+
+
+def test_score_parcial_sem_notas(questionario_v1):
+    parcial = score_prontidao_parcial({}, questionario_v1)
+    assert parcial.pontuacao == 0
+    assert parcial.maximo == 15
+    assert parcial.faltando == tuple(CRITERIOS_DADOS)
+    assert parcial.resultado is None
+
+
+def test_score_parcial_soma_o_que_ja_tem_e_lista_o_que_falta(questionario_v1):
+    parcial = score_viabilidade_parcial({"dor_clara": 3, "retorno_viavel": 2}, questionario_v1)
+    assert parcial.pontuacao == 5
+    assert parcial.maximo == 18
+    assert parcial.faltando == (
+        "ia_caminho_certo",
+        "prontidao_dados",
+        "riscos_controlaveis",
+        "comprometimento_cliente",
+    )
+    assert parcial.resultado is None
+
+
+def test_score_parcial_completo_traz_o_mesmo_resultado_do_score(questionario_v1):
+    todas = notas(CRITERIOS_DADOS, 3, 2, 1, 2, 3)
+    parcial = score_prontidao_parcial(todas, questionario_v1)
+    assert parcial.faltando == ()
+    assert parcial.resultado == score_prontidao(todas, questionario_v1)
+
+
+def test_score_parcial_tambem_recusa_nota_invalida_e_criterio_desconhecido(questionario_v1):
+    with pytest.raises(ValueError, match="volume"):
+        score_prontidao_parcial({"volume": 4}, questionario_v1)
+    with pytest.raises(ValueError, match="desconhecido.*prazo"):
+        score_viabilidade_parcial({"prazo": 1}, questionario_v1)

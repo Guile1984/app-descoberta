@@ -1,0 +1,6 @@
+{# Total de obrigatórias sem resposta; recarrega sozinho quando uma resposta é salva. #}
+{% if total_pendentes %}
+{{ total_pendentes }} {{ "obrigatória pendente" if total_pendentes == 1 else "obrigatórias pendentes" }}
+{% else %}
+<span class="completo">Todas as obrigatórias respondidas</span>
+{% endif %}

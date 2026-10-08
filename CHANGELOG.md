@@ -2,6 +2,83 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.6.0] — 2026-10-08 — Sprint 5: Uso ao vivo
+
+### Adicionado
+- Dependência de desenvolvimento `pytest-playwright` (com o Chromium do Playwright): testes
+  no navegador que provam o critério de aceite "sessão completa só com teclado", que
+  depende do JavaScript dos atalhos e o `TestClient` não executa. Marcados como `e2e`:
+  `uv run pytest -m "not e2e"` roda só os rápidos; o CI roda todos.
+- Questionário (YAML e modelos):
+  - `duracao`: aviso aos 75 min e limite aos 90 min (aviso precisa vir antes do limite);
+  - `bloco` em cada score (dados no bloco 4, final no bloco 10), validado;
+  - `prontidao_dados.criterio_final`: qual critério do score final recebe a nota derivada
+    do score de dados, em vez de o código presumir `prontidao_dados`;
+  - `Questionario.item_encerramento(id)`.
+- `dominio`:
+  - `painel.calcular_painel()`: aplica os cálculos existentes ao que já foi levantado e,
+    para cada resultado ainda impossível, diz quais entradas faltam. Não tem conta
+    própria: só chama `dor`, `operacao`, `payback`, `scores` e `sinais`. Operação só com
+    custo fixo (ou só a parte variável) conta o resto como zero; nota dada à mão para o
+    critério derivado é recusada;
+  - `scores.score_prontidao_parcial()` e `score_viabilidade_parcial()` (soma até agora e
+    critérios que faltam), reaproveitando a mesma validação dos scores completos;
+  - `cronometro`: tempo decorrido com pausas e situação normal/atenção/limite;
+  - `pendencias.obrigatorias_pendentes()`, respeitando as condicionais.
+- `repositorio`: tabela `Cronometro` (1 por sessão) com `alternar_cronometro()` e
+  `tempo_do_cronometro()`; `anotar_sinal()` (troca ou apaga a observação de um sinal).
+  Tabela nova em vez de colunas em `Sessao`: bancos existentes (como o `data/demo.db`)
+  ganham a tabela sem migração.
+- Tela da sessão ao vivo:
+  - sinais de alerta do bloco aberto na coluna direita, marcados com um clique ou
+    Espaço (`aria-pressed`), com observação opcional que salva sozinha;
+  - anotações livres: criar (ligada ao bloco aberto ou geral), editar e excluir; a troca
+    de aba não perde uma anotação em andamento (`hx-swap-oob`);
+  - números de cada bloco (bloco 1: dor; 6: operação; 9: retorno) e notas dos scores
+    (bloco 4 com as âncoras do YAML; bloco 10 com a nota de prontidão só para leitura),
+    com salvamento automático; números em formato brasileiro (`20.000`, `7,5`;
+    `7.5` é recusado com pedido de vírgula);
+  - painel de cálculos ao vivo (custo da dor, operação, economia, payback com alerta
+    acima de 12 meses ou "não se paga", score de dados, score final, sinais por bloco),
+    atualizado sozinho pelo evento `HX-Trigger` depois de cada salvamento;
+  - obrigatórias pendentes no topo e em cada aba;
+  - cronômetro com iniciar/pausar/retomar, que muda de cor (atenção e depois vermelho)
+    nos limites do YAML, sem som nem janela; atualiza a cada 30 s sem JavaScript;
+  - aba de encerramento com os 5 itens do YAML (guardados como respostas `enc.*`) e
+    resumo "para ler ao cliente", com a indicação do score final e o payback;
+  - atalhos de teclado (lista única em `web/atalhos.py`, que gera a ajuda e o JSON do
+    `static/atalhos.js`): Ctrl+/ ou ? (ajuda), Alt+1…Alt+0 (blocos), Alt+R
+    (encerramento), Alt+P (próxima obrigatória pendente, passando de bloco), Alt+S
+    (sinais), Alt+N e Ctrl+Enter (anotação), Alt+C (cálculos), Alt+T (cronômetro), Esc
+    (volta ao último campo). AltGr (Ctrl+Alt, teclado ABNT2) nunca dispara atalho;
+  - tela de ajuda dos atalhos em `<dialog>`, também aberta pelo botão "Atalhos (Ctrl+/)".
+- Banco de demonstração com 3 anotações de exemplo.
+
+### Alterado
+- `aviso()` aceita um evento para o cabeçalho `HX-Trigger` (só quando o valor foi salvo).
+  Respostas e tipo de solução disparam `pendencias-mudaram`; métricas e notas,
+  `calculos-mudaram`; sinais, `sinais-mudaram`.
+- Partes que se recarregam sozinhas (abas, pendências, cálculos, resumo) têm moldura fixa
+  e trocam só o conteúdo: trocando o elemento inteiro, um evento que chegasse durante uma
+  recarga se perdia (o teste no navegador pegou o caso).
+- CI instala o Chromium do Playwright; CLAUDE.md e especificação atualizados.
+
+### Pendências resolvidas do Sprint 4
+- Métricas, notas e sinais aparecem e são editáveis na tela (inclusive os do banco de
+  demonstração).
+
+### Pendências
+- Sprint 6: o relatório deve usar `dominio.painel` (mesmos números da tela) e os itens
+  do encerramento; continua valendo ignorar respostas de condicionais ocultas.
+- Sprint 6 (teste manual do Sprint 5):
+  - notas do score final: usar "bloco" no singular quando o critério tem um só bloco de
+    origem (hoje aparece "blocos 1");
+  - cronômetro: indicador discreto de que está rodando (um ponto pulsando, só com CSS),
+    porque com hh:mm o primeiro minuto parece parado.
+- Atalhos testados no Chromium (Chrome/Edge). No Firefox, Alt+S e Alt+T podem abrir
+  menus do navegador.
+- Continuam valendo as pendências "antes do primeiro uso com cliente real" do Sprint 3.
+
 ## [0.5.0] — 2026-10-07 — Sprint 4: Web básica
 
 ### Adicionado

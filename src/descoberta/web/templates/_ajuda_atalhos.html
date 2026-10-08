@@ -1,0 +1,19 @@
+{#
+  Tela de ajuda dos atalhos. <dialog> é um elemento do próprio HTML: o atalhos.js abre com
+  showModal() (Ctrl+/ ou ?) e o navegador já cuida de fechar com Esc e de prender o foco
+  dentro da janela enquanto ela está aberta.
+#}
+<dialog id="ajuda-atalhos" aria-labelledby="ajuda-atalhos-titulo">
+  <h2 id="ajuda-atalhos-titulo">Atalhos de teclado</h2>
+  <p class="discreto">Funcionam mesmo com o cursor dentro de um campo de texto (exceto ?).</p>
+  <table class="tabela compacta">
+    <thead><tr><th>Teclas</th><th>O que faz</th></tr></thead>
+    <tbody>
+      {% for atalho in atalhos %}
+      <tr><td><kbd>{{ atalho.teclas }}</kbd></td><td>{{ atalho.descricao }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="discreto">Tab e Shift+Tab andam entre os campos; Enter ou Espaço acionam botões e marcam sinais.</p>
+  <form method="dialog"><button class="botao">Fechar (Esc)</button></form>
+</dialog>

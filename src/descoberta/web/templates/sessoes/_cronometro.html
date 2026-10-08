@@ -1,0 +1,16 @@
+{#
+  Cronômetro. Enquanto roda, pede a si mesmo uma versão nova a cada 30 s (hx-trigger
+  "every 30s") e é trocado inteiro (outerHTML). Parado, não pede nada.
+  A classe muda a cor: normal, atencao (aviso do YAML) e limite (limite do YAML).
+#}
+{% set c = cronometro %}
+<div id="cronometro" class="cronometro {{ c.situacao }}"
+     title="Duração-alvo: aviso aos {{ c.duracao.aviso_minutos }} min, limite aos {{ c.duracao.limite_minutos }} min"
+     {% if c.rodando %}hx-get="/sessoes/{{ sessao.id }}/cronometro" hx-trigger="every 30s" hx-swap="outerHTML"{% endif %}>
+  <span class="tempo" aria-label="Tempo de sessão">{{ c.texto }}</span>
+  <button type="button" class="botao secundario"
+          hx-post="/sessoes/{{ sessao.id }}/cronometro" hx-target="#cronometro" hx-swap="outerHTML">
+    {{ "Pausar" if c.rodando else ("Retomar" if c.iniciado else "Iniciar") }}
+  </button>
+  <span class="discreto">Alt+T</span>
+</div>

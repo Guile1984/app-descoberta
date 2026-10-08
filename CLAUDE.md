@@ -28,7 +28,7 @@ O LLM só é usado depois da sessão, para o rascunho do relatório.
 - SQLite + SQLModel
 - Pydantic para validar o questionário (YAML)
 - Exportação: Markdown, DOCX, PDF
-- Qualidade: pytest (+ cobertura), ruff, pre-commit
+- Qualidade: pytest (+ cobertura), Playwright (testes e2e no navegador), ruff, pre-commit
 
 ## Arquitetura (dependências apontam para dentro)
 ```
@@ -72,7 +72,9 @@ tests/
 ## Comandos
 - Instalar: `uv sync`
 - Rodar: `uv run uvicorn descoberta.web.app:app --reload`
-- Testes: `uv run pytest --cov=descoberta`
+- Testes: `uv run pytest --cov=descoberta` (todos, inclusive os e2e no navegador)
+- Testes rápidos, sem navegador: `uv run pytest -m "not e2e"`
+- Navegador dos testes e2e (uma vez por máquina): `uv run playwright install chromium`
 - Lint: `uv run ruff check . && uv run ruff format --check .`
 
 ## Não fazer

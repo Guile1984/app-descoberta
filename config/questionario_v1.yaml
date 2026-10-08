@@ -13,6 +13,11 @@
 versao: 1
 titulo: Modelo de Descoberta — Apps de IA para PMEs
 
+# Duração-alvo de 60 a 90 minutos: o cronômetro muda de cor no aviso e de novo no limite.
+duracao:
+  aviso_minutos: 75
+  limite_minutos: 90
+
 orientacoes:
   - >-
     A sessão de descoberta responde três perguntas antes de qualquer proposta: a dor é
@@ -668,6 +673,9 @@ encerramento:
 scores:
   # Bloco 4 — score de prontidão de dados (5 critérios × 0–3, máximo 15).
   prontidao_dados:
+    bloco: 4
+    # A nota deste critério do score final sai do score de dados (conversao_para_nota).
+    criterio_final: prontidao_dados
     criterios:
       - id: disponibilidade
         rotulo: Disponibilidade
@@ -712,6 +720,7 @@ scores:
 
   # Bloco 10 — score final de viabilidade (6 critérios × 0–3, máximo 18).
   viabilidade_final:
+    bloco: 10
     criterios:
       - id: dor_clara
         rotulo: Dor clara e relevante

@@ -200,3 +200,45 @@ def test_bloco_por_numero(dados_minimos):
     assert questionario.bloco(4).id == "bloco_4"
     with pytest.raises(KeyError):
         questionario.bloco(99)
+
+
+# --- Sprint 5: duração da sessão, bloco dos scores, nota derivada e encerramento ---
+
+
+def test_duracao_da_sessao(dados_minimos):
+    duracao = validar(dados_minimos).duracao
+    assert (duracao.aviso_minutos, duracao.limite_minutos) == (75, 90)
+
+
+@pytest.mark.parametrize(("aviso", "limite"), [(90, 90), (100, 90)])
+def test_aviso_de_duracao_precisa_vir_antes_do_limite(dados_minimos, aviso, limite):
+    dados_minimos["duracao"] = {"aviso_minutos": aviso, "limite_minutos": limite}
+    assert "aviso" in erro_de(dados_minimos)
+
+
+@pytest.mark.parametrize("minutos", [0, -5])
+def test_duracao_precisa_ser_positiva(dados_minimos, minutos):
+    dados_minimos["duracao"]["aviso_minutos"] = minutos
+    erro_de(dados_minimos)
+
+
+@pytest.mark.parametrize("score", ["prontidao_dados", "viabilidade_final"])
+def test_score_em_bloco_inexistente(dados_minimos, score):
+    dados_minimos["scores"][score]["bloco"] = 9
+    mensagem = erro_de(dados_minimos)
+    assert score in mensagem
+    assert "9" in mensagem
+
+
+def test_criterio_final_precisa_existir_no_score_de_viabilidade(dados_minimos):
+    dados_minimos["scores"]["prontidao_dados"]["criterio_final"] = "prazo"
+    mensagem = erro_de(dados_minimos)
+    assert "criterio_final" in mensagem
+    assert "prazo" in mensagem
+
+
+def test_item_de_encerramento_por_id(dados_minimos):
+    questionario = validar(dados_minimos)
+    assert questionario.item_encerramento("enc.resumo").titulo == "Resumo"
+    with pytest.raises(KeyError):
+        questionario.item_encerramento("b1.o1")

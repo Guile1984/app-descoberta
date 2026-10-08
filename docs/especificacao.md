@@ -40,7 +40,7 @@ A tela principal é feita para anotar ao vivo no notebook, sem travar a conversa
 3. Obrigatórias em destaque; aprofundamento recolhido.
 4. Condicionais aparecem quando o tipo de solução é escolhido no bloco 3.
 5. Salvamento automático a cada campo.
-6. Cronômetro geral e indicador de obrigatórias pendentes.
+6. Cronômetro geral (muda de cor no aviso e no limite da duração-alvo, definidos no questionário) e indicador de obrigatórias pendentes.
 7. Cálculos atualizados em tempo real.
 8. Roteiro de encerramento com resumo pronto para ler ao cliente.
 
@@ -61,7 +61,8 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Bloco | número, título, objetivo, saída esperada |
 | Pergunta | id, bloco, texto, tipo (obrigatória/aprofundamento), condição de exibição |
 | Sinal de alerta | id, bloco, texto |
-| Score | critérios, faixas; no score de dados, conversão para a nota do score final |
+| Score | bloco onde as notas são dadas, critérios, faixas; no score de dados, conversão para a nota do critério do score final que ele alimenta |
+| Duração da sessão | minutos do aviso e do limite (o cronômetro muda de cor) |
 
 **Banco (SQLite + SQLModel)**
 
@@ -69,11 +70,12 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | --- | --- |
 | Cliente | nome, empresa, setor, nº de funcionários, contato |
 | Sessão | cliente, data, versão do questionário, tipo de solução, status, contexto prévio, amostra de dados recebida |
-| Resposta | sessão, id da pergunta, texto |
+| Resposta | sessão, id da pergunta (ou do item do encerramento), texto |
 | Sinal marcado | sessão, id do sinal, observação |
 | Anotação livre | sessão, bloco (opcional), texto, horário |
 | Métricas | sessão, horas por ocorrência, frequência (quantidade e período), custo da hora, horas economizadas por mês, outros ganhos mensais, investimento, custo de operação (chamadas por dia, custo por chamada, custo fixo mensal) |
 | Nota de critério | sessão, id do critério, nota (0–3) |
+| Cronômetro | sessão, tempo acumulado, rodando desde |
 | Relatório | sessão, origem (template/LLM), conteúdo, modelo, versão do prompt, data |
 
 Um cliente tem várias sessões; uma sessão tem muitas respostas, sinais e anotações, e um conjunto de métricas. Métricas ficam em campos numéricos próprios, nunca extraídas do texto.

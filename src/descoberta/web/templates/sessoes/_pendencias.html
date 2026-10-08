@@ -1,0 +1,10 @@
+{#
+  Moldura fixa: o elemento que escuta o evento fica sempre na página e só o conteúdo de
+  dentro é trocado (innerHTML). Se a moldura fosse trocada inteira (outerHTML), um aviso
+  que chegasse durante uma recarga se perderia: o HTMX descarta o pedido de um elemento
+  que já saiu da página.
+#}
+<p id="pendencias" class="pendencias" role="status"
+   hx-get="/sessoes/{{ sessao.id }}/pendencias" hx-trigger="pendencias-mudaram from:body">
+  {% include "sessoes/_pendencias_conteudo.html" %}
+</p>

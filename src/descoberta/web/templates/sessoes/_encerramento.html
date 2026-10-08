@@ -1,0 +1,26 @@
+{#
+  Aba de encerramento: os itens do YAML, cada um com um campo que salva sozinho (guardado
+  como resposta, com o id do item: enc.resumo, enc.prazo…), e o resumo para ler ao
+  cliente, que se recarrega quando uma resposta, um número ou um sinal muda.
+#}
+{% from "_salvamento.html" import atributos, estado %}
+{% include "sessoes/_abas.html" %}
+
+<div class="painel-bloco">
+  <h2 id="titulo-painel" tabindex="-1">Encerramento</h2>
+  <p class="objetivo">{{ questionario.encerramento.objetivo }}</p>
+
+  {% for item in questionario.encerramento.itens %}
+  <div class="pergunta obrigatoria">
+    <label for="resposta-{{ item.id | id_html }}">
+      {{ item.titulo }} <span class="id-pergunta">{{ item.id }}</span>
+      <br><span class="discreto">{{ item.descricao }}</span>
+    </label>
+    <textarea id="resposta-{{ item.id | id_html }}" name="texto" rows="2"
+              {{ atributos("/sessoes/%d/respostas/%s" % (sessao.id, item.id), item.id | id_html) }}>{{ respostas.get(item.id, "") }}</textarea>
+    {{ estado(item.id | id_html) }}
+  </div>
+  {% endfor %}
+
+  {% include "sessoes/_resumo_leitura.html" %}
+</div>

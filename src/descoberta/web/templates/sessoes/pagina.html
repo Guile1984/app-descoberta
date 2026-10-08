@@ -1,12 +1,22 @@
 {% extends "base.html" %}
 {% from "_salvamento.html" import atributos, estado %}
 {% block titulo %}{{ cliente.empresa }} · {{ sessao.data | data_br }} · Descoberta{% endblock %}
+{% block scripts %}
+{# A lista de atalhos vem do servidor (web/atalhos.py); o tojson escapa o texto para o HTML. #}
+<script type="application/json" id="atalhos-dados">{{ atalhos_js | tojson }}</script>
+<script src="/static/atalhos.js" defer></script>
+{% endblock %}
 {% block conteudo %}
 <div class="cabecalho-pagina">
   <div>
     <p class="discreto"><a href="/clientes/{{ cliente.id }}">{{ cliente.empresa }}</a> · {{ cliente.nome }}</p>
     <h1>Sessão de {{ sessao.data | data_br }}</h1>
     <p class="discreto">{{ questionario.titulo }} · versão {{ sessao.versao_questionario }}</p>
+  </div>
+  <div class="painel-topo">
+    {% include "sessoes/_cronometro.html" %}
+    {% include "sessoes/_pendencias.html" %}
+    <button type="button" class="botao secundario" data-acao="ajuda" title="Atalhos de teclado">Atalhos (Ctrl+/)</button>
   </div>
   <div class="acoes">
     <label>Status
@@ -40,10 +50,15 @@
 
 <div class="colunas">
   <section id="conteudo-bloco" class="coluna-perguntas">
-    {% include "sessoes/_bloco.html" %}
+    {% include "sessoes/_painel.html" %}
   </section>
   <aside class="coluna-apoio">
-    <p class="discreto">Sinais de alerta, anotações e cálculos ao vivo chegam no Sprint 5.</p>
+    {# Cálculos antes das anotações: a lista de anotações cresce durante a sessão. #}
+    {% include "sessoes/_sinais.html" %}
+    {% include "sessoes/_calculos.html" %}
+    {% include "sessoes/_anotacoes.html" %}
   </aside>
 </div>
+
+{% include "_ajuda_atalhos.html" %}
 {% endblock %}

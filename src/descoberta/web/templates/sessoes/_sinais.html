@@ -1,0 +1,26 @@
+{#
+  Sinais de alerta da aba aberta (coluna da direita). Na troca de aba, este pedaço vem com
+  hx-swap-oob e substitui o da página (veja _troca_de_aba.html).
+  No encerramento, lista todos os sinais marcados na sessão.
+#}
+<section id="sinais" class="apoio" aria-label="Sinais de alerta"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% if bloco %}
+  <h2>Sinais de alerta <span class="discreto">bloco {{ bloco.numero }} · Alt+S</span></h2>
+  {% for sinal in bloco.sinais %}
+    {% include "sessoes/_sinal.html" %}
+  {% else %}
+  <p class="discreto">Este bloco não tem sinais de alerta.</p>
+  {% endfor %}
+  {% else %}
+  <h2>Sinais marcados na sessão</h2>
+  {% set ns = namespace(algum=false) %}
+  <ul class="lista-sinais">
+  {% for b in questionario.blocos %}{% for sinal in b.sinais %}{% if marcados.get(sinal.id) %}
+    {% set ns.algum = true %}
+    <li><span class="discreto">Bloco {{ b.numero }}:</span> {{ sinal.texto }}
+      {% if marcados[sinal.id].observacao %}<br><em>{{ marcados[sinal.id].observacao }}</em>{% endif %}</li>
+  {% endif %}{% endfor %}{% endfor %}
+  </ul>
+  {% if not ns.algum %}<p class="discreto">Nenhum sinal de alerta marcado.</p>{% endif %}
+  {% endif %}
+</section>

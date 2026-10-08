@@ -31,6 +31,7 @@ def _faixas_ate_3() -> list[dict]:
 QUESTIONARIO_MINIMO = {
     "versao": 1,
     "titulo": "Questionário de teste",
+    "duracao": {"aviso_minutos": 75, "limite_minutos": 90},
     "tipos_solucao": [
         {"id": "automacao_sem_ia", "rotulo": "Automação", "situacao": "Regras claras"},
         {"id": "visao_computacional", "rotulo": "Visão", "situacao": "Imagens ou vídeo"},
@@ -59,6 +60,9 @@ QUESTIONARIO_MINIMO = {
     },
     "scores": {
         "prontidao_dados": {
+            "bloco": 4,
+            # No mínimo, o único critério final faz o papel da nota derivada do score de dados.
+            "criterio_final": "dor_clara",
             "criterios": [
                 {
                     "id": "disponibilidade",
@@ -74,6 +78,7 @@ QUESTIONARIO_MINIMO = {
             ],
         },
         "viabilidade_final": {
+            "bloco": 4,
             "criterios": [{"id": "dor_clara", "rotulo": "Dor clara", "blocos_origem": [1]}],
             "faixas": _faixas_ate_3(),
         },

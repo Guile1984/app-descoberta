@@ -1,0 +1,24 @@
+{#
+  Anotações livres. O formulário manda a anotação com o bloco da aba aberta (campo
+  escondido #anotacao-bloco, que acompanha a troca de aba). A resposta é esta seção
+  inteira: depois de salvar, volta com o formulário vazio e a lista atualizada.
+  Atalhos: Alt+N escreve; Ctrl+Enter salva e devolve o cursor ao campo onde você estava.
+#}
+{% set bloco_atual = bloco_anotacao if bloco_anotacao is defined else (bloco.numero if bloco else "") %}
+<section id="anotacoes" class="apoio" aria-label="Anotações">
+  <h2>Anotações <span class="discreto">Alt+N</span></h2>
+  <form id="form-anotacao" hx-post="/sessoes/{{ sessao.id }}/anotacoes" hx-target="#anotacoes" hx-swap="outerHTML">
+    <input type="hidden" id="anotacao-bloco" name="bloco" value="{{ bloco_atual }}">
+    <label for="anotacao-texto" class="discreto">Nova anotação (Ctrl+Enter salva)</label>
+    <textarea id="anotacao-texto" name="texto" rows="2">{{ texto_anotacao or "" }}</textarea>
+    {% if erro_anotacao %}<p class="aviso-erro" role="alert">⚠ Não salvo: {{ erro_anotacao }}</p>{% endif %}
+    <button type="submit" class="botao secundario">Salvar anotação</button>
+  </form>
+  <ul id="lista-anotacoes" class="lista-anotacoes">
+    {% for anotacao in anotacoes %}
+    {% include "sessoes/_anotacao.html" %}
+    {% else %}
+    <li class="discreto">Nenhuma anotação ainda.</li>
+    {% endfor %}
+  </ul>
+</section>
