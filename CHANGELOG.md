@@ -70,6 +70,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Pendências
 - Sprint 6: o relatório deve usar `dominio.painel` (mesmos números da tela) e os itens
   do encerramento; continua valendo ignorar respostas de condicionais ocultas.
+- Sprint 6 (teste manual do Sprint 5):
+  - notas do score final: usar "bloco" no singular quando o critério tem um só bloco de
+    origem (hoje aparece "blocos 1");
+  - cronômetro: indicador discreto de que está rodando (um ponto pulsando, só com CSS),
+    porque com hh:mm o primeiro minuto parece parado.
 - Atalhos testados no Chromium (Chrome/Edge). No Firefox, Alt+S e Alt+T podem abrir
   menus do navegador.
 - Continuam valendo as pendências "antes do primeiro uso com cliente real" do Sprint 3.
