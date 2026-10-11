@@ -80,6 +80,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   saídas da revisão, e ignora respostas de condicionais ocultas pelo tipo de solução.
 
 ### Pendências
+- Sprint 6c: no PDF, um título de seção não pode ficar sozinho no pé da página, separado
+  do conteúdo (hoje acontece com "Próximos passos" e "Score final de viabilidade"); o
+  título deve ir para a página seguinte junto com o início do conteúdo.
 - Sprint 7: os rascunhos do LLM para os textos narrativos ficam numa tabela própria (com
   modelo e versão do prompt), sem sobrescrever o texto do consultor.
 - Continuam valendo as pendências "antes do primeiro uso com cliente real" do Sprint 3.
