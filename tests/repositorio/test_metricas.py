@@ -3,9 +3,10 @@
 from decimal import Decimal
 
 import pytest
-from sqlmodel import select
+from sqlmodel import Session, select
 
 from descoberta.repositorio import (
+    Metricas,
     NotaCriterio,
     RegistroNaoEncontrado,
     notas_da_sessao,
@@ -126,3 +127,31 @@ def test_nota_invalida(session, sessao, nota, excecao):
 def test_criterio_invalido(session, sessao):
     with pytest.raises(ValueError, match="criterio_id"):
         salvar_nota(session, sessao.id, "Volume", 1)
+
+
+def test_dois_pedidos_criando_as_metricas_ao_mesmo_tempo(engine, sessao):
+    """Dois números salvos quase juntos numa sessão nova: os dois pedidos veem que a linha
+    de métricas não existe e tentam criá-la. O segundo não pode falhar nem perder o valor.
+
+    A ordem é encenada sem threads: logo depois de o pedido A ler (e não achar nada), o
+    pedido B cria a linha e grava; só então A tenta gravar a sua.
+    """
+    with Session(engine) as pedido_a, Session(engine) as pedido_b:
+        ler = pedido_a.get
+        chamadas = []
+
+        def ler_e_deixar_b_gravar(modelo, *args, **kwargs):
+            resultado = ler(modelo, *args, **kwargs)
+            if modelo is Metricas and not chamadas:
+                chamadas.append(1)
+                salvar_metricas(pedido_b, sessao.id, frequencia_periodo="mes")
+            return resultado
+
+        pedido_a.get = ler_e_deixar_b_gravar
+        salvar_metricas(pedido_a, sessao.id, frequencia_quantidade=15)
+    assert chamadas == [1]  # a corrida aconteceu mesmo
+
+    with Session(engine) as conferir:
+        metricas = obter_metricas(conferir, sessao.id)
+        assert metricas.frequencia_periodo == "mes"
+        assert metricas.frequencia_quantidade == Decimal(15)

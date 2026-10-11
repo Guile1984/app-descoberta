@@ -2,6 +2,7 @@
 
 from typing import Any, get_args
 
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, col, select
 
 from descoberta.dominio.dor import Periodo
@@ -47,6 +48,18 @@ def salvar_metricas(session: Session, sessao_id: int, **campos: Any) -> Metricas
     guardados como Decimal. None apaga o valor do campo.
     """
     exigir_sessao(session, sessao_id)
+    try:
+        return _gravar_metricas(session, sessao_id, campos)
+    except IntegrityError:
+        # Todas as métricas ficam numa linha só. Numa sessão nova, dois números salvos
+        # quase juntos chegam em pedidos paralelos: os dois veem que a linha não existe e
+        # tentam criá-la, e o segundo esbarra no primeiro. Desfaz e grava de novo, agora
+        # atualizando a linha que o outro pedido criou.
+        session.rollback()
+        return _gravar_metricas(session, sessao_id, campos)
+
+
+def _gravar_metricas(session: Session, sessao_id: int, campos: dict[str, Any]) -> Metricas:
     metricas = session.get(Metricas, sessao_id) or Metricas(sessao_id=sessao_id)
     aplicar_campos(metricas, campos, _VALIDADORES)
     return gravar(session, metricas)

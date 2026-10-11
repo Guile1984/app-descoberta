@@ -11,6 +11,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   cursor só volta ao botão se tiver se perdido com a troca, e só na troca do próprio sinal.
   Era a causa da falha intermitente do teste e2e `test_sessao_completa_so_com_teclado`
   (anotação gravada como "Maão participou.").
+- Número salvo como "Não salvo" (erro 500) numa sessão nova: todas as métricas ficam numa
+  linha só, e dois números gravados quase juntos (por exemplo, quantidade e período da
+  frequência) chegavam em pedidos paralelos que tentavam criar essa linha ao mesmo tempo
+  (`UNIQUE constraint failed: metricas.sessao_id`). Agora o segundo pedido desfaz e grava
+  de novo sobre a linha criada pelo primeiro. Foi a segunda falha intermitente do mesmo
+  teste e2e no CI; um teste do repositório encena essa ordem sem threads.
 - Teste e2e novo que segura a resposta do sinal até o meio da digitação, reproduzindo a
   corrida de forma determinística; o teste do roteiro completo agora espera o cursor
   voltar ao sinal antes de seguir.
