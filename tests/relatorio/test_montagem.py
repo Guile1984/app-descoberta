@@ -1,7 +1,7 @@
 """Montagem do relatório (sem gerar arquivos): conteúdo, versões, anexos e termo."""
 
 import dataclasses
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 
@@ -106,7 +106,7 @@ def test_saidas_da_revisao_entram_nas_secoes(dados_roberto, emissao_cliente):
         "Recall de fissuras graves",  # indicador
         "Laudo técnico gerado automaticamente",  # escopo: fica de fora
         "Enviar a proposta da fase 0",  # próximo passo
-        "21/10/2026",
+        (date.today() + timedelta(days=14)).strftime("%d/%m/%Y"),  # prazo relativo do demo
         "1. Teste com dados históricos",  # tabela de critério de aceite do YAML
     ):
         assert trecho in texto
@@ -187,6 +187,24 @@ def test_anexo_a_ignora_condicionais_ocultas(banco_roberto, questionario_v1, emi
     assert "Fotos recebidas pelo WhatsApp, guardadas no celular do Marcos." not in texto.texto()
     assert "Quem tira as fotos" not in texto.texto()
     assert "Cerca de 500 fotos em 2 anos." in texto.texto()  # obrigatória comum continua
+
+
+def test_secao_de_operacao_esconde_as_entradas_vazias(dados_roberto, emissao_cliente):
+    documento = montar_relatorio(dados_roberto, emissao_cliente)
+    titulo = _titulos_das_secoes(documento)[6]
+    assert titulo.startswith("7. ")
+    linhas = {linha[0]: linha[1] for linha in _tabela_apos(documento, titulo).linhas}
+    assert linhas == {"Custo fixo mensal": "R$ 400,00 *", "Custo de operação": "R$ 400,00/mês *"}
+    # No Anexo B as entradas vazias continuam, para mostrar o que não foi informado.
+    entradas = _tabela_apos(documento, "Anexo B — Memória de cálculo")
+    por_campo = {linha[0]: linha for linha in entradas.linhas}
+    assert por_campo["Chamadas por dia"][1] == "—"
+
+
+def test_secao_de_operacao_vazia_mostra_so_o_que_falta(dados_vazios, emissao_cliente):
+    documento = montar_relatorio(dados_vazios, emissao_cliente)
+    tabela = _tabela_apos(documento, _titulos_das_secoes(documento)[6])
+    assert tabela.linhas == [["Custo de operação", FALTA]]
 
 
 # --- Anexo B ---

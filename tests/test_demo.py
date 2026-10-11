@@ -1,5 +1,6 @@
 """Banco de demonstração com o caso Roberto (`uv run python -m descoberta.demo`)."""
 
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -161,3 +162,22 @@ def test_saidas_da_revisao_do_roberto(banco_demo, questionario_v1):
         [t.id for t in questionario_v1.revisao.textos], textos, riscos, indicadores, escopo, passos
     )
     assert pendencias.total == 0
+
+
+def test_textos_do_demo_revisados():
+    assert "Roberto" in RESPOSTAS["b1.o6"]
+    assert "investimento" in RESPOSTAS["b1.o6"]
+    assert "eu entrego" not in RESPOSTAS["enc.proximos_passos"]
+    assert "o consultor entrega" in RESPOSTAS["enc.proximos_passos"]
+    assert "a partir de 6" in TEXTOS["recomendacao"]
+
+
+def test_proximos_passos_vencem_depois_da_criacao_do_demo(tmp_path):
+    caminho = tmp_path / "demo.db"
+    sessao_id = popular_demo(caminho, hoje=date(2027, 3, 1))
+    engine = criar_engine(caminho)
+    with Session(engine) as session:
+        prazos = [p.prazo for p in itens_da_sessao(session, ProximoPasso, sessao_id)]
+    engine.dispose()
+    assert prazos == sorted(prazos)
+    assert all(prazo > date(2027, 3, 1) for prazo in prazos)

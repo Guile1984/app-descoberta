@@ -297,7 +297,9 @@ class _Montador:
         ]
 
     def _operacao(self) -> list[Bloco]:
-        tabela = self._metricas(("chamadas_por_dia", "custo_por_chamada", "custo_fixo_mes"))
+        # Só as entradas informadas; as vazias continuam no Anexo B.
+        campos = ("chamadas_por_dia", "custo_por_chamada", "custo_fixo_mes")
+        tabela = self._metricas(c for c in campos if getattr(self.dados.entradas, c) is not None)
         total = self._calculo(self.painel.operacao_mes, lambda v: f"{moeda(v)}/mês")
         return [
             Tabela(tabela.colunas, [*tabela.linhas, ["Custo de operação", total]], None, [2, 1])
@@ -326,7 +328,9 @@ class _Montador:
             Tabela(
                 ["#", "Risco", "Categoria", "Probabilidade", "Impacto", "Mitigação"],
                 linhas,
-                larguras=[0.45, 2.6, 1.6, 1.55, 1.15, 2.8],
+                # Em cm (somam os 17 cm úteis): cada coluna cabe a sua palavra mais longa
+                # ("R12", "Responsabilidade", "Probabilidade" em negrito) sem quebrá-la.
+                larguras=[1.2, 3.9, 3.2, 2.9, 1.9, 3.9],
             ),
             Titulo("Matriz de riscos", 2),
             Tabela(

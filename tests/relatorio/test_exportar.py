@@ -175,3 +175,28 @@ def test_montagem_nao_muda_os_dados(dados_roberto, emissao_cliente):
     antes = dict(dados_roberto.respostas)
     montar_relatorio(dados_roberto, emissao_cliente)
     assert dados_roberto.respostas == antes
+
+
+@pytest.mark.parametrize("tipo", list(TipoVersao))
+def test_nenhuma_palavra_quebra_nas_tabelas_do_pdf(dados_roberto, tipo):
+    """Cada palavra das tabelas cabe na coluna ("Probabilidad e" não pode acontecer)."""
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    from descoberta.relatorio.exportar import pdf
+
+    pdf._registrar_fontes()
+    documento = emitir(dados_roberto, Emissao(tipo, None, EMITIDO_EM)).documento
+    quebradas = []
+    for tabela in (b for b in documento.blocos if isinstance(b, Tabela)):
+        larguras = tabela.larguras or [1] * len(tabela.colunas)
+        for linha, fonte in [(tabela.colunas, pdf.FONTE_NEGRITO)] + [
+            (linha, pdf.FONTE) for linha in tabela.linhas
+        ]:
+            for celula, parte in zip(linha, larguras, strict=True):
+                util = pdf.LARGURA_UTIL * parte / sum(larguras) - 12  # 6 pt de cada lado
+                quebradas += [
+                    (tabela.colunas[0], palavra)
+                    for palavra in celula.split()
+                    if stringWidth(palavra, fonte, 8.5) > util
+                ]
+    assert quebradas == []

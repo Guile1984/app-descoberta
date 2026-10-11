@@ -67,6 +67,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   exportação; Sprint 8 (validação e lançamento, com SECURITY.md, aviso de uso local e
   verificações de segurança no CI) e Sprint 9 (documentação Diátaxis com MkDocs, guia de
   produção com modelo de ameaças, CONTRIBUTING e CI da documentação).
+- Ajustes do teste manual:
+  - tabela de riscos com colunas largas o bastante para nenhuma palavra quebrar no PDF e
+    no Word, com teste que mede cada palavra de todas as tabelas do PDF;
+  - seção 7 sem as entradas vazias (elas continuam no Anexo B);
+  - demo: decisão do investimento é do Roberto (b1.o6); "o consultor entrega";
+    "a partir de 6"; prazos dos próximos passos contados a partir do dia em que o
+    demo é criado, para ficarem sempre depois da emissão.
 
 ### Pendências resolvidas do Sprint 6a
 - O relatório usa `dominio.painel` (mesmos números da tela), os itens do encerramento e as
