@@ -35,3 +35,5 @@ uv run uvicorn descoberta.web.app:app --reload
 
 No Bash: `DESCOBERTA_BANCO=data/demo.db uv run uvicorn descoberta.web.app:app --reload`.
 O comando de demonstração recria só o `data/demo.db` e nunca toca no banco real.
+Na sessão do Roberto, o botão "Revisão pós-sessão →" abre a revisão já preenchida (riscos,
+indicadores, escopo do MVP, próximos passos e textos do relatório).

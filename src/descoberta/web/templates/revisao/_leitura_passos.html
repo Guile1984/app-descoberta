@@ -1,0 +1,5 @@
+<p class="titulo-item">{{ item.acao }}</p>
+<p class="discreto">
+  {{ responsaveis[item.responsavel] }} ·
+  {% if item.prazo %}até {{ item.prazo | data_br }}{% else %}<span class="falta">sem prazo</span>{% endif %}
+</p>

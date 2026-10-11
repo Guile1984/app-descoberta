@@ -122,6 +122,17 @@ def test_notas_finais_no_bloco_10_sem_a_nota_derivada(cliente_http, sessao):
     assert "Prontidão dos dados" in html  # aparece só para leitura
 
 
+def test_origem_das_notas_finais_com_bloco_no_singular(cliente_http, sessao, questionario_v1):
+    html = cliente_http.get(f"/sessoes/{sessao.id}?bloco=10", headers=HX).text
+    assert '<span class="discreto">(blocos 1)</span>' not in html
+    for criterio in questionario_v1.scores.viabilidade_final.criterios:
+        if criterio.id == questionario_v1.scores.prontidao_dados.criterio_final:
+            continue  # nota derivada: não tem campo
+        blocos = ", ".join(map(str, criterio.blocos_origem))
+        palavra = "bloco" if len(criterio.blocos_origem) == 1 else "blocos"
+        assert f'{criterio.rotulo} <span class="discreto">({palavra} {blocos})</span>' in html
+
+
 def test_nota_salva_e_avisa_os_calculos(cliente_http, banco, sessao):
     resposta = _nota(cliente_http, sessao.id, "volume", "2")
     assert resposta.status_code == 200

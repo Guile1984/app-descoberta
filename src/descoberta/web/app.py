@@ -21,7 +21,16 @@ from descoberta.repositorio import CAMINHO_BANCO_PADRAO, criar_engine, criar_tab
 
 from .catalogo import Catalogo
 from .dependencias import html
-from .rotas import anotacoes, clientes, cronometro, numeros, respostas, sessoes, sinais
+from .rotas import (
+    anotacoes,
+    clientes,
+    cronometro,
+    numeros,
+    respostas,
+    revisao,
+    sessoes,
+    sinais,
+)
 
 PASTA_CONFIG_PADRAO = Path("config")
 PASTA_STATIC = Path(__file__).parent / "static"
@@ -57,6 +66,7 @@ def criar_app(
     app.include_router(anotacoes.router)
     app.include_router(numeros.router)
     app.include_router(cronometro.router)
+    app.include_router(revisao.router)
 
     @app.exception_handler(HTTPException)
     async def pagina_de_erro(request: Request, erro: HTTPException):

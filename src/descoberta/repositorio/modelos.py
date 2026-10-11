@@ -16,6 +16,8 @@ from typing import Any
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, SQLModel
 
+from descoberta.dominio.revisao import Camada, Nivel, Responsavel
+
 from .tipos import DecimalTexto
 
 
@@ -153,3 +155,75 @@ class Relatorio(SQLModel, table=True):
     modelo: str | None = None  # modelo de LLM usado (só quando origem = llm)
     versao_prompt: str | None = None
     criado_em: datetime = Field(default_factory=agora)
+
+
+# --- Revisão pós-sessão (Sprint 6a) ---
+# Tabelas novas, e não colunas em tabelas antigas: o create_all cria as tabelas num banco
+# que já existe (como o data/demo.db), sem precisar de migração.
+
+
+class Risco(SQLModel, table=True):
+    """Uma linha da matriz de riscos do bloco 7."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    descricao: str
+    categoria: str  # id do YAML (revisao.categorias_risco)
+    probabilidade: Nivel
+    impacto: Nivel
+    mitigacao: str | None = None
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class Indicador(SQLModel, table=True):
+    """Uma linha da tabela "indicador atual → meta → prazo → como medir" do bloco 5.
+
+    Valor atual, meta e prazo são texto ("Recall ≥ 95%", "3 dias", "fim do piloto"):
+    misturam unidades e não entram em nenhum cálculo.
+    """
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    nome: str
+    camada: Camada
+    valor_atual: str | None = None
+    meta: str | None = None
+    prazo: str | None = None
+    como_medir: str | None = None
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class ItemEscopo(SQLModel, table=True):
+    """Item do escopo do MVP: o que entra (entra=True) e o que fica de fora."""
+
+    __tablename__ = "item_escopo"
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    texto: str
+    entra: bool
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class ProximoPasso(SQLModel, table=True):
+    __tablename__ = "proximo_passo"
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    acao: str
+    responsavel: Responsavel
+    prazo: date | None = None
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class TextoSecao(SQLModel, table=True):
+    """Texto de uma parte narrativa do relatório (ids em revisao.textos do YAML)."""
+
+    __tablename__ = "texto_secao"
+    __table_args__ = (UniqueConstraint("sessao_id", "secao_id"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    secao_id: str
+    texto: str
+    atualizado_em: datetime = Field(default_factory=agora)

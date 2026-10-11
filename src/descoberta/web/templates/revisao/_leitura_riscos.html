@@ -1,0 +1,7 @@
+{% set categoria = questionario.revisao.categorias_risco | selectattr("id", "equalto", item.categoria) | first %}
+<p class="titulo-item"><span class="tag-risco">R{{ numero }}</span> {{ item.descricao }}</p>
+<p class="discreto">
+  {{ categoria.rotulo if categoria else item.categoria }} · probabilidade {{ probabilidades[item.probabilidade] | lower }}
+  · impacto {{ impactos[item.impacto] | lower }}
+</p>
+<p class="detalhe-item">Mitigação: {% if item.mitigacao %}{{ item.mitigacao }}{% else %}<span class="falta">não definida</span>{% endif %}</p>

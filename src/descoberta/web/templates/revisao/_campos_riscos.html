@@ -1,0 +1,33 @@
+{# Campos de um risco. `prefixo` separa os ids do formulário novo dos de cada edição; `v`: valores. #}
+<div class="campos-revisao">
+  <label class="campo largo" for="{{ prefixo }}-descricao">Risco
+    <textarea id="{{ prefixo }}-descricao" name="descricao" rows="2" {% if focar %}autofocus{% endif %}>{{ v.descricao }}</textarea>
+  </label>
+  <label class="campo" for="{{ prefixo }}-categoria">Categoria
+    <select id="{{ prefixo }}-categoria" name="categoria">
+      <option value="">Escolha…</option>
+      {% for categoria in questionario.revisao.categorias_risco %}
+      <option value="{{ categoria.id }}"{% if v.categoria == categoria.id %} selected{% endif %}>{{ categoria.rotulo }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="campo" for="{{ prefixo }}-probabilidade">Probabilidade
+    <select id="{{ prefixo }}-probabilidade" name="probabilidade">
+      <option value="">Escolha…</option>
+      {% for valor, rotulo in probabilidades.items() %}
+      <option value="{{ valor }}"{% if v.probabilidade == valor %} selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="campo" for="{{ prefixo }}-impacto">Impacto
+    <select id="{{ prefixo }}-impacto" name="impacto">
+      <option value="">Escolha…</option>
+      {% for valor, rotulo in impactos.items() %}
+      <option value="{{ valor }}"{% if v.impacto == valor %} selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="campo largo" for="{{ prefixo }}-mitigacao">Mitigação
+    <textarea id="{{ prefixo }}-mitigacao" name="mitigacao" rows="2">{{ v.mitigacao }}</textarea>
+  </label>
+</div>

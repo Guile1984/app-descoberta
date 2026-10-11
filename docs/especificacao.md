@@ -47,8 +47,9 @@ A tela principal é feita para anotar ao vivo no notebook, sem travar a conversa
 **Depois da sessão**
 
 1. Revisar e completar respostas.
-2. Gerar o relatório (template ou rascunho por LLM) e revisar.
-3. Exportar e enviar ao cliente.
+2. Na área de revisão pós-sessão (página separada da tela ao vivo), preencher as saídas que o relatório usa: matriz de riscos, indicadores de sucesso, escopo do MVP, próximos passos e os textos narrativos. Um quadro mostra o que ainda falta.
+3. Gerar o relatório (template ou rascunho por LLM) e revisar.
+4. Exportar e enviar ao cliente.
 
 ## Modelo de dados
 
@@ -63,6 +64,7 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Sinal de alerta | id, bloco, texto |
 | Score | bloco onde as notas são dadas, critérios, faixas; no score de dados, conversão para a nota do critério do score final que ele alimenta |
 | Duração da sessão | minutos do aviso e do limite (o cronômetro muda de cor) |
+| Revisão | categorias de risco (as da tabela do bloco 7, mais "outro"); textos narrativos do relatório (id, título, orientação e perguntas de apoio) |
 
 **Banco (SQLite + SQLModel)**
 
@@ -76,6 +78,11 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Métricas | sessão, horas por ocorrência, frequência (quantidade e período), custo da hora, horas economizadas por mês, outros ganhos mensais, investimento, custo de operação (chamadas por dia, custo por chamada, custo fixo mensal) |
 | Nota de critério | sessão, id do critério, nota (0–3) |
 | Cronômetro | sessão, tempo acumulado, rodando desde |
+| Risco | sessão, descrição, categoria (id do YAML), probabilidade e impacto (baixo/médio/alto), mitigação |
+| Indicador | sessão, nome, camada (negócio/técnica), valor atual, meta, prazo, como medir (texto: não entram em cálculos) |
+| Item de escopo | sessão, texto, entra no MVP (sim/não) |
+| Próximo passo | sessão, ação, responsável (cliente/consultor), prazo (data) |
+| Texto de seção | sessão, id do texto (do YAML), texto |
 | Relatório | sessão, origem (template/LLM), conteúdo, modelo, versão do prompt, data |
 
 Um cliente tem várias sessões; uma sessão tem muitas respostas, sinais e anotações, e um conjunto de métricas. Métricas ficam em campos numéricos próprios, nunca extraídas do texto.
@@ -117,8 +124,9 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
 | 3 — Persistência | Entidades SQLModel e repositório | CRUD testado em banco temporário |
 | 4 — Web básica | Cliente, sessão, abas por bloco, salvamento automático | Resposta salva sem recarregar a página |
 | 5 — Uso ao vivo | Sinais com um clique, anotações, atalhos, cronômetro, cálculos ao vivo | Sessão completa conduzida só com teclado |
-| 6 — Relatório base | Template do bloco 10; exportação Markdown, DOCX, PDF | Relatório do caso Roberto gerado offline |
-| 7 — LLM | Provedor abstrato, anonimização, prompts versionados | Nenhum dado pessoal no payload enviado (teste automatizado) |
+| 6a — Saídas estruturadas | Revisão pós-sessão: matriz de riscos (com visualização 3×3), indicadores de sucesso, escopo do MVP, próximos passos e textos narrativos editáveis, com indicação do que falta | Caso Roberto com todas as saídas preenchidas e nenhuma pendência na revisão |
+| 6b — Relatório | Relatório por template em versão cliente e versão interna, anexos, memória de cálculo e termo de ciência; exportação Markdown, DOCX, PDF. Usa `dominio.painel` (os mesmos números da tela) e ignora respostas de condicionais ocultas | Relatório do caso Roberto gerado offline |
+| 7 — LLM | Provedor abstrato, anonimização, prompts versionados; rascunhos sugeridos para os textos narrativos da revisão | Nenhum dado pessoal no payload enviado (teste automatizado) |
 | 8 — Validação | Caso Roberto de ponta a ponta; README; ajustes | Sessão simulada completa e relatório revisado |
 
 ## Modo de desenvolvimento

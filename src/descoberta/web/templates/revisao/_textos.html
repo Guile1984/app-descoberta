@@ -1,0 +1,26 @@
+{#
+  Textos do relatório: cada caixa salva sozinha (macro de _salvamento.html). Abaixo, o que
+  foi dito na sessão sobre o assunto (perguntas de "apoio" no YAML), só para consulta.
+#}
+<section id="textos" class="secao-revisao" aria-labelledby="titulo-textos">
+  <h2 id="titulo-textos">Textos do relatório</h2>
+  {% for t in questionario.revisao.textos %}
+  <div class="texto-revisao">
+    <label for="texto-{{ t.id }}" class="rotulo-texto">{{ t.titulo }}</label>
+    <p class="discreto">{{ t.orientacao }}</p>
+    <textarea id="texto-{{ t.id }}" name="texto" rows="5" {{ atributos("/sessoes/%d/textos/%s" % (sessao.id, t.id), "texto-" ~ t.id) }}>{{ textos.get(t.id, "") }}</textarea>
+    {{ estado("texto-" ~ t.id) }}
+    {% if apoio[t.id] %}
+    <details class="apoio-texto">
+      <summary>O que foi dito na sessão</summary>
+      <dl>
+        {% for rotulo, resposta in apoio[t.id] %}
+        <dt>{{ rotulo }}</dt>
+        <dd>{% if resposta %}{{ resposta }}{% else %}<span class="falta">sem resposta</span>{% endif %}</dd>
+        {% endfor %}
+      </dl>
+    </details>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>

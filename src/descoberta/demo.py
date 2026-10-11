@@ -9,6 +9,10 @@ As respostas usam só os fatos levantados com o cliente; perguntas sem informaç
 branco. Há também três anotações livres. Os números (métricas, notas e sinais) são os do
 caso de referência dos testes (`tests/conftest.py`), incluindo as hipóteses registradas lá
 (custo da hora de R$ 100 e 30 h economizadas por mês).
+
+A revisão pós-sessão (riscos, indicadores, escopo, próximos passos e textos) vem toda
+preenchida, montada pelo consultor a partir desses fatos. O que o cliente não disse está
+marcado como hipótese.
 """
 
 import sys
@@ -19,8 +23,13 @@ from sqlmodel import Session
 
 from descoberta.repositorio import (
     CAMINHO_BANCO_PADRAO,
+    Indicador,
+    ItemEscopo,
+    ProximoPasso,
+    Risco,
     StatusSessao,
     adicionar_anotacao,
+    adicionar_item,
     criar_cliente,
     criar_engine,
     criar_sessao,
@@ -29,6 +38,7 @@ from descoberta.repositorio import (
     salvar_metricas,
     salvar_nota,
     salvar_resposta,
+    salvar_texto_secao,
 )
 
 CAMINHO_DEMO = Path("data") / "demo.db"
@@ -155,6 +165,133 @@ RESPOSTAS = {
     "b9.o3": "O Marcos, com 3 horas por semana.",
 }
 
+# --- Revisão pós-sessão ---
+
+RISCOS = [
+    {
+        "descricao": "As fotos mostram pessoas e o interior das casas dos clientes.",
+        "categoria": "lgpd",
+        "probabilidade": "alto",
+        "impacto": "alto",
+        "mitigacao": (
+            "Guia de captura com foco só na fissura; recorte da área antes de qualquer envio "
+            "a serviço externo; base legal e aviso ao cliente da obra."
+        ),
+    },
+    {
+        "descricao": "Uma fissura grave classificada como simples pela IA.",
+        "categoria": "responsabilidade_tecnica",
+        "probabilidade": "medio",
+        "impacto": "alto",
+        "mitigacao": (
+            "A IA só faz a triagem; o Marcos confirma todos os casos e assina os laudos (ART). "
+            "Na dúvida, o caso vai como grave."
+        ),
+    },
+    {
+        "descricao": "Fotos de clientes espalhadas no WhatsApp e no celular do Marcos.",
+        "categoria": "seguranca",
+        "probabilidade": "medio",
+        "impacto": "medio",
+        "mitigacao": "Pasta única com acesso controlado; apagar do celular depois de arquivar.",
+    },
+    {
+        "descricao": "O serviço de visão computacional muda o preço ou sai do ar.",
+        "categoria": "dependencia_fornecedor",
+        "probabilidade": "baixo",
+        "impacto": "medio",
+        "mitigacao": "Camada de abstração e um modelo alternativo testado na fase 0.",
+    },
+]
+
+INDICADORES = [
+    {
+        "nome": "Horas do Marcos com chamados de fissura",
+        "camada": "negocio",
+        "valor_atual": "60 h/mês (15 chamados × 4 h)",
+        "meta": "30 h/mês",
+        "prazo": "3 meses após a entrega do MVP",  # hipótese
+        "como_medir": "Registro de cada chamado com o tempo gasto (planilha de obras)",
+    },
+    {
+        "nome": "Prazo de resposta ao cliente",
+        "camada": "negocio",
+        "valor_atual": "3 dias",
+        "meta": "1 dia",
+        "prazo": "3 meses após a entrega do MVP",  # hipótese
+        "como_medir": "Data do chamado e data da resposta, na mesma planilha",
+    },
+    {
+        "nome": "Recall de fissuras graves",
+        "camada": "tecnica",
+        "valor_atual": "Não medido",
+        "meta": "≥ 95%",  # hipótese: deixar passar um caso grave é o pior erro
+        "prazo": "Fim do piloto",
+        "como_medir": "Comparar a triagem com a decisão do Marcos nos 40 casos com laudo",
+    },
+]
+
+# (texto, entra no MVP)
+ESCOPO = [
+    ("Guia de captura de fotos para os mestres de obra (distância, luz, ângulo, régua)", True),
+    ("Organização e rotulagem das cerca de 500 fotos com o critério do Marcos", True),
+    ("Triagem por foto (grave ou simples), com revisão do Marcos em todos os casos", True),
+    ("Envio e devolução pelo WhatsApp ou por upload (integração nível 0 ou 1)", True),
+    ("Medição automática da abertura da fissura", False),
+    ("Laudo técnico gerado automaticamente", False),
+    ("Integração com outros sistemas (a empresa não tem ERP)", False),
+]
+
+# (ação, responsável, prazo)
+PROXIMOS_PASSOS = [
+    ("Enviar o Relatório de Descoberta", "consultor", date(2026, 10, 9)),
+    ("Enviar a amostra com os 40 casos graves (fotos + laudo)", "cliente", date(2026, 10, 14)),
+    ("Reunião com o Marcos para validar o critério de gravidade", "cliente", date(2026, 10, 16)),
+    ("Enviar a proposta da fase 0", "consultor", date(2026, 10, 21)),
+]
+
+TEXTOS = {
+    "resumo_executivo": (
+        "Os chamados de fissura tomam cerca de 60 h por mês do Marcos, único engenheiro da "
+        "Construtora Alvorada, e o cliente espera 3 dias pela resposta; já houve processo "
+        "judicial. Uma triagem por foto, com a decisão final sempre do Marcos, pode cortar "
+        "essas horas pela metade: R$ 3.000 por mês, com payback de cerca de 7,7 meses. Os "
+        "dados ainda não estão prontos (score 4 de 15): fotos sem padrão e só 40 casos com "
+        "laudo. Score final 12 de 18: seguir com fase 0."
+    ),
+    "frase_problema": (
+        "Hoje o Marcos gasta cerca de 60 horas por mês avaliando os chamados de fissura nas "
+        "obras, o que faz o cliente esperar 3 dias pela resposta e já levou a um processo "
+        "judicial. O sucesso será reduzir essas horas para 30 e responder em 1 dia, em até 3 "
+        "meses após a entrega."
+    ),
+    "fluxo_as_is": (
+        "1. O chamado chega pela recepção (a Cida anota num caderno) ou pelo WhatsApp.\n"
+        "2. O mestre de obra ou o cliente manda fotos pelo WhatsApp, sem padrão.\n"
+        "3. O Marcos vai até a obra (até 80 km), mede a abertura com régua e decide pela "
+        "experiência.\n"
+        "4. Casos graves: laudo em Word. Casos simples: resposta pelo WhatsApp."
+    ),
+    "fluxo_to_be": (
+        "1. O mestre de obra fotografa seguindo o guia de captura (com régua na foto).\n"
+        "2. A IA faz a triagem: provável grave ou provável simples. [IA]\n"
+        "3. O Marcos revisa a triagem pelo celular e decide se vai à obra. [revisão humana]\n"
+        "4. Casos simples: resposta no mesmo dia. Casos graves: visita e laudo do Marcos."
+    ),
+    "justificativa_solucao": (
+        "Visão computacional: o insumo são fotos, e a decisão depende de padrões visuais que "
+        "o Marcos reconhece pela experiência, sem regra escrita que permita uma automação "
+        "simples. O baseline é o próprio Marcos avaliando cada chamado. A IA entra só como "
+        "triagem, com decisão humana em todos os casos, porque deixar passar um caso grave "
+        "é o pior erro."
+    ),
+    "recomendacao": (
+        "Seguir com fase 0 (score final 12 de 18). A fase 0 padroniza a captura das fotos, "
+        "organiza e rotula o histórico com o critério do Marcos e mede a qualidade dos "
+        "dados. Com o score de dados acima de 6, o MVP de triagem pode começar."
+    ),
+}
+
 
 def popular_demo(caminho: Path | str = CAMINHO_DEMO) -> int:
     """Recria o banco de demonstração e devolve o id da sessão do Roberto."""
@@ -185,9 +322,25 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO) -> int:
                 salvar_resposta(session, sessao.id, pergunta_id, texto)
             for texto, bloco in ANOTACOES:
                 adicionar_anotacao(session, sessao.id, texto, bloco=bloco)
+            _popular_revisao(session, sessao.id)
             return sessao.id
     finally:
         engine.dispose()  # no Windows, o arquivo só pode ser apagado depois de fechado
+
+
+def _popular_revisao(session: Session, sessao_id: int) -> None:
+    for risco in RISCOS:
+        adicionar_item(session, Risco, sessao_id, **risco)
+    for indicador in INDICADORES:
+        adicionar_item(session, Indicador, sessao_id, **indicador)
+    for texto, entra in ESCOPO:
+        adicionar_item(session, ItemEscopo, sessao_id, texto=texto, entra=entra)
+    for acao, responsavel, prazo in PROXIMOS_PASSOS:
+        adicionar_item(
+            session, ProximoPasso, sessao_id, acao=acao, responsavel=responsavel, prazo=prazo
+        )
+    for secao_id, texto in TEXTOS.items():
+        salvar_texto_secao(session, sessao_id, secao_id, texto)
 
 
 def main(argumentos: list[str] | None = None) -> None:

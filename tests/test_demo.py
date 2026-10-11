@@ -5,8 +5,19 @@ from decimal import Decimal
 import pytest
 from sqlmodel import Session
 
-from descoberta.demo import ANOTACOES, RESPOSTAS, main, popular_demo
+from descoberta.demo import (
+    ANOTACOES,
+    ESCOPO,
+    INDICADORES,
+    PROXIMOS_PASSOS,
+    RESPOSTAS,
+    RISCOS,
+    TEXTOS,
+    main,
+    popular_demo,
+)
 from descoberta.dominio.payback import economia_mes, payback_meses
+from descoberta.dominio.revisao import pendencias_da_revisao
 from descoberta.dominio.scores import (
     nota_prontidao_para_viabilidade,
     score_prontidao,
@@ -15,14 +26,20 @@ from descoberta.dominio.scores import (
 from descoberta.questionario import pergunta_visivel
 from descoberta.repositorio import (
     CAMINHO_BANCO_PADRAO,
+    Indicador,
+    ItemEscopo,
+    ProximoPasso,
+    Risco,
     anotacoes_da_sessao,
     criar_engine,
+    itens_da_sessao,
     listar_clientes,
     listar_sessoes,
     notas_da_sessao,
     obter_metricas,
     respostas_da_sessao,
     sinais_marcados,
+    textos_da_sessao,
 )
 
 
@@ -119,3 +136,26 @@ def test_anotacoes_de_exemplo(banco_demo):
     _, sessao = _sessao(banco_demo)
     gravadas = [(a.texto, a.bloco) for a in anotacoes_da_sessao(banco_demo, sessao.id)]
     assert gravadas == ANOTACOES
+
+
+def test_saidas_da_revisao_do_roberto(banco_demo, questionario_v1):
+    _, sessao = _sessao(banco_demo)
+    riscos = itens_da_sessao(banco_demo, Risco, sessao.id)
+    indicadores = itens_da_sessao(banco_demo, Indicador, sessao.id)
+    escopo = itens_da_sessao(banco_demo, ItemEscopo, sessao.id)
+    passos = itens_da_sessao(banco_demo, ProximoPasso, sessao.id)
+    textos = textos_da_sessao(banco_demo, sessao.id)
+    assert len(riscos) == len(RISCOS)
+    assert len(indicadores) == len(INDICADORES)
+    assert len(escopo) == len(ESCOPO)
+    assert len(passos) == len(PROXIMOS_PASSOS)
+    assert textos == TEXTOS
+
+    categorias = {c.id for c in questionario_v1.revisao.categorias_risco}
+    assert {r.categoria for r in riscos} <= categorias
+    assert set(TEXTOS) == {t.id for t in questionario_v1.revisao.textos}
+
+    pendencias = pendencias_da_revisao(
+        [t.id for t in questionario_v1.revisao.textos], textos, riscos, indicadores, escopo, passos
+    )
+    assert pendencias.total == 0
