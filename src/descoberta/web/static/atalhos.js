@@ -175,8 +175,12 @@
       focarAposTroca = null;
       focarAgora();
     }
-    if (sinalComFoco) {
-      focar(`#${sinalComFoco} .botao-sinal`);
+    // Troca do sinal marcado pelo teclado (outros painéis também assentam, como os cálculos).
+    if (sinalComFoco && e.detail.target && e.detail.target.id === sinalComFoco) {
+      // Só devolve o cursor ao botão novo se ele se perdeu com a troca (foi para o body).
+      // Se a pessoa já foi para outro campo enquanto o servidor respondia, fica onde está.
+      const ativo = document.activeElement;
+      if (!ativo || ativo === document.body) focar(`#${sinalComFoco} .botao-sinal`);
       sinalComFoco = null;
     }
   });

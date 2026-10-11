@@ -72,6 +72,8 @@ def test_sessao_completa_so_com_teclado(page: Page, url_sessao, banco, questiona
     expect(primeiro_sinal).to_be_focused()
     page.keyboard.press("Space")
     expect(page.locator("#sinais .botao-sinal").first).to_have_attribute("aria-pressed", "true")
+    # O servidor troca o botão; o cursor volta ao botão novo antes de seguir.
+    expect(page.locator("#sinais .botao-sinal").first).to_be_focused()
 
     # Esc volta ao último campo de resposta.
     page.keyboard.press("Escape")
@@ -213,3 +215,33 @@ def test_troca_de_aba_nao_perde_a_anotacao_em_andamento(page: Page, url_sessao):
     expect(page.locator("#anotacao-bloco")).to_have_value("5")
     expect(page).to_have_url(re.compile(r"\?bloco=5$"))  # o F5 reabre na mesma aba
     expect(page.locator("#sinais")).to_contain_text("bloco 5")
+
+
+def test_resposta_lenta_do_sinal_nao_rouba_o_foco(page: Page, url_sessao):
+    """Quem marca um sinal e já vai escrever a anotação não perde o que digita.
+
+    A resposta do servidor ao sinal fica presa até o meio da digitação: quando ela chega,
+    o cursor só volta ao botão do sinal se ainda estivesse nele (aqui, já saiu).
+    """
+    url, _ = url_sessao
+    page.goto(url)
+    ir_para_bloco(page, 1)
+    presas = []
+    page.route("**/sinais/**", lambda rota: presas.append(rota))
+
+    page.keyboard.press("Alt+s")
+    page.keyboard.press("Space")
+    page.keyboard.press("Alt+n")
+    expect(page.locator("#anotacao-texto")).to_be_focused()
+    digitar(page, "Ma")
+    page.wait_for_function("true")  # deixa o Playwright entregar a requisição presa
+    assert len(presas) == 1
+    presas[0].continue_()
+    page.unroute("**/sinais/**")
+    expect(page.locator("#sinais .botao-sinal").first).to_have_attribute("aria-pressed", "true")
+    page.evaluate("() => new Promise((pronto) => setTimeout(pronto, 100))")  # settle do HTMX
+
+    digitar(page, "rcos não participou.")
+    expect(page.locator("#anotacao-texto")).to_be_focused()
+    expect(page.locator("#anotacao-texto")).to_have_value("Marcos não participou.")
+    expect(page.locator("#sinais .botao-sinal").first).to_have_attribute("aria-pressed", "true")

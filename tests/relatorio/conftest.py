@@ -16,12 +16,14 @@ from descoberta.repositorio import (
 )
 
 EMITIDO_EM = datetime(2026, 10, 11, 17, 5, tzinfo=UTC)
+# Base dos prazos do demo: fixa, para os testes não dependerem do dia em que rodam.
+CRIACAO_DO_DEMO = date(2026, 10, 11)
 
 
 @pytest.fixture
 def banco_roberto(tmp_path):
     caminho = tmp_path / "demo.db"
-    sessao_id = popular_demo(caminho)
+    sessao_id = popular_demo(caminho, hoje=CRIACAO_DO_DEMO)
     engine = criar_engine(caminho)
     with Session(engine) as session:
         yield session, sessao_id
