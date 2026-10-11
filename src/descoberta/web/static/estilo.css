@@ -113,6 +113,11 @@ textarea { width: 100%; box-sizing: border-box; resize: vertical; }
 .cronometro .tempo { font-variant-numeric: tabular-nums; font-size: 1.2rem; font-weight: 700; }
 .cronometro.atencao { background: var(--atencao-fundo); border-color: var(--atencao-texto); color: var(--atencao-texto); }
 .cronometro.limite { background: var(--limite-fundo); border-color: var(--erro); color: var(--erro); }
+/* Ponto que pulsa enquanto o cronômetro roda; usa a cor do texto (muda junto no aviso e no limite). */
+.pulso { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: currentColor; animation: pulso 1.6s ease-in-out infinite; }
+@keyframes pulso { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+/* Quem desativou as animações no sistema vê o ponto parado. */
+@media (prefers-reduced-motion: reduce) { .pulso { animation: none; } }
 
 .pendencias { margin: 0; font-size: 0.9rem; color: var(--atencao-texto); }
 .pendencias .completo { color: var(--ok); }
@@ -164,6 +169,57 @@ textarea { width: 100%; box-sizing: border-box; resize: vertical; }
 .resumo-leitura { margin-top: 1.5rem; padding: 0.75rem 1rem; background: var(--fundo-suave); border-left: 4px solid var(--destaque); }
 .resumo-leitura h3 { margin-top: 0; }
 .recomendacao { border-top: 1px solid var(--borda); padding-top: 0.5rem; }
+
+/* --- Revisão pós-sessão (Sprint 6a) --- */
+:root {
+  --nivel-baixo: #dafbe1;
+  --nivel-medio: #fff1c2;
+  --nivel-alto: #ffd8d6;
+}
+.secao-revisao { margin-bottom: 2rem; }
+.secao-revisao h2 { border-bottom: 1px solid var(--borda); padding-bottom: 0.25rem; }
+.texto-revisao { margin: 1rem 0 1.5rem; }
+.rotulo-texto { font-weight: 600; }
+.apoio-texto { margin-top: 0.4rem; font-size: 0.9rem; }
+.apoio-texto summary { cursor: pointer; color: var(--discreto); }
+.apoio-texto dt { color: var(--discreto); margin-top: 0.4rem; }
+.apoio-texto dd { margin: 0 0 0 1rem; white-space: pre-wrap; }
+
+.itens-revisao { list-style: none; padding: 0; margin: 0.5rem 0; }
+.item-revisao { padding: 0.5rem 0; border-top: 1px solid var(--borda); }
+.titulo-item { margin: 0; font-weight: 600; }
+.detalhe-item { margin: 0.2rem 0; font-size: 0.9rem; white-space: pre-wrap; }
+.acoes-item { display: flex; gap: 0.75rem; margin-top: 0.2rem; }
+.selo.entra { background: var(--nivel-baixo); }
+.selo.fora { background: var(--fundo-suave); border: 1px solid var(--borda); }
+
+.form-revisao { margin-top: 0.75rem; padding: 0.5rem 0.75rem; background: var(--fundo-suave); border-radius: 6px; }
+.form-revisao h3 { margin: 0.2rem 0 0.5rem; font-size: 0.95rem; }
+.campos-revisao { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.5rem 0.75rem; margin-bottom: 0.5rem; }
+.campos-revisao .largo { grid-column: 1 / -1; }
+/* Opções longas ("Responsabilidade técnica") não podem alargar a coluna da grade. */
+.campos-revisao input, .campos-revisao select { width: 100%; min-width: 0; box-sizing: border-box; }
+
+.tag-risco {
+  display: inline-block; padding: 0 0.35rem; border-radius: 4px; border: 1px solid var(--texto);
+  background: var(--fundo); font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.matriz { border-collapse: collapse; width: 100%; max-width: 40rem; table-layout: fixed; }
+.matriz caption { text-align: left; font-weight: 600; margin-bottom: 0.4rem; }
+.matriz th { font-size: 0.85rem; font-weight: 600; padding: 0.3rem; color: var(--discreto); }
+.matriz th[scope="row"] { text-align: right; }
+.matriz td { border: 1px solid var(--borda); height: 4.5rem; padding: 0.3rem; vertical-align: top; }
+.matriz td .tag-risco { margin: 0.1rem; }
+.matriz thead td { width: 8rem; height: auto; border: none; }  /* canto vazio */
+.matriz .nivel-texto { display: block; font-size: 0.7rem; color: var(--discreto); }
+.matriz .nivel-baixo { background: var(--nivel-baixo); }
+.matriz .nivel-medio { background: var(--nivel-medio); }
+.matriz .nivel-alto { background: var(--nivel-alto); }
+
+.pendencias-revisao { position: sticky; top: 1rem; }
+.pendencias-revisao h3 { font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }
+.lista-pendencias { margin: 0; padding-left: 1.2rem; font-size: 0.9rem; color: var(--atencao-texto); }
+.completo { color: var(--ok); }
 
 /* Ajuda dos atalhos. */
 #ajuda-atalhos { max-width: 40rem; border: 1px solid var(--borda); border-radius: 8px; }

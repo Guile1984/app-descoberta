@@ -670,6 +670,64 @@ encerramento:
       titulo: Prazo
       descricao: Data de entrega do Relatório de Descoberta, em até 48 h.
 
+# Revisão pós-sessão: o que o consultor completa depois da conversa para o relatório.
+# Os ids são gravados no banco: NÃO renomeie um id existente.
+revisao:
+  # Categorias da matriz de riscos: as linhas da tabela "Principais riscos" do bloco 7,
+  # mais "outro" para o que não se encaixa nelas.
+  categorias_risco:
+    - id: lgpd
+      rotulo: LGPD
+    - id: vies
+      rotulo: Viés
+    - id: explicabilidade
+      rotulo: Explicabilidade
+    - id: responsabilidade_tecnica
+      rotulo: Responsabilidade técnica
+    - id: seguranca
+      rotulo: Segurança
+    - id: dependencia_fornecedor
+      rotulo: Dependência de fornecedor
+    - id: outro
+      rotulo: Outro
+  # Partes narrativas do relatório (seções do bloco 10). "apoio": perguntas ou itens do
+  # encerramento cujas respostas aparecem ao lado do texto, só para consulta.
+  textos:
+    - id: resumo_executivo
+      titulo: Resumo executivo
+      orientacao: >-
+        Meia página, lida em 2 minutos: a dor e quanto ela custa, a solução proposta, o
+        score final e a recomendação.
+      apoio: [enc.resumo, enc.recomendacao]
+    - id: frase_problema
+      titulo: Frase-problema
+      orientacao: >-
+        "Hoje [quem] gasta [quanto] fazendo [o quê], o que causa [impacto]. O sucesso será
+        [métrica] em [prazo]."
+      apoio: [enc.resumo, b1.o1, b1.o3, b1.o4, b1.o5]
+    - id: fluxo_as_is
+      titulo: Fluxo atual (as-is)
+      orientacao: Passo a passo de como a tarefa é feita hoje, com as ferramentas de cada passo.
+      apoio: [b2.o1, b2.o2, b2.o3, b2.o4]
+    - id: fluxo_to_be
+      titulo: Fluxo futuro (to-be)
+      orientacao: >-
+        Como a tarefa ficaria com a solução, marcando onde a IA entra e onde fica a revisão
+        humana.
+      apoio: [b2.o5, b2.o3]
+    - id: justificativa_solucao
+      titulo: Tipo de solução e justificativa
+      orientacao: >-
+        Por que este tipo de solução, qual é o baseline (como seria resolvido sem IA ou por
+        um humano) e por que não algo mais simples.
+      apoio: [b3.o1, b3.o2, b3.o3, b3.o4, b3.o5]
+    - id: recomendacao
+      titulo: Recomendação
+      orientacao: >-
+        Seguir, seguir com fase 0 ou não seguir agora, com o motivo. Na fase 0, diga o que
+        ela entrega; em "não seguir", o que precisa mudar.
+      apoio: [enc.recomendacao]
+
 scores:
   # Bloco 4 — score de prontidão de dados (5 critérios × 0–3, máximo 15).
   prontidao_dados:

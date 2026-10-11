@@ -1,0 +1,7 @@
+<p class="titulo-item">{{ item.nome }} <span class="selo">{{ camadas[item.camada] }}</span></p>
+<dl class="ficha detalhe-item">
+  <dt>Valor atual</dt><dd>{{ item.valor_atual or "—" }}</dd>
+  <dt>Meta</dt><dd>{{ item.meta or "—" }}</dd>
+  <dt>Prazo</dt><dd>{{ item.prazo or "—" }}</dd>
+  <dt>Como medir</dt><dd>{{ item.como_medir or "—" }}</dd>
+</dl>

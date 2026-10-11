@@ -1,0 +1,5 @@
+{# Moldura fixa: a matriz se recarrega sozinha quando um risco muda (evento revisao-mudou). #}
+<section id="matriz-riscos" class="secao-revisao" aria-label="Matriz de riscos"
+         hx-get="/sessoes/{{ sessao.id }}/revisao/matriz" hx-trigger="revisao-mudou from:body">
+  {% include "revisao/_matriz_conteudo.html" %}
+</section>

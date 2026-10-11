@@ -23,6 +23,12 @@ TABELAS = {
     "nota_criterio",
     "relatorio",
     "cronometro",
+    # Sprint 6a: saídas da revisão pós-sessão.
+    "risco",
+    "indicador",
+    "item_escopo",
+    "proximo_passo",
+    "texto_secao",
 }
 
 

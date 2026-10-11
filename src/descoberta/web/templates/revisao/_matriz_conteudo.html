@@ -1,0 +1,28 @@
+{#
+  Matriz 3×3: impacto nas linhas (alto em cima), probabilidade nas colunas (alta à direita).
+  A cor de cada célula vem do nível (baixo, médio, alto); o nível também vai escrito, para
+  não depender só da cor. Passe o mouse sobre R1, R2… para ver a descrição do risco.
+#}
+{% set niveis = {"baixo": "baixo", "medio": "médio", "alto": "alto"} %}
+<table class="matriz">
+  <caption>Matriz de riscos: impacto × probabilidade</caption>
+  <thead>
+    <tr>
+      <td></td>
+      {% for celula in matriz[0] %}<th scope="col">Probabilidade {{ probabilidades[celula.probabilidade] | lower }}</th>{% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for linha in matriz %}
+    <tr>
+      <th scope="row">Impacto {{ impactos[linha[0].impacto] | lower }}</th>
+      {% for celula in linha %}
+      <td class="nivel-{{ celula.severidade }}" data-impacto="{{ celula.impacto }}" data-probabilidade="{{ celula.probabilidade }}">
+        <span class="nivel-texto">nível {{ niveis[celula.severidade] }}</span>
+        {% for numero, risco in celula.riscos %}<span class="tag-risco" title="{{ risco.descricao }}">R{{ numero }}</span> {% endfor %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

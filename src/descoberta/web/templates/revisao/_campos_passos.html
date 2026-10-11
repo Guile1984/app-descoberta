@@ -1,0 +1,16 @@
+{# Campos de um próximo passo. O <input type="date"> é do próprio navegador: funciona sem internet. #}
+<div class="campos-revisao">
+  <label class="campo largo" for="{{ prefixo }}-acao">Ação
+    <input id="{{ prefixo }}-acao" name="acao" value="{{ v.acao }}" {% if focar %}autofocus{% endif %}>
+  </label>
+  <label class="campo" for="{{ prefixo }}-responsavel">Responsável
+    <select id="{{ prefixo }}-responsavel" name="responsavel">
+      {% for valor, rotulo in responsaveis.items() %}
+      <option value="{{ valor }}"{% if v.responsavel == valor %} selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="campo" for="{{ prefixo }}-prazo">Prazo
+    <input type="date" id="{{ prefixo }}-prazo" name="prazo" value="{{ v.prazo }}">
+  </label>
+</div>

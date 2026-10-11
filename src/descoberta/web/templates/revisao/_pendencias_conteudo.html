@@ -1,0 +1,17 @@
+<h2>Falta preencher</h2>
+{% if total_pendencias == 0 %}
+<p class="completo">✓ Nada falta nas saídas da revisão.</p>
+{% else %}
+{% for grupo in grupos_pendencias %}
+<h3><a href="#{{ grupo.ancora }}">{{ grupo.titulo }}</a></h3>
+<ul class="lista-pendencias">
+  {% for mensagem in grupo.mensagens %}<li>{{ mensagem }}</li>{% endfor %}
+</ul>
+{% endfor %}
+{% endif %}
+{% if obrigatorias_sem_resposta %}
+<p class="discreto">
+  {{ obrigatorias_sem_resposta }} {{ "obrigatória sem resposta" if obrigatorias_sem_resposta == 1 else "obrigatórias sem resposta" }}
+  na <a href="/sessoes/{{ sessao.id }}">tela da sessão</a>.
+</p>
+{% endif %}

@@ -4,6 +4,7 @@ from .carregador import QuestionarioInvalido, carregar_questionario
 from .condicionais import pergunta_visivel, perguntas_visiveis
 from .modelos import (
     Bloco,
+    CategoriaRisco,
     Duracao,
     Faixa,
     FaixaNota,
@@ -11,11 +12,13 @@ from .modelos import (
     Pergunta,
     Questionario,
     Sinal,
+    TextoRevisao,
     TipoSolucao,
 )
 
 __all__ = [
     "Bloco",
+    "CategoriaRisco",
     "Duracao",
     "Faixa",
     "FaixaNota",
@@ -24,6 +27,7 @@ __all__ = [
     "Questionario",
     "QuestionarioInvalido",
     "Sinal",
+    "TextoRevisao",
     "TipoSolucao",
     "carregar_questionario",
     "pergunta_visivel",

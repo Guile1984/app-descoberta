@@ -2,6 +2,66 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.7.0] — 2026-10-11 — Sprint 6a: Saídas estruturadas da sessão
+
+### Adicionado
+- Questionário: seção `revisao` no YAML (sem mudar nenhum id da v1):
+  - `categorias_risco`: as 6 linhas da tabela "Principais riscos" do bloco 7, mais `outro`;
+  - `textos`: as 6 partes narrativas do relatório (resumo executivo, frase-problema,
+    fluxos as-is e to-be, justificativa do tipo de solução e recomendação), cada uma com
+    orientação e `apoio` (perguntas ou itens do encerramento mostrados ao lado);
+  - validação: ids únicos em todo o questionário e `apoio` citando só ids que existem;
+    `Questionario.categoria_risco(id)` e `texto_revisao(id)`.
+- `dominio.revisao`:
+  - escalas `Nivel` (baixo/médio/alto), `Camada` (negócio/técnica) e `Responsavel`
+    (cliente/consultor);
+  - `matriz_de_riscos()`: grade 3×3 (impacto × probabilidade) com os riscos numerados
+    R1, R2… e o nível de cada célula (`severidade()`);
+  - `pendencias_da_revisao()`: textos em branco; nenhum risco, ou risco alto × alto sem
+    mitigação (regra do bloco 7); nenhum indicador de negócio, ou indicador sem valor
+    atual, meta, prazo ou como medir (tabela do bloco 5); escopo sem item que entra ou sem
+    item que fica fora; nenhum próximo passo, ou passo sem prazo.
+- `repositorio`: 5 tabelas novas, criadas sem migração em bancos existentes: `Risco`,
+  `Indicador`, `ItemEscopo`, `ProximoPasso` e `TextoSecao`. As quatro listas usam as mesmas
+  funções (`adicionar_item`, `editar_item`, `excluir_item`, `itens_da_sessao`), com
+  validação por campo; textos com `salvar_texto_secao` (em branco apaga) e
+  `textos_da_sessao`. Valor atual, meta e prazo dos indicadores são texto (misturam
+  unidades e não entram em cálculos); o prazo dos próximos passos é data.
+- Página "Revisão pós-sessão" (`/sessoes/{id}/revisao`), separada da tela ao vivo e ligada
+  a ela nos dois sentidos:
+  - textos do relatório com salvamento automático e "O que foi dito na sessão" recolhido;
+  - riscos, indicadores, escopo e próximos passos: incluir, editar e excluir sem recarregar
+    a página. Categoria fora do YAML, escala inválida ou data fora do formato são recusadas
+    com a mensagem ao lado, sem perder o que foi digitado. Depois de incluir, o cursor
+    volta ao primeiro campo;
+  - matriz 3×3 em HTML e CSS, com o nível escrito em cada célula (não depende só da cor);
+  - quadro "Falta preencher", com links para cada seção e as obrigatórias ainda sem
+    resposta na sessão;
+  - matriz e quadro se atualizam sozinhos com o evento `revisao-mudou`.
+- Banco de demonstração: revisão do Roberto completa (4 riscos, 3 indicadores, 7 itens de
+  escopo, 4 próximos passos e os 6 textos), sem nenhuma pendência. O que o cliente não
+  disse está marcado como hipótese no `demo.py`.
+- Teste no navegador: incluir um risco só com o teclado e vê-lo na matriz.
+
+### Alterado
+- Especificação: Sprint 6 dividido em 6a (saídas estruturadas) e 6b (relatório com versão
+  cliente e versão interna, anexos, memória de cálculo e termo de ciência); revisão
+  pós-sessão no fluxo de uso; novas entidades no modelo de dados; Sprint 7 inclui os
+  rascunhos dos textos narrativos.
+
+### Pendências resolvidas do Sprint 5
+- Notas do score final: "bloco 1" no singular quando o critério tem um só bloco de origem.
+- Cronômetro: ponto pulsando (só CSS) enquanto roda; parado para quem desativou animações
+  no sistema (`prefers-reduced-motion`).
+
+### Pendências
+- Sprint 6b: o relatório deve usar `dominio.painel` (mesmos números da tela), os itens do
+  encerramento e as saídas da revisão, e ignorar respostas de condicionais ocultas pelo
+  tipo de solução atual.
+- Sprint 7: os rascunhos do LLM para os textos narrativos ficam numa tabela própria (com
+  modelo e versão do prompt), sem sobrescrever o texto do consultor.
+- Continuam valendo as pendências "antes do primeiro uso com cliente real" do Sprint 3.
+
 ## [0.6.0] — 2026-10-08 — Sprint 5: Uso ao vivo
 
 ### Adicionado

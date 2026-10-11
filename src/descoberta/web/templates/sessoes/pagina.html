@@ -27,6 +27,7 @@
       </select>
     </label>
     {{ estado("status") }}
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/revisao">Revisão pós-sessão →</a>
     <button class="botao perigo" hx-post="/sessoes/{{ sessao.id }}/excluir"
             hx-confirm="Excluir esta sessão e tudo o que foi registrado nela? Isso não pode ser desfeito.">
       Excluir sessão

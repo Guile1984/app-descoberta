@@ -6,6 +6,7 @@ import pytest
 
 from descoberta.repositorio import Cronometro, obter_cronometro
 from descoberta.repositorio.modelos import agora
+from descoberta.web.app import PASTA_STATIC
 
 HX = {"HX-Request": "true"}
 
@@ -52,3 +53,19 @@ def test_limites_vem_do_questionario(cliente_http, sessao):
     html = cliente_http.get(f"/sessoes/{sessao.id}/cronometro", headers=HX).text
     assert "75 min" in html
     assert "90 min" in html
+
+
+def test_ponto_pulsando_so_enquanto_roda(cliente_http, sessao):
+    # Com hh:mm, o primeiro minuto parece parado: o ponto mostra que o tempo está correndo.
+    parado = cliente_http.get(f"/sessoes/{sessao.id}/cronometro", headers=HX).text
+    assert 'class="pulso"' not in parado
+    rodando = cliente_http.post(f"/sessoes/{sessao.id}/cronometro", headers=HX).text
+    assert 'class="pulso"' in rodando
+    pausado = cliente_http.post(f"/sessoes/{sessao.id}/cronometro", headers=HX).text
+    assert 'class="pulso"' not in pausado
+
+
+def test_pulso_respeita_quem_desativou_animacoes():
+    css = (PASTA_STATIC / "estilo.css").read_text(encoding="utf-8")
+    assert "@keyframes pulso" in css
+    assert "prefers-reduced-motion" in css

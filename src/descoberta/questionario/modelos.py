@@ -92,6 +92,28 @@ class Encerramento(_Modelo):
     itens: list[ItemEncerramento] = Field(min_length=1)
 
 
+class CategoriaRisco(_Modelo):
+    id: Id
+    rotulo: Texto
+
+
+class TextoRevisao(_Modelo):
+    """Parte narrativa do relatório, escrita pelo consultor na revisão pós-sessão."""
+
+    id: Id
+    titulo: Texto
+    orientacao: Texto
+    # Perguntas ou itens do encerramento cujas respostas aparecem ao lado, para consulta.
+    apoio: list[Id] = []
+
+
+class Revisao(_Modelo):
+    """O que a revisão pós-sessão pede, além das respostas: as saídas para o relatório."""
+
+    categorias_risco: list[CategoriaRisco] = Field(min_length=1)
+    textos: list[TextoRevisao] = Field(min_length=1)
+
+
 class Duracao(_Modelo):
     """Duração-alvo da sessão: o cronômetro muda de cor no aviso e de novo no limite."""
 
@@ -235,6 +257,7 @@ class Questionario(_Modelo):
     tipos_solucao: list[TipoSolucao] = Field(min_length=1)
     blocos: list[Bloco] = Field(min_length=1)
     encerramento: Encerramento
+    revisao: Revisao
     scores: Scores
 
     def bloco(self, numero: int) -> Bloco:
@@ -257,6 +280,18 @@ class Questionario(_Modelo):
                 return item
         raise KeyError(f"o encerramento não tem o item '{item_id}'")
 
+    def categoria_risco(self, categoria_id: str) -> CategoriaRisco:
+        for categoria in self.revisao.categorias_risco:
+            if categoria.id == categoria_id:
+                return categoria
+        raise KeyError(f"o questionário não tem a categoria de risco '{categoria_id}'")
+
+    def texto_revisao(self, texto_id: str) -> TextoRevisao:
+        for texto in self.revisao.textos:
+            if texto.id == texto_id:
+                return texto
+        raise KeyError(f"o questionário não tem o texto de revisão '{texto_id}'")
+
     @model_validator(mode="after")
     def _validar_consistencia(self):
         problemas = [
@@ -265,6 +300,7 @@ class Questionario(_Modelo):
             *self._problemas_de_condicoes(),
             *self._problemas_de_blocos_origem(),
             *self._problemas_dos_scores(),
+            *self._problemas_do_apoio(),
         ]
         if problemas:
             raise ValueError("; ".join(problemas))
@@ -285,6 +321,8 @@ class Questionario(_Modelo):
         ids.extend(item.id for item in self.encerramento.itens)
         ids.extend(criterio.id for criterio in self.scores.prontidao_dados.criterios)
         ids.extend(criterio.id for criterio in self.scores.viabilidade_final.criterios)
+        ids.extend(categoria.id for categoria in self.revisao.categorias_risco)
+        ids.extend(texto.id for texto in self.revisao.textos)
         return [
             f"id duplicado '{id_}' (aparece {vezes} vezes)"
             for id_, vezes in Counter(ids).items()
@@ -339,3 +377,14 @@ class Questionario(_Modelo):
                 "do score viabilidade_final"
             )
         return problemas
+
+    def _problemas_do_apoio(self) -> list[str]:
+        existentes = {p.id for bloco in self.blocos for p in bloco.perguntas}
+        existentes |= {item.id for item in self.encerramento.itens}
+        return [
+            f"revisao: texto '{texto.id}' cita no apoio '{id_}', que não é pergunta nem "
+            "item do encerramento"
+            for texto in self.revisao.textos
+            for id_ in texto.apoio
+            if id_ not in existentes
+        ]

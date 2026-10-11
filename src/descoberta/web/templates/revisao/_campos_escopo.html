@@ -1,0 +1,13 @@
+{# Campos de um item do escopo do MVP. #}
+<div class="campos-revisao">
+  <label class="campo largo" for="{{ prefixo }}-texto">Item
+    <input id="{{ prefixo }}-texto" name="texto" value="{{ v.texto }}" {% if focar %}autofocus{% endif %}>
+  </label>
+  <label class="campo" for="{{ prefixo }}-entra">No MVP?
+    <select id="{{ prefixo }}-entra" name="entra">
+      {% for valor, rotulo in opcoes_escopo.items() %}
+      <option value="{{ valor }}"{% if v.entra == valor %} selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</div>

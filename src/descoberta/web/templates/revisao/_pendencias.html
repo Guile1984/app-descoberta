@@ -1,0 +1,5 @@
+{# Moldura fixa (como as pendências da sessão): só o conteúdo é trocado quando chega o evento. #}
+<section id="pendencias-revisao" class="apoio pendencias-revisao" role="status" aria-label="Falta preencher"
+         hx-get="/sessoes/{{ sessao.id }}/revisao/pendencias" hx-trigger="revisao-mudou from:body">
+  {% include "revisao/_pendencias_conteudo.html" %}
+</section>

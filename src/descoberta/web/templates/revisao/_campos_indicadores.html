@@ -1,0 +1,25 @@
+{# Campos de um indicador: as colunas da tabela do bloco 5. Tudo texto, menos a camada. #}
+<div class="campos-revisao">
+  <label class="campo largo" for="{{ prefixo }}-nome">Indicador
+    <input id="{{ prefixo }}-nome" name="nome" value="{{ v.nome }}" {% if focar %}autofocus{% endif %}>
+  </label>
+  <label class="campo" for="{{ prefixo }}-camada">Camada
+    <select id="{{ prefixo }}-camada" name="camada">
+      {% for valor, rotulo in camadas.items() %}
+      <option value="{{ valor }}"{% if v.camada == valor %} selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label class="campo" for="{{ prefixo }}-valor_atual">Valor atual
+    <input id="{{ prefixo }}-valor_atual" name="valor_atual" value="{{ v.valor_atual }}">
+  </label>
+  <label class="campo" for="{{ prefixo }}-meta">Meta
+    <input id="{{ prefixo }}-meta" name="meta" value="{{ v.meta }}">
+  </label>
+  <label class="campo" for="{{ prefixo }}-prazo">Prazo
+    <input id="{{ prefixo }}-prazo" name="prazo" value="{{ v.prazo }}">
+  </label>
+  <label class="campo largo" for="{{ prefixo }}-como_medir">Como medir
+    <input id="{{ prefixo }}-como_medir" name="como_medir" value="{{ v.como_medir }}">
+  </label>
+</div>

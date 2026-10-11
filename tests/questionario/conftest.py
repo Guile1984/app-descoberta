@@ -58,6 +58,20 @@ QUESTIONARIO_MINIMO = {
         "objetivo": "Fechar a sessão.",
         "itens": [{"id": "enc.resumo", "titulo": "Resumo", "descricao": "A frase-problema."}],
     },
+    "revisao": {
+        "categorias_risco": [
+            {"id": "lgpd", "rotulo": "LGPD"},
+            {"id": "outro", "rotulo": "Outro"},
+        ],
+        "textos": [
+            {
+                "id": "frase_problema",
+                "titulo": "Frase-problema",
+                "orientacao": "Hoje [quem] gasta [quanto]…",
+                "apoio": ["b1.o1", "enc.resumo"],
+            }
+        ],
+    },
     "scores": {
         "prontidao_dados": {
             "bloco": 4,

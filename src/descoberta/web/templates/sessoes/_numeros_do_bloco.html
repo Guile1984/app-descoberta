@@ -77,7 +77,7 @@
       </span>
     </div>
     {% else %}
-    {{ nota(criterio, "blocos " ~ criterio.blocos_origem | join(", ")) }}
+    {{ nota(criterio, ("bloco " if criterio.blocos_origem | length == 1 else "blocos ") ~ criterio.blocos_origem | join(", ")) }}
     {% endif %}
   {% endfor %}
 </fieldset>
