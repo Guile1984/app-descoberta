@@ -10,6 +10,7 @@
   </div>
   <div class="acoes">
     <a class="botao secundario" href="/sessoes/{{ sessao.id }}">← Tela da sessão</a>
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio">Relatório →</a>
   </div>
 </div>
 <p class="discreto">O que o relatório para o cliente precisa e não sai direto das respostas. Os textos salvam sozinhos, como na sessão.</p>
@@ -23,6 +24,7 @@
       {% endwith %}
       {% if lista.nome == "riscos" %}{% include "revisao/_matriz.html" %}{% endif %}
     {% endfor %}
+    {% include "revisao/_hipoteses.html" %}
   </div>
   <aside class="coluna-apoio">
     {% include "revisao/_pendencias.html" %}

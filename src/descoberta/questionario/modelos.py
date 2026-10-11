@@ -5,6 +5,7 @@ Os modelos descrevem a forma do arquivo e checam regras que envolvem mais de um 
 é carregado uma vez e só lido depois.
 """
 
+import re
 from collections import Counter
 from typing import Annotated, Literal
 
@@ -62,6 +63,22 @@ class Referencia(_Modelo):
         return self
 
 
+class SecaoRelatorio(_Modelo):
+    """Seção do Relatório de Descoberta; o id liga a seção à sua montagem (relatorio)."""
+
+    id: Id
+    titulo: Texto
+    blocos: list[int] = []  # blocos cujas respostas obrigatórias entram na seção
+    respostas: list[Id] = []  # outras perguntas ou itens do encerramento
+    tabelas: list[Texto] = []  # tabelas de referência (títulos) dos blocos acima
+
+    @property
+    def titulo_para_cliente(self) -> str:
+        """O título sem o parêntese final, que é nota para o consultor: "(bloco 4)" ou
+        "(meia página, lido em 2 minutos)"."""
+        return re.sub(r"\s*\([^)]*\)$", "", self.titulo)
+
+
 class Bloco(_Modelo):
     numero: int = Field(ge=1)
     id: Id
@@ -72,7 +89,7 @@ class Bloco(_Modelo):
     sinais: list[Sinal] = []
     notas: list[Texto] = []
     referencias: list[Referencia] = []
-    secoes_relatorio: list[Texto] = []
+    secoes_relatorio: list[SecaoRelatorio] = []
 
 
 class TipoSolucao(_Modelo):
@@ -301,6 +318,7 @@ class Questionario(_Modelo):
             *self._problemas_de_blocos_origem(),
             *self._problemas_dos_scores(),
             *self._problemas_do_apoio(),
+            *self._problemas_das_secoes(),
         ]
         if problemas:
             raise ValueError("; ".join(problemas))
@@ -318,6 +336,7 @@ class Questionario(_Modelo):
             ids.append(bloco.id)
             ids.extend(pergunta.id for pergunta in bloco.perguntas)
             ids.extend(sinal.id for sinal in bloco.sinais)
+            ids.extend(secao.id for secao in bloco.secoes_relatorio)
         ids.extend(item.id for item in self.encerramento.itens)
         ids.extend(criterio.id for criterio in self.scores.prontidao_dados.criterios)
         ids.extend(criterio.id for criterio in self.scores.viabilidade_final.criterios)
@@ -388,3 +407,29 @@ class Questionario(_Modelo):
             for id_ in texto.apoio
             if id_ not in existentes
         ]
+
+    def _problemas_das_secoes(self) -> list[str]:
+        numeros = {bloco.numero: bloco for bloco in self.blocos}
+        existentes = {p.id for bloco in self.blocos for p in bloco.perguntas}
+        existentes |= {item.id for item in self.encerramento.itens}
+        problemas = []
+        for bloco in self.blocos:
+            for secao in bloco.secoes_relatorio:
+                local = f"seção '{secao.id}'"
+                problemas += [
+                    f"{local}: bloco {n} inexistente" for n in secao.blocos if n not in numeros
+                ]
+                problemas += [
+                    f"{local}: resposta '{id_}' não é pergunta nem item do encerramento"
+                    for id_ in secao.respostas
+                    if id_ not in existentes
+                ]
+                titulos = {
+                    r.titulo for n in secao.blocos if n in numeros for r in numeros[n].referencias
+                }
+                problemas += [
+                    f"{local}: tabela '{t}' não está nos blocos {secao.blocos}"
+                    for t in secao.tabelas
+                    if t not in titulos
+                ]
+        return problemas

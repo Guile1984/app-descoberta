@@ -106,7 +106,9 @@ def test_respostas_existem_e_aparecem_para_visao_computacional(banco_demo, quest
     respostas = respostas_da_sessao(banco_demo, sessao.id)
     assert respostas == RESPOSTAS
     assert {"b4.vc1", "b4.vc2", "b4.vc3", "b4.vc4"} <= respostas.keys()
-    for pergunta_id in respostas:
+    itens_do_encerramento = {item.id for item in questionario_v1.encerramento.itens}
+    assert itens_do_encerramento <= respostas.keys()
+    for pergunta_id in respostas.keys() - itens_do_encerramento:
         assert pergunta_visivel(questionario_v1, pergunta_id, "visao_computacional")
 
 

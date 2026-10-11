@@ -37,3 +37,10 @@ No Bash: `DESCOBERTA_BANCO=data/demo.db uv run uvicorn descoberta.web.app:app --
 O comando de demonstração recria só o `data/demo.db` e nunca toca no banco real.
 Na sessão do Roberto, o botão "Revisão pós-sessão →" abre a revisão já preenchida (riscos,
 indicadores, escopo do MVP, próximos passos e textos do relatório).
+
+### Relatório
+
+O botão "Relatório →" (na sessão ou na revisão) mostra a prévia nas versões cliente e
+interna e baixa o rascunho em PDF, Word ou Markdown, tudo sem internet. "Registrar versão
+enviada" guarda o PDF com número de versão, data e hash SHA-256, que aparecem no rodapé de
+cada página: compare o rodapé da cópia assinada com a lista de versões registradas.

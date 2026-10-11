@@ -29,6 +29,9 @@ TABELAS = {
     "item_escopo",
     "proximo_passo",
     "texto_secao",
+    # Sprint 6b: relatório.
+    "hipotese_metrica",
+    "versao_relatorio",
 }
 
 

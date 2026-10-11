@@ -1,4 +1,6 @@
-"""Números no formato brasileiro: vírgula para decimais, ponto para separar milhares.
+"""Números no formato brasileiro, usados pela web e pelo relatório.
+
+Vírgula para decimais, ponto para separar milhares.
 
 Ler: "20.000", "20000", "7,5", "3.000,50" e "R$ 400" são aceitos. "7.5" é recusado: no
 Brasil o ponto separa milhares, e ler "7.5" como 75 (ou como 7,5) sem avisar seria pior

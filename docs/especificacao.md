@@ -48,8 +48,9 @@ A tela principal é feita para anotar ao vivo no notebook, sem travar a conversa
 
 1. Revisar e completar respostas.
 2. Na área de revisão pós-sessão (página separada da tela ao vivo), preencher as saídas que o relatório usa: matriz de riscos, indicadores de sucesso, escopo do MVP, próximos passos e os textos narrativos. Um quadro mostra o que ainda falta.
-3. Gerar o relatório (template ou rascunho por LLM) e revisar.
-4. Exportar e enviar ao cliente.
+3. Marcar na revisão quais números são hipóteses do consultor (o relatório os destaca).
+4. Conferir a prévia do relatório (versão cliente e versão interna) e baixar em Markdown, Word ou PDF. O texto narrativo poderá vir de um rascunho por LLM (Sprint 7).
+5. Registrar a versão enviada: o PDF fica guardado com número de versão, data e hash SHA-256, que aparecem no rodapé de cada página para conferir a cópia assinada.
 
 ## Modelo de dados
 
@@ -65,6 +66,7 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Score | bloco onde as notas são dadas, critérios, faixas; no score de dados, conversão para a nota do critério do score final que ele alimenta |
 | Duração da sessão | minutos do aviso e do limite (o cronômetro muda de cor) |
 | Revisão | categorias de risco (as da tabela do bloco 7, mais "outro"); textos narrativos do relatório (id, título, orientação e perguntas de apoio) |
+| Seção do relatório | id, título; blocos cujas respostas entram na seção, outras respostas e tabelas de referência |
 
 **Banco (SQLite + SQLModel)**
 
@@ -83,6 +85,8 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Item de escopo | sessão, texto, entra no MVP (sim/não) |
 | Próximo passo | sessão, ação, responsável (cliente/consultor), prazo (data) |
 | Texto de seção | sessão, id do texto (do YAML), texto |
+| Hipótese | sessão, campo da métrica assumido pelo consultor |
+| Versão do relatório | sessão, número, tipo (cliente/interna), emissão, Markdown canônico, hash do conteúdo, PDF, hash do PDF |
 | Relatório | sessão, origem (template/LLM), conteúdo, modelo, versão do prompt, data |
 
 Um cliente tem várias sessões; uma sessão tem muitas respostas, sinais e anotações, e um conjunto de métricas. Métricas ficam em campos numéricos próprios, nunca extraídas do texto.
@@ -96,11 +100,13 @@ FastAPI + HTMX com SQLite, rodando localmente. Escolhida por manter Python quase
 | questionario | Pydantic + YAML | Carregar e validar o catálogo; resolver condicionais |
 | dominio | Python puro | Cálculos e regras, sem dependência de banco ou web |
 | repositorio | SQLModel + SQLite | Persistência |
-| relatorio | Jinja2 + exportadores | Relatório por template; Markdown, DOCX, PDF |
+| relatorio | Python puro + python-docx + ReportLab | Monta o relatório como documento neutro (blocos) e exporta para Markdown, DOCX e PDF; os números vêm do Painel do domínio |
 | llm | Cliente abstrato | Provedor (API Claude ou modelo local), anonimização, prompts versionados |
 | web | FastAPI + Jinja2 + HTMX | Rotas, telas e atalhos de teclado (JS mínimo) |
 
 Dependências apontam para dentro: `web` usa `dominio`, nunca o contrário. Ferramentas: uv, ruff, pytest (com cobertura), pre-commit.
+
+**Exportação offline no Windows:** só bibliotecas que instalam com `uv sync`, sem programas externos. DOCX com python-docx (MIT); PDF com ReportLab (BSD, Python puro), com a fonte DejaVu Sans embutida para caracteres como "≥" e "→". WeasyPrint (exige GTK), pandoc, wkhtmltopdf e LibreOffice foram descartados.
 
 ## Uso de LLM
 
@@ -125,9 +131,35 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
 | 4 — Web básica | Cliente, sessão, abas por bloco, salvamento automático | Resposta salva sem recarregar a página |
 | 5 — Uso ao vivo | Sinais com um clique, anotações, atalhos, cronômetro, cálculos ao vivo | Sessão completa conduzida só com teclado |
 | 6a — Saídas estruturadas | Revisão pós-sessão: matriz de riscos (com visualização 3×3), indicadores de sucesso, escopo do MVP, próximos passos e textos narrativos editáveis, com indicação do que falta | Caso Roberto com todas as saídas preenchidas e nenhuma pendência na revisão |
-| 6b — Relatório | Relatório por template em versão cliente e versão interna, anexos, memória de cálculo e termo de ciência; exportação Markdown, DOCX, PDF. Usa `dominio.painel` (os mesmos números da tela) e ignora respostas de condicionais ocultas | Relatório do caso Roberto gerado offline |
+| 6b — Relatório | Relatório por template em versão cliente e versão interna (com sinais de alerta e anotações), capa, 12 seções, Anexo A (respostas), Anexo B (memória de cálculo com hipóteses destacadas) e termo de ciência e validação; exportação Markdown, DOCX, PDF; registro das versões enviadas com hash no rodapé. Usa `dominio.painel` (os mesmos números da tela) e ignora respostas de condicionais ocultas | Relatório do caso Roberto gerado offline nos três formatos |
 | 7 — LLM | Provedor abstrato, anonimização, prompts versionados; rascunhos sugeridos para os textos narrativos da revisão | Nenhum dado pessoal no payload enviado (teste automatizado) |
-| 8 — Validação | Caso Roberto de ponta a ponta; README; ajustes | Sessão simulada completa e relatório revisado |
+| 8 — Validação e lançamento | Caso Roberto de ponta a ponta; escolha de licença; README para quem não programa, com GIF de demonstração; transparência sobre o desenvolvimento com Claude Code; limitações declaradas; SECURITY.md; aviso de uso local; verificações de segurança no CI; revisão de dados e segredos no histórico do Git; repositório público | Sessão simulada completa, relatório revisado e repositório público sem dados pessoais nem segredos no histórico |
+| 9 — Documentação | Documentação no modelo Diátaxis (tutorial, guias práticos, referência e explicação, incluindo a metodologia do Modelo de Descoberta); site com MkDocs e tema Material no GitHub Pages; guia de uso em produção com modelo de ameaças; CONTRIBUTING; CI da documentação | Site publicado, compilando sem avisos e sem links quebrados |
+
+### Sprint 8 — Validação e lançamento
+
+- Caso Roberto de ponta a ponta: sessão simulada, revisão, relatório e versão registrada.
+- Escolha da licença do projeto (e conferência das licenças das dependências e da fonte DejaVu).
+- README para quem não programa: o que a app faz, como instalar e usar, com um GIF de demonstração.
+- Transparência: o projeto foi desenvolvido com Claude Code, sob direção e revisão do autor.
+- Limitações declaradas (o que a app não faz e os cuidados de uso).
+- `SECURITY.md`: política de relato de vulnerabilidades e escopo suportado.
+- Aviso no README: a app é projetada para uso local, por um único usuário, e não deve ser exposta à rede sem as medidas do guia de produção (Sprint 9).
+- Verificações de segurança no CI: `pip-audit` (dependências com vulnerabilidades conhecidas), regras "S" do ruff (flake8-bandit), gitleaks (segredos no repositório e no histórico) e Dependabot (atualizações de dependências).
+- Revisão de dados pessoais e segredos em todo o histórico do Git antes de tornar o repositório público.
+- Repositório público.
+
+### Sprint 9 — Documentação
+
+- Documentação no modelo Diátaxis:
+  - tutorial: a primeira sessão de descoberta com a app, do cadastro ao relatório;
+  - guias práticos: tarefas específicas (ex.: criar uma nova versão do questionário, fazer backup);
+  - referência: questionário YAML, cálculos, estrutura do relatório, comandos;
+  - explicação: a metodologia do Modelo de Descoberta, as decisões de arquitetura e o uso de LLM.
+- Site com MkDocs e tema Material, publicado no GitHub Pages.
+- Guia de uso em produção, com modelo de ameaças e a lista de medidas necessárias antes de expor a app: autenticação, HTTPS, proteção contra CSRF, limite de requisições, criptografia do banco e dos backups, migrações com Alembic, logs de auditoria e teste de intrusão profissional.
+- `CONTRIBUTING.md`.
+- CI da documentação: compilação do site (modo estrito) e verificação de links quebrados.
 
 ## Modo de desenvolvimento
 

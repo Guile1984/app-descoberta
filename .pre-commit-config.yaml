@@ -1,5 +1,6 @@
-# Arquivos de terceiros copiados como estão (o hash precisa bater com o original).
-exclude: ^src/descoberta/web/static/htmx\.min\.js$
+# Arquivos de terceiros copiados como estão: o htmx (o hash SRI precisa bater com o
+# original) e a fonte DejaVu Sans do PDF, com a licença (cada fonte tem ~750 KB).
+exclude: ^(src/descoberta/web/static/htmx\.min\.js|src/descoberta/relatorio/fontes/.*)$
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks

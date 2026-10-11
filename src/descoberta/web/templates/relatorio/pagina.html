@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block titulo %}Relatório · {{ dados.empresa }} · {{ sessao.data | data_br }} · Descoberta{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <p class="discreto"><a href="/clientes/{{ sessao.cliente_id }}">{{ dados.empresa }}</a> · {{ dados.cliente }}</p>
+    <h1>Relatório de Descoberta</h1>
+    <p class="discreto">Sessão de {{ sessao.data | data_br }}</p>
+  </div>
+  <div class="acoes">
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}">← Tela da sessão</a>
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/revisao">← Revisão pós-sessão</a>
+  </div>
+</div>
+
+<nav class="abas" aria-label="Versão do relatório">
+  {% for valor, rotulo in rotulos_versao.items() %}
+  <a href="/sessoes/{{ sessao.id }}/relatorio?versao={{ valor }}"{% if tipo == valor %} aria-current="page"{% endif %}>Versão {{ rotulo | lower }}</a>
+  {% endfor %}
+</nav>
+<p class="discreto">
+  {% if tipo == "interna" %}A versão interna inclui os sinais de alerta e as anotações (Anexo C). Não envie ao cliente.
+  {% else %}A versão para o cliente não inclui sinais de alerta nem anotações.{% endif %}
+</p>
+
+<div class="colunas">
+  <div>
+    {% if a_preencher %}
+    <p class="doc-aviso" role="status">
+      ⚠ O relatório tem {{ a_preencher }} {{ "trecho" if a_preencher == 1 else "trechos" }} a preencher
+      (marcados com “A preencher”). Complete na <a href="/sessoes/{{ sessao.id }}/revisao">revisão pós-sessão</a>
+      ou na <a href="/sessoes/{{ sessao.id }}">tela da sessão</a>.
+    </p>
+    {% endif %}
+    {% include "relatorio/_documento.html" %}
+  </div>
+  <aside class="coluna-apoio">
+    <section class="apoio">
+      <h2>Baixar (rascunho)</h2>
+      <p class="discreto">Gerado na hora, com os dados atuais. O rodapé diz “Rascunho não registrado”.</p>
+      <p class="acoes">
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio.pdf?versao={{ tipo }}">PDF</a>
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio.docx?versao={{ tipo }}">Word</a>
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio.md?versao={{ tipo }}">Markdown</a>
+      </p>
+    </section>
+    <section class="apoio" id="versoes">
+      <h2>Versões registradas</h2>
+      <form method="post" action="/sessoes/{{ sessao.id }}/relatorio/versoes">
+        <input type="hidden" name="versao" value="{{ tipo }}">
+        <button type="submit" class="botao">Registrar versão enviada ({{ rotulos_versao[tipo] | lower }})</button>
+      </form>
+      <p class="discreto">Guarda o PDF como foi emitido, com número de versão, data e hash. O rodapé de cada página mostra os três, para conferir a cópia assinada.</p>
+      {% if versoes %}
+      <table class="tabela compacta">
+        <thead><tr><th>Versão</th><th>Emitida em</th><th>Hash</th><th></th></tr></thead>
+        <tbody>
+          {% for v in versoes %}
+          <tr>
+            <td>{{ v.numero }} · {{ rotulos_versao[v.tipo] }}</td>
+            <td>{{ v.emitido_em | data_hora_local }}</td>
+            <td><code title="Hash do conteúdo (no rodapé): {{ v.hash_conteudo }}&#10;Hash do arquivo PDF: {{ v.hash_pdf }}">{{ v.hash_conteudo[:12] }}</code></td>
+            <td><a href="/sessoes/{{ sessao.id }}/relatorio/versoes/{{ v.numero }}.pdf">PDF</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="discreto">Nenhuma versão registrada.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

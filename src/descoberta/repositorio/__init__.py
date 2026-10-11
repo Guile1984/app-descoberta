@@ -14,11 +14,20 @@ from .clientes import (
     obter_cliente,
 )
 from .cronometro import alternar_cronometro, obter_cronometro, tempo_do_cronometro
-from .metricas import notas_da_sessao, obter_metricas, salvar_metricas, salvar_nota
+from .metricas import (
+    CAMPOS_NUMERICOS,
+    hipoteses_da_sessao,
+    marcar_hipotese,
+    notas_da_sessao,
+    obter_metricas,
+    salvar_metricas,
+    salvar_nota,
+)
 from .modelos import (
     Anotacao,
     Cliente,
     Cronometro,
+    HipoteseMetrica,
     Indicador,
     ItemEscopo,
     Metricas,
@@ -32,6 +41,8 @@ from .modelos import (
     SinalMarcado,
     StatusSessao,
     TextoSecao,
+    TipoVersao,
+    VersaoRelatorio,
 )
 from .registros import (
     adicionar_anotacao,
@@ -61,12 +72,21 @@ from .sessoes import (
     listar_sessoes,
     obter_sessao,
 )
+from .versoes import (
+    hash_do_conteudo,
+    obter_versao,
+    proximo_numero_versao,
+    registrar_versao,
+    versoes_da_sessao,
+)
 
 __all__ = [
-    "CAMINHO_BANCO_PADRAO",
     "Anotacao",
+    "CAMINHO_BANCO_PADRAO",
+    "CAMPOS_NUMERICOS",
     "Cliente",
     "Cronometro",
+    "HipoteseMetrica",
     "Indicador",
     "ItemEscopo",
     "Metricas",
@@ -81,8 +101,10 @@ __all__ = [
     "SinalMarcado",
     "StatusSessao",
     "TextoSecao",
-    "adicionar_item",
+    "TipoVersao",
+    "VersaoRelatorio",
     "adicionar_anotacao",
+    "adicionar_item",
     "alternar_cronometro",
     "anotacoes_da_sessao",
     "anotar_sinal",
@@ -98,11 +120,14 @@ __all__ = [
     "excluir_anotacao",
     "excluir_cliente",
     "excluir_item",
-    "itens_da_sessao",
     "excluir_sessao",
+    "hash_do_conteudo",
+    "hipoteses_da_sessao",
+    "itens_da_sessao",
     "listar_clientes",
     "listar_relatorios",
     "listar_sessoes",
+    "marcar_hipotese",
     "marcar_sinal",
     "notas_da_sessao",
     "obter_cliente",
@@ -110,6 +135,9 @@ __all__ = [
     "obter_metricas",
     "obter_relatorio",
     "obter_sessao",
+    "obter_versao",
+    "proximo_numero_versao",
+    "registrar_versao",
     "respostas_da_sessao",
     "salvar_metricas",
     "salvar_nota",
@@ -119,4 +147,5 @@ __all__ = [
     "sinais_marcados",
     "tempo_do_cronometro",
     "textos_da_sessao",
+    "versoes_da_sessao",
 ]

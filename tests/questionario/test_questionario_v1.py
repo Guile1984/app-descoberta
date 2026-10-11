@@ -114,11 +114,27 @@ def test_encerramento_com_5_itens(questionario_v1):
     ]
 
 
+SECOES_RELATORIO = [
+    "rel.resumo",
+    "rel.problema",
+    "rel.fluxos",
+    "rel.solucao",
+    "rel.dados",
+    "rel.indicadores",
+    "rel.operacao",
+    "rel.riscos",
+    "rel.integracoes",
+    "rel.escopo",
+    "rel.orcamento",
+    "rel.recomendacao",
+]
+
+
 def test_bloco_10_tem_as_12_secoes_do_relatorio(questionario_v1):
-    bloco = questionario_v1.bloco(10)
-    assert len(bloco.secoes_relatorio) == 12
-    assert bloco.secoes_relatorio[0].startswith("Resumo executivo")
-    assert bloco.secoes_relatorio[-1] == "Recomendação e próximos passos"
+    secoes = questionario_v1.bloco(10).secoes_relatorio
+    assert [secao.id for secao in secoes] == SECOES_RELATORIO
+    assert secoes[0].titulo.startswith("Resumo executivo")
+    assert secoes[-1].titulo == "Recomendação e próximos passos"
 
 
 def test_score_de_prontidao_de_dados(questionario_v1):

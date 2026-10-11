@@ -1,4 +1,6 @@
-"""Campos numéricos da sessão (tabela Metricas) e em que bloco cada um aparece na tela.
+"""Campos numéricos da sessão (tabela Metricas): rótulo, unidade e bloco onde aparecem.
+
+Usados pela tela e pelo relatório.
 
 Não é o questionário: são os campos do banco que os cálculos usam. O bloco de cada um é
 só onde o campo é mostrado, perto das perguntas que levantam aquele número.

@@ -2,12 +2,12 @@
 
 Durante a conversa quase tudo começa vazio. Este módulo não faz conta nenhuma por conta
 própria: chama as funções de `dor`, `operacao`, `payback`, `scores` e `sinais` quando as
-entradas de cada uma existem e, quando não existem, diz quais faltam. O relatório
-(Sprint 6) usa o mesmo painel.
+entradas de cada uma existem e, quando não existem, diz quais faltam. O relatório usa o
+mesmo painel: os números da tela e do relatório são sempre os mesmos.
 """
 
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from decimal import Decimal
 
 from descoberta.questionario import Questionario
@@ -40,6 +40,23 @@ class EntradasPainel:
     custo_por_chamada: Numero | None = None
     custo_fixo_mes: Numero | None = None
 
+    @classmethod
+    def de(cls, registro: object | None) -> "EntradasPainel":
+        """As entradas lidas de qualquer objeto com os mesmos nomes (ex.: a tabela Metricas)."""
+        if registro is None:
+            return cls()
+        return cls(**{campo.name: getattr(registro, campo.name, None) for campo in fields(cls)})
+
+
+# De quais entradas cada resultado depende (direta ou indiretamente). A memória de cálculo
+# do relatório usa isso para avisar quando um resultado depende de uma hipótese.
+_ENTRADAS_OCORRENCIAS = ("frequencia_quantidade", "frequencia_periodo")
+_ENTRADAS_HORAS = ("horas_por_ocorrencia", *_ENTRADAS_OCORRENCIAS)
+_ENTRADAS_CUSTO_DOR = (*_ENTRADAS_HORAS, "custo_hora")
+_ENTRADAS_OPERACAO = ("chamadas_por_dia", "custo_por_chamada", "custo_fixo_mes")
+_ENTRADAS_ECONOMIA = ("horas_economizadas_mes", "custo_hora", "outros_ganhos_mes")
+_ENTRADAS_PAYBACK = ("investimento", *_ENTRADAS_ECONOMIA, *_ENTRADAS_OPERACAO)
+
 
 @dataclass(frozen=True)
 class Calculo:
@@ -47,6 +64,7 @@ class Calculo:
 
     valor: Decimal | None
     faltando: tuple[str, ...] = ()
+    entradas: tuple[str, ...] = ()  # todas as entradas de que o resultado depende
 
 
 @dataclass(frozen=True)
@@ -55,6 +73,7 @@ class Payback:
     faltando: tuple[str, ...]
     nunca_se_paga: bool  # economia não supera a operação (com todos os dados)
     dificil_de_aprovar: bool | None  # None enquanto falta dado
+    entradas: tuple[str, ...] = _ENTRADAS_PAYBACK
 
 
 @dataclass(frozen=True)
@@ -79,9 +98,13 @@ def _vazios(**entradas: object) -> tuple[str, ...]:
     return tuple(nome for nome, valor in entradas.items() if valor is None)
 
 
-def _se_completo(faltando: tuple[str, ...], conta: Callable[[], Decimal]) -> Calculo:
+def _se_completo(
+    entradas: tuple[str, ...], faltando: tuple[str, ...], conta: Callable[[], Decimal]
+) -> Calculo:
     """Faz a conta só quando nada falta; senão guarda o que falta."""
-    return Calculo(None, faltando) if faltando else Calculo(conta())
+    if faltando:
+        return Calculo(None, faltando, entradas)
+    return Calculo(conta(), (), entradas)
 
 
 def _operacao(e: EntradasPainel) -> Calculo:
@@ -89,16 +112,16 @@ def _operacao(e: EntradasPainel) -> Calculo:
     # o que não foi informado (só custo fixo, ou só a parte variável) entra como zero.
     variavel = {"chamadas_por_dia": e.chamadas_por_dia, "custo_por_chamada": e.custo_por_chamada}
     if e.custo_fixo_mes is None and all(v is None for v in variavel.values()):
-        return Calculo(None, (*variavel, "custo_fixo_mes"))
+        return Calculo(None, (*variavel, "custo_fixo_mes"), _ENTRADAS_OPERACAO)
     if any(v is None for v in variavel.values()) and any(v is not None for v in variavel.values()):
-        return Calculo(None, tuple(nome for nome, v in variavel.items() if v is None))
-    return Calculo(
-        custo_operacao_mes(
-            chamadas_por_dia=e.chamadas_por_dia or 0,
-            custo_por_chamada=e.custo_por_chamada or 0,
-            custo_fixo_mes=e.custo_fixo_mes or 0,
-        )
+        faltando = tuple(nome for nome, v in variavel.items() if v is None)
+        return Calculo(None, faltando, _ENTRADAS_OPERACAO)
+    valor = custo_operacao_mes(
+        chamadas_por_dia=e.chamadas_por_dia or 0,
+        custo_por_chamada=e.custo_por_chamada or 0,
+        custo_fixo_mes=e.custo_fixo_mes or 0,
     )
+    return Calculo(valor, (), _ENTRADAS_OPERACAO)
 
 
 def _payback(e: EntradasPainel, economia: Calculo, operacao: Calculo) -> Payback:
@@ -139,21 +162,25 @@ def calcular_painel(
 ) -> Painel:
     e = entradas
     ocorrencias = _se_completo(
+        _ENTRADAS_OCORRENCIAS,
         _vazios(
             frequencia_quantidade=e.frequencia_quantidade, frequencia_periodo=e.frequencia_periodo
         ),
         lambda: ocorrencias_por_mes(e.frequencia_quantidade, e.frequencia_periodo),
     )
     horas = _se_completo(
+        _ENTRADAS_HORAS,
         _sem_repetir(_vazios(horas_por_ocorrencia=e.horas_por_ocorrencia), ocorrencias.faltando),
         lambda: horas_dor_mes(e.horas_por_ocorrencia, ocorrencias.valor),
     )
     custo = _se_completo(
+        _ENTRADAS_CUSTO_DOR,
         _sem_repetir(horas.faltando, _vazios(custo_hora=e.custo_hora)),
         lambda: custo_dor_mes(horas.valor, e.custo_hora),
     )
     operacao = _operacao(e)
     economia = _se_completo(
+        _ENTRADAS_ECONOMIA,
         _vazios(horas_economizadas_mes=e.horas_economizadas_mes, custo_hora=e.custo_hora),
         lambda: economia_mes(e.horas_economizadas_mes, e.custo_hora, e.outros_ganhos_mes or 0),
     )

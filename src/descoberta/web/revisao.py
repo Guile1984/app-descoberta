@@ -12,27 +12,28 @@ from typing import Any
 
 from sqlmodel import Session, SQLModel
 
+from descoberta.campos import CAMPO_POR_NOME, CampoNumerico
 from descoberta.dominio.pendencias import obrigatorias_pendentes
 from descoberta.dominio.revisao import matriz_de_riscos, pendencias_da_revisao
+from descoberta.formatos import moeda, numero
 from descoberta.questionario import Questionario
 from descoberta.repositorio import (
+    CAMPOS_NUMERICOS,
     Indicador,
     ItemEscopo,
     ProximoPasso,
     Risco,
     Sessao,
+    hipoteses_da_sessao,
     itens_da_sessao,
+    obter_metricas,
     respostas_da_sessao,
     textos_da_sessao,
 )
+from descoberta.rotulos import CAMADAS, ESCOPO, IMPACTOS, PROBABILIDADES, RESPONSAVEIS
 
 from .formularios import data_iso
 
-PROBABILIDADES = {"baixo": "Baixa", "medio": "Média", "alto": "Alta"}
-IMPACTOS = {"baixo": "Baixo", "medio": "Médio", "alto": "Alto"}
-CAMADAS = {"negocio": "Negócio", "tecnica": "Técnica"}
-RESPONSAVEIS = {"cliente": "Cliente", "consultor": "Consultor"}
-ESCOPO = {"sim": "Entra no MVP", "nao": "Fica de fora"}
 # Os mesmos rótulos para todos os templates da revisão.
 ROTULOS = {
     "probabilidades": PROBABILIDADES,
@@ -180,6 +181,24 @@ def _apoio(questionario: Questionario, respostas: Mapping[str, str]) -> dict:
     return apoio
 
 
+def _hipoteses(banco: Session, sessao_id: int) -> list[tuple[CampoNumerico, str, bool]]:
+    """Cada métrica numérica: (campo, valor formatado, se está marcada como hipótese)."""
+    metricas = obter_metricas(banco, sessao_id)
+    marcadas = hipoteses_da_sessao(banco, sessao_id)
+    linhas = []
+    for nome in CAMPOS_NUMERICOS:
+        campo = CAMPO_POR_NOME[nome]
+        valor = getattr(metricas, nome) if metricas else None
+        if valor is None:
+            texto = "—"
+        elif campo.unidade == "R$":
+            texto = moeda(valor)
+        else:
+            texto = f"{numero(valor, 2)} {campo.unidade}".strip()
+        linhas.append((campo, texto, nome in marcadas))
+    return linhas
+
+
 def contexto_da_revisao(banco: Session, sessao: Sessao, questionario: Questionario) -> dict:
     textos = textos_da_sessao(banco, sessao.id)
     itens = {
@@ -217,5 +236,6 @@ def contexto_da_revisao(banco: Session, sessao: Sessao, questionario: Questionar
         "grupos_pendencias": [grupo for grupo in grupos if grupo.mensagens],
         "total_pendencias": pendencias.total,
         "obrigatorias_sem_resposta": sum(len(ids) for ids in obrigatorias.values()),
+        "hipoteses": _hipoteses(banco, sessao.id),
         **ROTULOS,
     }

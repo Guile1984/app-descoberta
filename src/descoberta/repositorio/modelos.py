@@ -13,7 +13,7 @@ from decimal import Decimal
 from enum import StrEnum, auto
 from typing import Any
 
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import LargeBinary, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from descoberta.dominio.revisao import Camada, Nivel, Responsavel
@@ -26,6 +26,13 @@ class StatusSessao(StrEnum):
     preparacao = auto()
     em_andamento = auto()
     concluida = auto()
+
+
+class TipoVersao(StrEnum):
+    """Para quem é a versão do relatório: a interna tem sinais de alerta e anotações."""
+
+    cliente = auto()
+    interna = auto()
 
 
 class OrigemRelatorio(StrEnum):
@@ -227,3 +234,39 @@ class TextoSecao(SQLModel, table=True):
     secao_id: str
     texto: str
     atualizado_em: datetime = Field(default_factory=agora)
+
+
+# --- Relatório (Sprint 6b) ---
+
+
+class HipoteseMetrica(SQLModel, table=True):
+    """Métrica que o consultor assumiu (não foi dita pelo cliente): o relatório a destaca."""
+
+    __tablename__ = "hipotese_metrica"
+    __table_args__ = (UniqueConstraint("sessao_id", "campo"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    campo: str  # nome do campo em Metricas (ex.: "custo_hora")
+
+
+class VersaoRelatorio(SQLModel, table=True):
+    """PDF do relatório registrado como enviado, guardado exatamente como foi emitido.
+
+    Dois hashes SHA-256: o do conteúdo (o texto do relatório em Markdown), impresso no
+    rodapé de cada página, e o do arquivo PDF. Um arquivo não pode conter o próprio hash
+    (imprimi-lo mudaria o arquivo), por isso o rodapé leva o hash do conteúdo.
+    """
+
+    __tablename__ = "versao_relatorio"
+    __table_args__ = (UniqueConstraint("sessao_id", "numero"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    numero: int  # 1, 2, 3… em cada sessão
+    tipo: TipoVersao
+    emitido_em: datetime
+    conteudo_md: str
+    hash_conteudo: str
+    pdf: bytes = Field(sa_type=LargeBinary)
+    hash_pdf: str

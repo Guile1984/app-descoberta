@@ -1,0 +1,49 @@
+{#
+  Prévia do relatório na tela: desenha os mesmos blocos que viram Markdown, Word e PDF
+  (descoberta.relatorio.documento). O Jinja escapa todo o texto.
+#}
+<article class="documento">
+  {% for bloco in documento.blocos %}
+    {% if bloco.tipo == "capa" %}
+    <header class="doc-capa">
+      {% if bloco.faixa %}<p class="doc-faixa">{{ bloco.faixa }}</p>{% endif %}
+      <h2 class="doc-titulo">{{ bloco.titulo }}</h2>
+      <p class="doc-subtitulo">{{ bloco.subtitulo }}</p>
+      <dl class="ficha">
+        {% for rotulo, valor in bloco.linhas %}<dt>{{ rotulo }}</dt><dd>{{ valor }}</dd>{% endfor %}
+      </dl>
+      {% if bloco.nota %}<p class="discreto"><em>{{ bloco.nota }}</em></p>{% endif %}
+    </header>
+    {% elif bloco.tipo == "titulo" %}
+      {% if bloco.nivel == 1 %}<h3 class="doc-secao">{{ bloco.texto }}</h3>{% else %}<h4>{{ bloco.texto }}</h4>{% endif %}
+    {% elif bloco.tipo == "paragrafo" %}
+    <p>{% if bloco.rotulo %}<strong>{{ bloco.rotulo }}</strong> {% endif %}{{ bloco.texto }}</p>
+    {% elif bloco.tipo == "aviso" %}
+    <p class="doc-aviso">{{ bloco.texto }}</p>
+    {% elif bloco.tipo == "lista" %}
+    <ul>{% for item in bloco.itens %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% elif bloco.tipo == "tabela" %}
+    <table class="tabela compacta">
+      <thead><tr>{% for coluna in bloco.colunas %}<th>{{ coluna }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for linha in bloco.linhas %}
+        {% set i = loop.index0 %}
+        <tr>
+          {% for celula in linha %}
+          {% set nivel = bloco.niveis[i][loop.index0] if bloco.niveis else none %}
+          <td{% if nivel %} class="nivel-{{ nivel }}"{% endif %}>{{ celula | replace("\n", " · ") }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% elif bloco.tipo == "assinatura" %}
+    <div class="doc-assinatura">
+      <p><strong>{{ bloco.titulo }}</strong></p>
+      {% for campo in bloco.campos %}<p>{{ campo }}: <span class="linha-assinatura"></span></p>{% endfor %}
+    </div>
+    {% elif bloco.tipo == "quebra" %}
+    <hr class="doc-quebra">
+    {% endif %}
+  {% endfor %}
+</article>

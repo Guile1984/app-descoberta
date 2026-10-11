@@ -34,6 +34,7 @@ from descoberta.repositorio import (
     criar_engine,
     criar_sessao,
     criar_tabelas,
+    marcar_hipotese,
     marcar_sinal,
     salvar_metricas,
     salvar_nota,
@@ -75,6 +76,9 @@ NOTAS = {
     "riscos_controlaveis": 2,
     "comprometimento_cliente": 2,
 }
+
+# Números assumidos pelo consultor, não ditos pelo cliente: o relatório os destaca.
+HIPOTESES = ["custo_hora", "horas_economizadas_mes", "custo_fixo_mes"]
 
 SINAIS = ["b1.s4", "b2.s2", "b2.s3", "b8.s4", "b9.s1"]
 
@@ -163,6 +167,20 @@ RESPOSTAS = {
     # Bloco 9 — Restrições do projeto
     "b9.o1": "Em fases, de R$ 15 mil a R$ 20 mil.",
     "b9.o3": "O Marcos, com 3 horas por semana.",
+    # Encerramento
+    "enc.resumo": (
+        "Os chamados de fissura tomam cerca de 60 h por mês do Marcos, e o cliente espera "
+        "3 dias pela resposta."
+    ),
+    "enc.recomendacao": (
+        "Seguir com fase 0: os dados ainda não estão prontos (fotos sem padrão e só 40 "
+        "casos com laudo)."
+    ),
+    "enc.proximos_passos": (
+        "Roberto envia a amostra com os 40 casos graves; eu entrego o Relatório de Descoberta."
+    ),
+    "enc.participantes": "O Marcos, para validar o critério de gravidade das fissuras.",
+    "enc.prazo": "Relatório até 09/10/2026.",
 }
 
 # --- Revisão pós-sessão ---
@@ -314,6 +332,8 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO) -> int:
                 status=StatusSessao.em_andamento,
             )
             salvar_metricas(session, sessao.id, **METRICAS)
+            for campo in HIPOTESES:
+                marcar_hipotese(session, sessao.id, campo, True)
             for criterio_id, nota in NOTAS.items():
                 salvar_nota(session, sessao.id, criterio_id, nota)
             for sinal_id in SINAIS:

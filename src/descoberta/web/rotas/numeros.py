@@ -8,12 +8,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Form, HTTPException, Request
 
+from descoberta.campos import CAMPO_POR_NOME
+from descoberta.formatos import ler_decimal
 from descoberta.repositorio import salvar_metricas, salvar_nota
 
-from ..campos import CAMPO_POR_NOME
 from ..dependencias import Banco, CatalogoDep, aviso, exigir_sessao
 from ..formularios import inteiro_ou_nada
-from ..numeros import ler_decimal
 
 router = APIRouter()
 

@@ -628,19 +628,41 @@ blocos:
     saida_esperada: >-
       Relatório de Descoberta entregue ao cliente em até 48 h, com o score final de
       viabilidade e a recomendação.
+    # O id liga cada seção à sua montagem no relatório (descoberta.relatorio). "blocos":
+    # respostas obrigatórias desses blocos que entram na seção; "respostas": outras
+    # perguntas ou itens do encerramento; "tabelas": tabelas de referência desses blocos.
     secoes_relatorio:
-      - Resumo executivo (meia página, lido em 2 minutos)
-      - Frase-problema e custo da dor (bloco 1)
-      - Fluxos as-is e to-be (bloco 2)
-      - Tipo de solução e justificativa (bloco 3)
-      - Inventário e score de prontidão de dados (bloco 4)
-      - Indicadores, metas e critério de aceite (bloco 5)
-      - Requisitos não funcionais e custo de operação (bloco 6)
-      - Matriz de riscos e mitigações (bloco 7)
-      - Mapa de integrações e acessos necessários (bloco 8)
-      - "Escopo do MVP: o que entra e o que não entra"
-      - Orçamento, prazo e payback (bloco 9)
-      - Recomendação e próximos passos
+      - id: rel.resumo
+        titulo: Resumo executivo (meia página, lido em 2 minutos)
+      - id: rel.problema
+        titulo: Frase-problema e custo da dor (bloco 1)
+      - id: rel.fluxos
+        titulo: Fluxos as-is e to-be (bloco 2)
+      - id: rel.solucao
+        titulo: Tipo de solução e justificativa (bloco 3)
+      - id: rel.dados
+        titulo: Inventário e score de prontidão de dados (bloco 4)
+        blocos: [4]
+      - id: rel.indicadores
+        titulo: Indicadores, metas e critério de aceite (bloco 5)
+        blocos: [5]
+        tabelas: [Critério de aceite em três fases]
+      - id: rel.operacao
+        titulo: Requisitos não funcionais e custo de operação (bloco 6)
+        blocos: [6]
+      - id: rel.riscos
+        titulo: Matriz de riscos e mitigações (bloco 7)
+      - id: rel.integracoes
+        titulo: Mapa de integrações e acessos necessários (bloco 8)
+        blocos: [8]
+      - id: rel.escopo
+        titulo: "Escopo do MVP: o que entra e o que não entra"
+      - id: rel.orcamento
+        titulo: Orçamento, prazo e payback (bloco 9)
+        blocos: [9]
+      - id: rel.recomendacao
+        titulo: Recomendação e próximos passos
+        respostas: [enc.participantes]
     notas:
       - >-
         Recomendar "não seguir" quando for o caso constrói reputação: esse cliente tende

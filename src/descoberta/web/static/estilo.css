@@ -221,6 +221,23 @@ textarea { width: 100%; box-sizing: border-box; resize: vertical; }
 .lista-pendencias { margin: 0; padding-left: 1.2rem; font-size: 0.9rem; color: var(--atencao-texto); }
 .completo { color: var(--ok); }
 
+/* --- Relatório (Sprint 6b): prévia na tela --- */
+.documento { border: 1px solid var(--borda); border-radius: 6px; padding: 1rem 1.5rem; background: var(--fundo); }
+.documento p, .documento li { white-space: pre-wrap; }
+.doc-capa { text-align: center; padding: 1rem 0; }
+.doc-capa .ficha { text-align: left; max-width: 34rem; margin: 1rem auto; }
+.doc-titulo { font-size: 1.8rem; margin: 0.5rem 0; }
+.doc-subtitulo { font-size: 1.25rem; margin: 0; }
+.doc-faixa { background: var(--erro); color: #fff; font-weight: 700; padding: 0.4rem; border-radius: 4px; }
+.doc-secao { font-size: 1.15rem; margin-top: 1.5rem; border-bottom: 1px solid var(--borda); padding-bottom: 0.2rem; }
+.doc-aviso { background: var(--aviso-fundo); padding: 0.5rem 0.75rem; border-radius: 4px; }
+.doc-quebra { border: none; border-top: 2px dashed var(--borda); margin: 1.5rem 0; }
+.doc-assinatura { margin-top: 1.25rem; }
+.linha-assinatura { display: inline-block; width: 18rem; border-bottom: 1px solid var(--texto); }
+.documento td.nivel-baixo { background: var(--nivel-baixo); }
+.documento td.nivel-medio { background: var(--nivel-medio); }
+.documento td.nivel-alto { background: var(--nivel-alto); }
+
 /* Ajuda dos atalhos. */
 #ajuda-atalhos { max-width: 40rem; border: 1px solid var(--borda); border-radius: 8px; }
 #ajuda-atalhos::backdrop { background: rgb(0 0 0 / 0.3); }
