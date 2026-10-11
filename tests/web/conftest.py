@@ -48,7 +48,7 @@ def sessao(banco, cliente):
 def app_demo(tmp_path):
     """App com o banco de demonstração (caso Roberto completo) e o id da sessão."""
     caminho = tmp_path / "demo.db"
-    sessao_id = popular_demo(caminho)
+    sessao_id = popular_demo(caminho, hoje=date(2026, 10, 11))  # prazos fixos: sem depender do dia
     return criar_app(caminho_banco=caminho, pasta_config=RAIZ_PROJETO / "config"), sessao_id
 
 

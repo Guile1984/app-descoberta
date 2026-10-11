@@ -1,7 +1,7 @@
 """Montagem do relatório (sem gerar arquivos): conteúdo, versões, anexos e termo."""
 
 import dataclasses
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 
@@ -106,7 +106,7 @@ def test_saidas_da_revisao_entram_nas_secoes(dados_roberto, emissao_cliente):
         "Recall de fissuras graves",  # indicador
         "Laudo técnico gerado automaticamente",  # escopo: fica de fora
         "Enviar a proposta da fase 0",  # próximo passo
-        (date.today() + timedelta(days=14)).strftime("%d/%m/%Y"),  # prazo relativo do demo
+        "25/10/2026",  # prazo: 14 dias depois da criação do demo (fixada no conftest)
         "1. Teste com dados históricos",  # tabela de critério de aceite do YAML
     ):
         assert trecho in texto

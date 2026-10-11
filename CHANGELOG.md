@@ -2,6 +2,21 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.8.1] — 2026-10-11 — Correção do CI
+
+### Corrigido
+- Foco roubado depois de marcar um sinal pelo teclado: se a resposta do servidor chegava
+  quando a pessoa já estava em outro campo (por exemplo, escrevendo a anotação), o cursor
+  voltava ao botão do sinal, as letras se perdiam e um Espaço desmarcava o sinal. Agora o
+  cursor só volta ao botão se tiver se perdido com a troca, e só na troca do próprio sinal.
+  Era a causa da falha intermitente do teste e2e `test_sessao_completa_so_com_teclado`
+  (anotação gravada como "Maão participou.").
+- Teste e2e novo que segura a resposta do sinal até o meio da digitação, reproduzindo a
+  corrida de forma determinística; o teste do roteiro completo agora espera o cursor
+  voltar ao sinal antes de seguir.
+- Testes do relatório e da web criam o demo com data fixa (`popular_demo(hoje=...)`), em
+  vez de depender do dia em que rodam.
+
 ## [0.8.0] — 2026-10-11 — Sprint 6b: Relatório
 
 ### Adicionado
