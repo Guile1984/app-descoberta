@@ -2,6 +2,93 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.8.0] — 2026-10-11 — Sprint 6b: Relatório
+
+### Adicionado
+- Dependências `python-docx` (MIT) e `reportlab` (BSD) para exportar DOCX e PDF; `pypdf`
+  (BSD) no grupo dev, para os testes lerem o PDF gerado. As três instalam só com `uv sync`
+  no Windows, sem programas externos (WeasyPrint, que exige GTK, pandoc, wkhtmltopdf e
+  LibreOffice foram descartados).
+- Fonte DejaVu Sans (normal e negrito) em `relatorio/fontes/`, com o arquivo de licença:
+  as fontes padrão do PDF não têm "≥", "→" nem "✓".
+- `descoberta.relatorio`:
+  - `coletar_dados()`: lê a sessão inteira e calcula o `Painel` uma vez;
+  - documento neutro (`documento.py`): capa, título, parágrafo, aviso, lista, tabela,
+    assinatura e quebra de página. Markdown, DOCX, PDF e a prévia na tela desenham os
+    mesmos blocos, então os formatos nunca divergem;
+  - `montar_relatorio()`, nas versões cliente e interna:
+    - capa;
+    - as 12 seções do bloco 10, com os textos e as saídas da revisão, os números do
+      Painel, as respostas dos blocos indicados no YAML e a tabela "critério de aceite em
+      três fases";
+    - Anexo A: respostas por bloco e do encerramento, sem condicionais ocultas;
+    - Anexo B: memória de cálculo com fórmulas em palavras, entradas com a origem
+      ("Hipótese" ou "Informado na sessão") e resultados com "depende de hipótese";
+    - termo de ciência e validação, com o aviso de que não é proposta comercial nem
+      contrato e campos de nome, cargo, data e assinatura para o cliente e o consultor;
+    - versão interna: Anexo C (sinais de alerta, contagem por bloco e anotações) e "USO
+      INTERNO" na capa e no rodapé de todas as páginas;
+    - no corpo do relatório, valores calculados com hipóteses levam "*" e uma nota;
+      conteúdo faltando aparece como "⚠ A preencher";
+  - `emitir()`: texto canônico (Markdown) e hash SHA-256 do conteúdo; rodapé com a
+    versão, a data de emissão e os 12 primeiros caracteres do hash (ou "Rascunho não
+    registrado");
+  - exportadores `exportar_markdown`, `exportar_docx` e `exportar_pdf`. O PDF e o DOCX
+    trazem "Página X de Y" no rodapé.
+- Questionário: `secoes_relatorio` com `id`, `titulo` e, opcionalmente, `blocos`,
+  `respostas` e `tabelas` (validados). `titulo_para_cliente` tira o parêntese final, que é
+  nota para o consultor ("(bloco 4)", "(meia página, lido em 2 minutos)").
+- `dominio.painel`: cada cálculo informa de quais entradas depende (`entradas`), e
+  `EntradasPainel.de(registro)` lê as métricas de qualquer objeto.
+- `repositorio`: tabelas novas, sem migração:
+  - `HipoteseMetrica`, com `marcar_hipotese()` e `hipoteses_da_sessao()`;
+  - `VersaoRelatorio`, com `registrar_versao()`, `versoes_da_sessao()`, `obter_versao()` e
+    `proximo_numero_versao()`. Guarda o PDF emitido, o tipo, a data, o Markdown canônico,
+    o hash do conteúdo e o hash do PDF; número único por sessão.
+- Tela:
+  - página do relatório (`/sessoes/{id}/relatorio`) com abas "versão cliente" e "versão
+    interna", prévia, aviso de quantos trechos faltam e downloads em PDF, Word e
+    Markdown (rascunho, gerado na hora);
+  - botão "Registrar versão enviada" e lista das versões registradas, com download do PDF
+    guardado (o mesmo arquivo, byte a byte);
+  - revisão pós-sessão: seção "Hipóteses dos cálculos", com uma caixa por métrica que
+    salva sozinha;
+  - links "Relatório →" na tela da sessão e na revisão.
+- Banco de demonstração: hipóteses (custo da hora, horas economizadas e custo fixo de
+  operação) e respostas do encerramento.
+- Testes: relatório do Roberto nos três formatos com a rede bloqueada (critério de
+  aceite); rodapé com hash em todas as páginas do PDF; regra de arquitetura que proíbe
+  `relatorio` de importar `web`, `llm` e os módulos de cálculo do domínio.
+
+### Alterado
+- `web/numeros.py` → `descoberta/formatos.py` e `web/campos.py` → `descoberta/campos.py`;
+  rótulos das escalas em `descoberta/rotulos.py`. São usados pela web e pelo relatório.
+- Especificação: relatório no fluxo de uso e no modelo de dados; bibliotecas de
+  exportação; Sprint 8 (validação e lançamento, com SECURITY.md, aviso de uso local e
+  verificações de segurança no CI) e Sprint 9 (documentação Diátaxis com MkDocs, guia de
+  produção com modelo de ameaças, CONTRIBUTING e CI da documentação).
+- Ajustes do teste manual:
+  - tabela de riscos com colunas largas o bastante para nenhuma palavra quebrar no PDF e
+    no Word, com teste que mede cada palavra de todas as tabelas do PDF;
+  - seção 7 sem as entradas vazias (elas continuam no Anexo B);
+  - demo: decisão do investimento é do Roberto (b1.o6); "o consultor entrega";
+    "a partir de 6"; prazos dos próximos passos contados a partir do dia em que o
+    demo é criado, para ficarem sempre depois da emissão.
+
+### Pendências resolvidas do Sprint 6a
+- O relatório usa `dominio.painel` (mesmos números da tela), os itens do encerramento e as
+  saídas da revisão, e ignora respostas de condicionais ocultas pelo tipo de solução.
+
+### Pendências
+- Sprint 6c: no PDF, um título de seção não pode ficar sozinho no pé da página, separado
+  do conteúdo (hoje acontece com "Próximos passos" e "Score final de viabilidade"); o
+  título deve ir para a página seguinte junto com o início do conteúdo.
+- Sprint 7: os rascunhos do LLM para os textos narrativos ficam numa tabela própria (com
+  modelo e versão do prompt), sem sobrescrever o texto do consultor.
+- Continuam valendo as pendências "antes do primeiro uso com cliente real" do Sprint 3.
+  O banco agora guarda também os PDFs enviados, o que reforça a necessidade de backup e de
+  criptografia do disco.
+
 ## [0.7.0] — 2026-10-11 — Sprint 6a: Saídas estruturadas da sessão
 
 ### Adicionado

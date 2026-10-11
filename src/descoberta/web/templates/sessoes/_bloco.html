@@ -61,7 +61,7 @@
 
   {% if bloco.secoes_relatorio %}
   <h3>Seções do relatório</h3>
-  <ol>{% for secao in bloco.secoes_relatorio %}<li>{{ secao }}</li>{% endfor %}</ol>
+  <ol>{% for secao in bloco.secoes_relatorio %}<li>{{ secao.titulo }}</li>{% endfor %}</ol>
   {% endif %}
 
   {% if bloco.notas %}

@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import pytest
 
-from descoberta.web.numeros import ler_decimal, moeda, numero, numero_campo
+from descoberta.formatos import ler_decimal, moeda, numero, numero_campo
 
 
 @pytest.mark.parametrize(

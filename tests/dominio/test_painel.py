@@ -177,3 +177,63 @@ def test_entradas_tem_os_nomes_dos_parametros_das_metricas():
         "custo_por_chamada",
         "custo_fixo_mes",
     ]
+
+
+def test_cada_calculo_diz_de_quais_entradas_depende(questionario_v1):
+    # Usado pela memória de cálculo do relatório para marcar "depende de hipótese".
+    for painel in (
+        calcular_painel(EntradasPainel(), {}, [], questionario_v1),
+        calcular_painel(
+            EntradasPainel(custo_hora=100, horas_economizadas_mes=30), {}, [], questionario_v1
+        ),
+    ):
+        assert painel.ocorrencias_mes.entradas == ("frequencia_quantidade", "frequencia_periodo")
+        assert painel.horas_dor_mes.entradas == (
+            "horas_por_ocorrencia",
+            "frequencia_quantidade",
+            "frequencia_periodo",
+        )
+        assert painel.custo_dor_mes.entradas == (
+            "horas_por_ocorrencia",
+            "frequencia_quantidade",
+            "frequencia_periodo",
+            "custo_hora",
+        )
+        assert painel.operacao_mes.entradas == (
+            "chamadas_por_dia",
+            "custo_por_chamada",
+            "custo_fixo_mes",
+        )
+        assert painel.economia_mes.entradas == (
+            "horas_economizadas_mes",
+            "custo_hora",
+            "outros_ganhos_mes",
+        )
+        assert painel.payback.entradas == (
+            "investimento",
+            "horas_economizadas_mes",
+            "custo_hora",
+            "outros_ganhos_mes",
+            "chamadas_por_dia",
+            "custo_por_chamada",
+            "custo_fixo_mes",
+        )
+
+
+class _Registro:
+    """Qualquer objeto com os atributos certos (ex.: a tabela Metricas)."""
+
+    horas_por_ocorrencia = 4
+    custo_hora = 100
+    outro_campo = "ignorado"
+
+
+def test_entradas_a_partir_de_um_registro():
+    entradas = EntradasPainel.de(_Registro())
+    assert entradas.horas_por_ocorrencia == 4
+    assert entradas.custo_hora == 100
+    assert entradas.investimento is None
+
+
+def test_entradas_de_nada_ficam_vazias():
+    assert EntradasPainel.de(None) == EntradasPainel()

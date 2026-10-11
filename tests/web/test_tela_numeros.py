@@ -6,6 +6,7 @@ from typing import get_args
 
 import pytest
 
+from descoberta.campos import CAMPOS_METRICAS, PERIODOS
 from descoberta.dominio.dor import Periodo
 from descoberta.dominio.painel import EntradasPainel
 from descoberta.repositorio import (
@@ -16,7 +17,6 @@ from descoberta.repositorio import (
     salvar_metricas,
     salvar_nota,
 )
-from descoberta.web.campos import CAMPOS_METRICAS, PERIODOS
 
 HX = {"HX-Request": "true"}
 

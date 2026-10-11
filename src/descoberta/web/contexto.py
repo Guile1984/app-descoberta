@@ -5,16 +5,15 @@ O banco é pequeno (uma sessão tem dezenas de registros), então ler tudo a cad
 é simples e rápido, e não há risco de um pedaço mostrar dados diferentes de outro.
 """
 
-from dataclasses import fields
 from typing import Any
 
 from sqlmodel import Session
 
+from descoberta.campos import CAMPO_POR_NOME, PERIODOS, campos_do_bloco
 from descoberta.dominio.painel import EntradasPainel, Painel, calcular_painel
 from descoberta.dominio.pendencias import obrigatorias_pendentes
 from descoberta.questionario import Questionario, perguntas_visiveis
 from descoberta.repositorio import (
-    Metricas,
     Sessao,
     anotacoes_da_sessao,
     notas_da_sessao,
@@ -22,15 +21,6 @@ from descoberta.repositorio import (
     respostas_da_sessao,
     sinais_marcados,
 )
-
-from .campos import CAMPO_POR_NOME, PERIODOS, campos_do_bloco
-
-
-def entradas_do_painel(metricas: Metricas | None) -> EntradasPainel:
-    """As métricas gravadas, campo a campo (os nomes são os mesmos)."""
-    if metricas is None:
-        return EntradasPainel()
-    return EntradasPainel(**{c.name: getattr(metricas, c.name) for c in fields(EntradasPainel)})
 
 
 def _rotulos(questionario: Questionario) -> dict[str, str]:
@@ -50,7 +40,7 @@ def contexto_da_sessao(banco: Session, sessao: Sessao, questionario: Questionari
     painel: Painel | None = None
     erro_calculo: str | None = None
     try:
-        painel = calcular_painel(entradas_do_painel(metricas), notas, marcados, questionario)
+        painel = calcular_painel(EntradasPainel.de(metricas), notas, marcados, questionario)
     except ValueError as erro:
         # Dado gravado que o questionário da sessão não reconhece: a tela continua de pé.
         erro_calculo = str(erro)

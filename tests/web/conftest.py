@@ -45,10 +45,31 @@ def sessao(banco, cliente):
 
 
 @pytest.fixture
-def cliente_demo(tmp_path):
+def app_demo(tmp_path):
     """App com o banco de demonstração (caso Roberto completo) e o id da sessão."""
     caminho = tmp_path / "demo.db"
     sessao_id = popular_demo(caminho)
-    app = criar_app(caminho_banco=caminho, pasta_config=RAIZ_PROJETO / "config")
+    return criar_app(caminho_banco=caminho, pasta_config=RAIZ_PROJETO / "config"), sessao_id
+
+
+@pytest.fixture
+def cliente_demo(app_demo):
+    app, sessao_id = app_demo
     with TestClient(app, follow_redirects=False) as cliente:
         yield cliente, sessao_id
+
+
+@pytest.fixture
+def app_demo_banco(app_demo, cliente_demo):
+    """Abre uma sessão nova do banco de demonstração (vê o que a tela acabou de gravar)."""
+    app, _ = app_demo
+    abertas = []
+
+    def abrir():
+        session = Session(app.state.engine)
+        abertas.append(session)
+        return session
+
+    yield abrir
+    for session in abertas:
+        session.close()

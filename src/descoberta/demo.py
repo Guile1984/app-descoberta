@@ -16,7 +16,7 @@ marcado como hipótese.
 """
 
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 from sqlmodel import Session
@@ -34,6 +34,7 @@ from descoberta.repositorio import (
     criar_engine,
     criar_sessao,
     criar_tabelas,
+    marcar_hipotese,
     marcar_sinal,
     salvar_metricas,
     salvar_nota,
@@ -76,6 +77,9 @@ NOTAS = {
     "comprometimento_cliente": 2,
 }
 
+# Números assumidos pelo consultor, não ditos pelo cliente: o relatório os destaca.
+HIPOTESES = ["custo_hora", "horas_economizadas_mes", "custo_fixo_mes"]
+
 SINAIS = ["b1.s4", "b2.s2", "b2.s3", "b8.s4", "b9.s1"]
 
 # Anotações livres do consultor: (texto, bloco ou None para anotação geral).
@@ -101,7 +105,10 @@ RESPOSTAS = {
         "As horas do Marcos com chamados cairiam pela metade, e a resposta ao cliente "
         "passaria de 3 dias para 1."
     ),
-    "b1.o6": "No dia a dia, os mestres de obra (pelo celular) e o Marcos.",
+    "b1.o6": (
+        "O Roberto decide sobre o investimento. No dia a dia, usam os mestres de obra "
+        "(pelo celular) e o Marcos."
+    ),
     "b1.o7": "O Marcos: é ele quem decide cada caso, pela experiência.",
     # Bloco 2 — Processo atual × futuro
     "b2.o1": (
@@ -163,6 +170,21 @@ RESPOSTAS = {
     # Bloco 9 — Restrições do projeto
     "b9.o1": "Em fases, de R$ 15 mil a R$ 20 mil.",
     "b9.o3": "O Marcos, com 3 horas por semana.",
+    # Encerramento
+    "enc.resumo": (
+        "Os chamados de fissura tomam cerca de 60 h por mês do Marcos, e o cliente espera "
+        "3 dias pela resposta."
+    ),
+    "enc.recomendacao": (
+        "Seguir com fase 0: os dados ainda não estão prontos (fotos sem padrão e só 40 "
+        "casos com laudo)."
+    ),
+    "enc.proximos_passos": (
+        "Roberto envia a amostra com os 40 casos graves; o consultor entrega o Relatório de "
+        "Descoberta."
+    ),
+    "enc.participantes": "O Marcos, para validar o critério de gravidade das fissuras.",
+    "enc.prazo": "Relatório em até 2 dias; amostra dos 40 casos em até uma semana.",
 }
 
 # --- Revisão pós-sessão ---
@@ -242,12 +264,13 @@ ESCOPO = [
     ("Integração com outros sistemas (a empresa não tem ERP)", False),
 ]
 
-# (ação, responsável, prazo)
+# (ação, responsável, prazo em dias depois da criação do demo). Os prazos são relativos
+# para ficarem sempre depois da data de emissão do relatório, que é a data em que se usa o demo.
 PROXIMOS_PASSOS = [
-    ("Enviar o Relatório de Descoberta", "consultor", date(2026, 10, 9)),
-    ("Enviar a amostra com os 40 casos graves (fotos + laudo)", "cliente", date(2026, 10, 14)),
-    ("Reunião com o Marcos para validar o critério de gravidade", "cliente", date(2026, 10, 16)),
-    ("Enviar a proposta da fase 0", "consultor", date(2026, 10, 21)),
+    ("Enviar o Relatório de Descoberta", "consultor", 2),
+    ("Enviar a amostra com os 40 casos graves (fotos + laudo)", "cliente", 7),
+    ("Reunião com o Marcos para validar o critério de gravidade", "cliente", 9),
+    ("Enviar a proposta da fase 0", "consultor", 14),
 ]
 
 TEXTOS = {
@@ -288,13 +311,16 @@ TEXTOS = {
     "recomendacao": (
         "Seguir com fase 0 (score final 12 de 18). A fase 0 padroniza a captura das fotos, "
         "organiza e rotula o histórico com o critério do Marcos e mede a qualidade dos "
-        "dados. Com o score de dados acima de 6, o MVP de triagem pode começar."
+        "dados. Com o score de dados a partir de 6, o MVP de triagem pode começar."
     ),
 }
 
 
-def popular_demo(caminho: Path | str = CAMINHO_DEMO) -> int:
-    """Recria o banco de demonstração e devolve o id da sessão do Roberto."""
+def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -> int:
+    """Recria o banco de demonstração e devolve o id da sessão do Roberto.
+
+    `hoje` (padrão: a data atual) é a base dos prazos dos próximos passos.
+    """
     caminho = Path(caminho)
     if caminho.resolve() == CAMINHO_BANCO_PADRAO.resolve():
         raise ValueError(f"{caminho} é o banco real; a demonstração usa um arquivo próprio")
@@ -314,6 +340,8 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO) -> int:
                 status=StatusSessao.em_andamento,
             )
             salvar_metricas(session, sessao.id, **METRICAS)
+            for campo in HIPOTESES:
+                marcar_hipotese(session, sessao.id, campo, True)
             for criterio_id, nota in NOTAS.items():
                 salvar_nota(session, sessao.id, criterio_id, nota)
             for sinal_id in SINAIS:
@@ -322,20 +350,21 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO) -> int:
                 salvar_resposta(session, sessao.id, pergunta_id, texto)
             for texto, bloco in ANOTACOES:
                 adicionar_anotacao(session, sessao.id, texto, bloco=bloco)
-            _popular_revisao(session, sessao.id)
+            _popular_revisao(session, sessao.id, hoje or date.today())
             return sessao.id
     finally:
         engine.dispose()  # no Windows, o arquivo só pode ser apagado depois de fechado
 
 
-def _popular_revisao(session: Session, sessao_id: int) -> None:
+def _popular_revisao(session: Session, sessao_id: int, hoje: date) -> None:
     for risco in RISCOS:
         adicionar_item(session, Risco, sessao_id, **risco)
     for indicador in INDICADORES:
         adicionar_item(session, Indicador, sessao_id, **indicador)
     for texto, entra in ESCOPO:
         adicionar_item(session, ItemEscopo, sessao_id, texto=texto, entra=entra)
-    for acao, responsavel, prazo in PROXIMOS_PASSOS:
+    for acao, responsavel, dias in PROXIMOS_PASSOS:
+        prazo = hoje + timedelta(days=dias)
         adicionar_item(
             session, ProximoPasso, sessao_id, acao=acao, responsavel=responsavel, prazo=prazo
         )

@@ -10,11 +10,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session
 
+from descoberta.formatos import moeda, numero, numero_campo
 from descoberta.questionario import Questionario
 from descoberta.repositorio import Sessao, obter_sessao
 
 from .catalogo import Catalogo
-from .numeros import moeda, numero, numero_campo
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
 
@@ -36,9 +36,16 @@ def _hora_local(horario: datetime) -> str:
     return horario.astimezone().strftime("%H:%M")
 
 
+def _data_hora_local(horario: datetime) -> str:
+    if horario.tzinfo is None:
+        horario = horario.replace(tzinfo=UTC)
+    return horario.astimezone().strftime("%d/%m/%Y %H:%M")
+
+
 templates.env.filters["id_html"] = _id_html
 templates.env.filters["data_br"] = _data_br
 templates.env.filters["hora_local"] = _hora_local
+templates.env.filters["data_hora_local"] = _data_hora_local
 templates.env.filters["moeda"] = moeda
 templates.env.filters["numero"] = numero
 templates.env.filters["numero_campo"] = numero_campo

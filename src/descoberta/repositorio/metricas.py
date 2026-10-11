@@ -2,7 +2,7 @@
 
 from typing import Any, get_args
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from descoberta.dominio.dor import Periodo
 
@@ -14,7 +14,7 @@ from ._comum import (
     id_questionario,
     nota,
 )
-from .modelos import Metricas, NotaCriterio
+from .modelos import HipoteseMetrica, Metricas, NotaCriterio
 
 
 def _periodo(nome: str, valor: Any) -> str | None:
@@ -85,3 +85,33 @@ def notas_da_sessao(session: Session, sessao_id: int) -> dict[str, int]:
     """Notas da sessão: id do critério → nota (dos dois scores, juntos)."""
     registros = session.exec(select(NotaCriterio).where(NotaCriterio.sessao_id == sessao_id))
     return {registro.criterio_id: registro.nota for registro in registros}
+
+
+# --- Hipóteses ---
+
+# Só os números podem ser hipótese (o período da frequência é uma escolha, não um valor).
+CAMPOS_NUMERICOS = tuple(
+    nome for nome, validar in _VALIDADORES.items() if validar is decimal_opcional
+)
+
+
+def marcar_hipotese(session: Session, sessao_id: int, campo: str, hipotese: bool) -> None:
+    """Marca (ou desmarca) uma métrica como hipótese do consultor; repetir não duplica."""
+    if campo not in CAMPOS_NUMERICOS:
+        raise ValueError(f"campo '{campo}' não é uma métrica numérica")
+    exigir_sessao(session, sessao_id)
+    registro = session.exec(
+        select(HipoteseMetrica).where(
+            HipoteseMetrica.sessao_id == sessao_id, HipoteseMetrica.campo == campo
+        )
+    ).first()
+    if hipotese and registro is None:
+        gravar(session, HipoteseMetrica(sessao_id=sessao_id, campo=campo))
+    elif not hipotese and registro is not None:
+        session.delete(registro)
+        session.commit()
+
+
+def hipoteses_da_sessao(session: Session, sessao_id: int) -> set[str]:
+    consulta = select(HipoteseMetrica.campo).where(HipoteseMetrica.sessao_id == sessao_id)
+    return set(session.exec(consulta.order_by(col(HipoteseMetrica.id))))

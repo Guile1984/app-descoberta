@@ -102,3 +102,63 @@ def test_v1_textos_narrativos_do_relatorio(questionario_v1):
     assert [t.id for t in textos] == TEXTOS_V1
     assert all(t.orientacao for t in textos)
     assert questionario_v1.texto_revisao("recomendacao").apoio == ["enc.recomendacao"]
+
+
+# --- Seções do relatório (bloco 10) ---
+
+
+def test_secoes_do_relatorio_tem_id_e_titulo(dados_minimos):
+    dados_minimos["blocos"][3]["secoes_relatorio"] = [
+        {"id": "rel.resumo", "titulo": "Resumo executivo"}
+    ]
+    [secao] = Questionario.model_validate(dados_minimos).bloco(4).secoes_relatorio
+    assert (secao.id, secao.titulo) == ("rel.resumo", "Resumo executivo")
+
+
+def test_secao_do_relatorio_so_com_texto_e_recusada(dados_minimos):
+    dados_minimos["blocos"][3]["secoes_relatorio"] = ["Resumo executivo"]
+    erro_de(dados_minimos)
+
+
+def test_secao_do_relatorio_com_id_repetido(dados_minimos):
+    dados_minimos["blocos"][3]["secoes_relatorio"] = [
+        {"id": "rel.resumo", "titulo": "Resumo"},
+        {"id": "rel.resumo", "titulo": "Outro"},
+    ]
+    assert "id duplicado 'rel.resumo'" in erro_de(dados_minimos)
+
+
+def test_secao_traz_respostas_de_blocos_e_tabelas_de_referencia(dados_minimos):
+    dados_minimos["blocos"][3]["referencias"] = [
+        {"titulo": "Critério de aceite", "colunas": ["Fase"], "linhas": [["1. Teste"]]}
+    ]
+    dados_minimos["blocos"][3]["secoes_relatorio"] = [
+        {
+            "id": "rel.dados",
+            "titulo": "Dados (bloco 4)",
+            "blocos": [4],
+            "respostas": ["enc.resumo"],
+            "tabelas": ["Critério de aceite"],
+        }
+    ]
+    [secao] = Questionario.model_validate(dados_minimos).bloco(4).secoes_relatorio
+    assert secao.blocos == [4]
+    assert secao.respostas == ["enc.resumo"]
+    assert secao.tabelas == ["Critério de aceite"]
+    assert secao.titulo_para_cliente == "Dados"  # sem a referência interna ao bloco
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "mensagem"),
+    [
+        ("blocos", [9], "bloco 9 inexistente"),
+        ("respostas", ["b9.o9"], "'b9.o9'"),
+        ("tabelas", ["Tabela que não existe"], "'Tabela que não existe'"),
+    ],
+)
+def test_secao_cita_o_que_nao_existe(dados_minimos, campo, valor, mensagem):
+    secao = {"id": "rel.dados", "titulo": "Dados", "blocos": [4], campo: valor}
+    dados_minimos["blocos"][3]["secoes_relatorio"] = [secao]
+    texto = erro_de(dados_minimos)
+    assert "seção 'rel.dados'" in texto
+    assert mensagem in texto

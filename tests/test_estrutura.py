@@ -13,6 +13,16 @@ RAIZ_PACOTE = Path(descoberta.__file__).parent
 CAMADAS_PROIBIDAS = {
     "dominio": {"web", "repositorio", "llm"},
     "repositorio": {"web", "llm", "relatorio"},
+    "relatorio": {"web", "llm"},
+}
+
+# O relatório não faz conta: os números vêm do Painel. Estes módulos de cálculo do domínio
+# não podem ser importados por ele.
+CALCULOS_DO_DOMINIO = {
+    "descoberta.dominio.dor",
+    "descoberta.dominio.operacao",
+    "descoberta.dominio.payback",
+    "descoberta.dominio.scores",
 }
 
 
@@ -78,3 +88,16 @@ def test_camada_nao_importa_camadas_externas(camada):
         for modulo in violacoes(modulos_importados(codigo, pacote), proibidas):
             encontradas.append(f"{arquivo.name}: {modulo}")
     assert not encontradas, f"{camada} não pode importar {sorted(proibidas)}: {encontradas}"
+
+
+def test_relatorio_nao_refaz_calculos():
+    encontradas = []
+    for arquivo in sorted((RAIZ_PACOTE / "relatorio").rglob("*.py")):
+        pacote = ".".join(arquivo.relative_to(RAIZ_PACOTE.parent).parent.parts)
+        modulos = modulos_importados(arquivo.read_text(encoding="utf-8"), pacote)
+        encontradas += [
+            f"{arquivo.name}: {m}"
+            for m in modulos
+            if any(m == c or m.startswith(c + ".") for c in CALCULOS_DO_DOMINIO)
+        ]
+    assert not encontradas, f"use dominio.painel em vez de: {encontradas}"

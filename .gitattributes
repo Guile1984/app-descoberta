@@ -2,6 +2,7 @@
 *.docx binary
 *.pdf binary
 *.png binary
+*.ttf binary
 
 # htmx copiado como está: o Git não converte fim de linha (o hash SRI precisa bater).
 src/descoberta/web/static/htmx.min.js -text

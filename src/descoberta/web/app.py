@@ -26,6 +26,7 @@ from .rotas import (
     clientes,
     cronometro,
     numeros,
+    relatorio,
     respostas,
     revisao,
     sessoes,
@@ -67,6 +68,7 @@ def criar_app(
     app.include_router(numeros.router)
     app.include_router(cronometro.router)
     app.include_router(revisao.router)
+    app.include_router(relatorio.router)
 
     @app.exception_handler(HTTPException)
     async def pagina_de_erro(request: Request, erro: HTTPException):

@@ -21,11 +21,13 @@ from sqlmodel import SQLModel
 
 from descoberta.questionario import Questionario
 from descoberta.repositorio import (
+    CAMPOS_NUMERICOS,
     Sessao,
     adicionar_item,
     editar_item,
     excluir_item,
     itens_da_sessao,
+    marcar_hipotese,
     obter_cliente,
     salvar_texto_secao,
 )
@@ -155,6 +157,26 @@ def salvar_texto(
         raise HTTPException(404, f"O questionário não tem o texto '{secao_id}'.") from None
     salvar_texto_secao(banco, sessao_id, secao_id, texto)  # texto vazio apaga
     return aviso(request, evento=EVENTO)
+
+
+# --- Hipóteses dos cálculos ---
+
+
+@router.post("/sessoes/{sessao_id}/hipoteses/{campo}")
+def salvar_hipotese(
+    request: Request,
+    banco: Banco,
+    catalogo: CatalogoDep,
+    sessao_id: int,
+    campo: str,
+    valor: Annotated[str | None, Form()] = None,
+):
+    exigir_sessao(banco, catalogo, sessao_id)
+    if campo not in CAMPOS_NUMERICOS:
+        raise HTTPException(404, f"'{campo}' não é uma métrica numérica.")
+    # Caixa de marcar: o navegador só envia o campo quando ela está marcada.
+    marcar_hipotese(banco, sessao_id, campo, valor is not None)
+    return aviso(request)
 
 
 # --- Listas ---

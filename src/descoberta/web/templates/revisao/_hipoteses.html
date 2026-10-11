@@ -1,0 +1,24 @@
+{#
+  Hipóteses dos cálculos: números que o consultor assumiu, sem o cliente ter dito. No
+  relatório, aparecem com "*" e são destacadas na memória de cálculo (Anexo B).
+  Cada caixa salva sozinha ao ser marcada ou desmarcada.
+#}
+<section id="hipoteses" class="secao-revisao" aria-labelledby="titulo-hipoteses">
+  <h2 id="titulo-hipoteses">Hipóteses dos cálculos</h2>
+  <p class="discreto">Marque os números que você estimou e que o cliente ainda precisa confirmar. Os valores são editados na tela da sessão.</p>
+  <table class="tabela compacta">
+    <thead><tr><th>Número</th><th>Valor</th><th>Hipótese?</th></tr></thead>
+    <tbody>
+      {% for campo, valor, marcada in hipoteses %}
+      <tr>
+        <td><label for="hipotese-{{ campo.nome }}">{{ campo.rotulo }}</label></td>
+        <td>{{ valor }}</td>
+        <td>
+          <input type="checkbox" id="hipotese-{{ campo.nome }}" name="valor" value="sim"{% if marcada %} checked{% endif %} {{ atributos("/sessoes/%d/hipoteses/%s" % (sessao.id, campo.nome), "hipotese-" ~ campo.nome, "change") }}>
+          {{ estado("hipotese-" ~ campo.nome) }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
