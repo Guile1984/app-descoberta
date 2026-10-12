@@ -25,18 +25,22 @@ from descoberta.questionario import Questionario
 from descoberta.relatorio import (
     DadosProposta,
     DadosRelatorio,
+    Emissao,
     EmissaoProposta,
     coletar_dados,
     coletar_dados_proposta,
     dados_para_proposta_nova,
+    emitir,
     emitir_proposta,
     exportar_pdf,
 )
 from descoberta.relatorio.dados_proposta import faixa_do_score_final
 from descoberta.relatorio.documento import FALTA
+from descoberta.relatorio.exportar.juntar import Parte, juntar_pdfs
 from descoberta.relatorio.proposta import condicoes_gerais
 from descoberta.repositorio import (
     Sessao,
+    TipoVersao,
     ajustar_clausula,
     ajustes_das_clausulas,
     criar_proposta,
@@ -49,6 +53,7 @@ from descoberta.repositorio import (
     restaurar_clausula,
     salvar_proposta,
     versoes_da_proposta,
+    versoes_da_sessao,
 )
 from descoberta.repositorio.modelos import agora
 
@@ -221,6 +226,7 @@ def documento(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: 
         documento=emitida.documento,
         a_preencher=emitida.markdown.count(FALTA),
         versoes=versoes_da_proposta(banco, sessao_id),
+        pacote=_versoes_do_pacote(banco, sessao_id),
     )
 
 
@@ -253,6 +259,40 @@ def baixar_versao(banco: Banco, catalogo: CatalogoDep, sessao_id: int, numero: i
     empresa = obter_cliente(banco, sessao.cliente_id).empresa
     nome = _nome_do_arquivo(empresa, sessao.data, "pdf", numero)
     return arquivo(versao.pdf, "application/pdf", nome)
+
+
+def _versoes_do_pacote(banco: Banco, sessao_id: int):
+    """As partes do PDF único: a última versão registrada do relatório para o cliente (a
+    interna nunca vai) e a última da proposta; None onde ainda não há versão."""
+    relatorio = next(
+        (v for v in versoes_da_sessao(banco, sessao_id) if v.tipo == TipoVersao.cliente), None
+    )
+    proposta = next(iter(versoes_da_proposta(banco, sessao_id)), None)
+    return relatorio, proposta
+
+
+@router.get("/sessoes/{sessao_id}/proposta/relatorio-e-proposta.pdf")
+def baixar_juntos(banco: Banco, catalogo: CatalogoDep, sessao_id: int):
+    """Relatório e proposta num PDF só; sem versão registrada, entra o rascunho."""
+    dados = _dados_proposta(banco, catalogo, sessao_id)
+    relatorio, proposta = _versoes_do_pacote(banco, sessao_id)
+    momento = agora()
+    if relatorio is None:
+        emissao = Emissao(TipoVersao.cliente, numero=None, emitido_em=momento)
+        pdf_relatorio = exportar_pdf(emitir(dados.relatorio, emissao))
+    else:
+        pdf_relatorio = relatorio.pdf
+    if proposta is None:
+        pdf_proposta = exportar_pdf(emitir_proposta(dados, EmissaoProposta(None, momento)))
+    else:
+        pdf_proposta = proposta.pdf
+    empresa, data = dados.relatorio.empresa, dados.relatorio.data_sessao
+    junto = juntar_pdfs(
+        f"Relatório de Descoberta e {dados.modelo.titulo} — {empresa}",
+        [Parte("Relatório de Descoberta", pdf_relatorio), Parte(dados.modelo.titulo, pdf_proposta)],
+    )
+    nome = f"relatorio-e-proposta-{slug(empresa)}-{data.isoformat()}.pdf"
+    return arquivo(junto, "application/pdf", nome)
 
 
 @router.get("/sessoes/{sessao_id}/proposta.{formato}")

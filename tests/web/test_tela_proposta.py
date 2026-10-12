@@ -388,3 +388,49 @@ def test_versoes_da_proposta_nao_mexem_nas_do_relatorio(cliente_demo, app_demo_b
     cliente, sessao_id = cliente_demo
     cliente.post(_url(sessao_id, "/versoes"))
     assert versoes_da_sessao(app_demo_banco(), sessao_id) == []
+
+
+# --- Relatório e proposta num PDF só ---
+
+JUNTOS = "/relatorio-e-proposta.pdf"
+
+
+def _textos_das_paginas(dados: bytes) -> list[str]:
+    return [p.extract_text() for p in PdfReader(io.BytesIO(dados)).pages]
+
+
+def test_pdf_unico_com_rascunhos(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    html = cliente.get(_url(sessao_id, "/documento")).text
+    assert f'href="{_url(sessao_id, JUNTOS)}"' in html
+    assert "rascunho do relatório" in html
+    resposta = cliente.get(_url(sessao_id, JUNTOS))
+    assert resposta.headers["content-type"] == "application/pdf"
+    assert resposta.headers["content-disposition"] == (
+        'attachment; filename="relatorio-e-proposta-construtora-alvorada-2026-10-07.pdf"'
+    )
+    paginas = _textos_das_paginas(resposta.content)
+    assert "Relatório de Descoberta" in paginas[0]
+    assert "Rascunho não registrado (cliente)" in paginas[0]
+    assert any("Proposta · Rascunho" in p for p in paginas)
+    assert not any("USO INTERNO" in p for p in paginas)  # nunca a versão interna
+
+
+def test_pdf_unico_usa_as_versoes_registradas(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    cliente.post(f"/sessoes/{sessao_id}/relatorio/versoes", data={"versao": "interna"})
+    cliente.post(f"/sessoes/{sessao_id}/relatorio/versoes", data={"versao": "cliente"})
+    cliente.post(_url(sessao_id, "/versoes"))
+    html = cliente.get(_url(sessao_id, "/documento")).text
+    assert "relatório versão 2" in html
+    assert "proposta versão 1" in html
+    junto = cliente.get(_url(sessao_id, JUNTOS)).content
+    relatorio = cliente.get(f"/sessoes/{sessao_id}/relatorio/versoes/2.pdf").content
+    paginas = _textos_das_paginas(junto)
+    quantas = len(_textos_das_paginas(relatorio))
+    assert paginas[:quantas] == _textos_das_paginas(relatorio)
+    assert "Proposta · Versão 1" in paginas[quantas]
+
+
+def test_pdf_unico_sem_proposta(cliente_http, sessao):
+    assert cliente_http.get(_url(sessao.id, JUNTOS)).status_code == 404

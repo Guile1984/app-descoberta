@@ -38,6 +38,16 @@
         <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta.md">Markdown</a>
       </p>
     </section>
+    <section class="apoio">
+      <h2>Relatório e proposta num PDF só</h2>
+      {% set relatorio, proposta = pacote %}
+      <p class="discreto">Junta o
+        {% if relatorio %}relatório versão {{ relatorio.numero }} (cliente){% else %}rascunho do relatório (cliente){% endif %}
+        e a
+        {% if proposta %}proposta versão {{ proposta.numero }}{% else %}proposta em rascunho{% endif %}.
+        Cada parte mantém o próprio rodapé, com versão e hash, e a sua numeração de páginas.</p>
+      <p><a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta/relatorio-e-proposta.pdf">PDF único</a></p>
+    </section>
     <section class="apoio" id="versoes">
       <h2>Versões registradas</h2>
       <form method="post" action="/sessoes/{{ sessao.id }}/proposta/versoes">
