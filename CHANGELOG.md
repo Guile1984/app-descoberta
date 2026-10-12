@@ -125,6 +125,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.
 
+### Pendências resolvidas do Sprint 6c
+- Seção 10 do relatório ("Escopo do MVP"): uma nota diz que a divisão do escopo em fases,
+  com prazos e investimento, fica na Proposta Comercial.
+- Responsabilidades da proposta nova: os próximos passos do cliente que começam com um
+  substantivo ganham o verbo ("Reunião com o Marcos…" vira "Participar da reunião com o
+  Marcos…"), por uma regra fixa no modelo (`passos_como_responsabilidade` em
+  `config/proposta_v1.yaml`, campo opcional); os que já começam com verbo ficam como estão.
+  Propostas já criadas não mudam (a proposta é uma cópia).
+- Anonimização antes do LLM com os dados do perfil do consultor e do cliente da proposta.
+
 ## [0.9.0] — 2026-10-11 — Sprint 6c: Proposta comercial
 
 ### Adicionado

@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from descoberta.proposta import carregar_modelo_proposta
-from descoberta.proposta.inicial import DadosDaSessao, conteudo_inicial
+from descoberta.proposta.inicial import DadosDaSessao, como_responsabilidade, conteudo_inicial
 
 MODELO = carregar_modelo_proposta(
     Path(__file__).resolve().parents[2] / "config" / "proposta_v1.yaml"
@@ -72,3 +72,37 @@ def test_sessao_sem_revisao():
     assert inicial.fases[1].escopo == []
     assert inicial.fases[1].investimento is None
     assert inicial.exclusoes == []
+
+
+# --- Próximos passos do cliente viram responsabilidades (pendência da 6c) ---
+
+
+@pytest.mark.parametrize(
+    ("passo", "responsabilidade"),
+    [
+        (
+            "Reunião com o Marcos para validar o critério de gravidade",
+            "Participar da reunião com o Marcos para validar o critério de gravidade",
+        ),
+        ("reunião de alinhamento", "Participar da reunião de alinhamento"),
+        ("Reuniões semanais com a equipe", "Participar das reuniões semanais com a equipe"),
+        ("Enviar a amostra com os 40 casos graves", "Enviar a amostra com os 40 casos graves"),
+        ("Aprovação do orçamento pela diretoria", "Dar a aprovação do orçamento pela diretoria"),
+        ("Amostra dos 40 casos", "Amostra dos 40 casos"),  # sem regra: fica como está
+        ("Reunião", "Participar da reunião"),
+    ],
+)
+def test_passo_vira_responsabilidade(passo, responsabilidade):
+    verbos = MODELO.padrao.passos_como_responsabilidade
+    assert como_responsabilidade(passo, verbos) == responsabilidade
+
+
+def test_responsabilidades_da_proposta_nova_soam_como_responsabilidade():
+    dados = DadosDaSessao(
+        faixa_score_final="seguir_fase_0",
+        passos_do_cliente=["Reunião com o Marcos para validar o critério de gravidade"],
+    )
+    inicial = conteudo_inicial(MODELO.padrao, dados)
+    assert inicial.responsabilidades[-1] == (
+        "Participar da reunião com o Marcos para validar o critério de gravidade"
+    )

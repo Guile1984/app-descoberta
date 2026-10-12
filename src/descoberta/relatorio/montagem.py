@@ -71,6 +71,14 @@ _RESULTADOS = (
 )
 
 
+# O relatório diz o que entra no MVP; as fases (fase 0, MVP), com prazos e valores, são
+# assunto da proposta, que é renegociada sem mexer no relatório.
+NOTA_FASES = (
+    "A divisão do escopo em fases, com prazos e investimento, fica na Proposta Comercial, "
+    "documento separado deste relatório."
+)
+
+
 @dataclass(frozen=True)
 class Emissao:
     """Para quem é o relatório e se é uma versão registrada (numero) ou um rascunho."""
@@ -374,6 +382,7 @@ class _Montador:
             Lista(entra) if entra else Aviso(FALTA),
             Titulo("Fica de fora", 2),
             Lista(fora) if fora else Aviso(FALTA),
+            Paragrafo(NOTA_FASES),
         ]
 
     def _orcamento(self) -> list[Bloco]:

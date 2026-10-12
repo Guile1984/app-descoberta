@@ -83,6 +83,9 @@ class Padrao(_Modelo):
     fases: list[FasePadrao] = Field(min_length=1)
     premissas: list[Texto] = []
     responsabilidades: list[Texto] = []
+    # Próximos passos do cliente que começam com um destes substantivos ganham o verbo ao
+    # virar responsabilidade ("Reunião com…" → "Participar da reunião com…").
+    passos_como_responsabilidade: dict[Texto, Texto] = {}
 
     @model_validator(mode="after")
     def _uma_fase_para_cada_dado_da_sessao(self):

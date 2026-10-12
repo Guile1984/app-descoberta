@@ -138,3 +138,11 @@ def test_removivel_e_falso_por_padrao(dados_v1, escrever):
     dados = copy.deepcopy(dados_v1)
     del dados["clausulas"][0]["removivel"]
     assert carregar_modelo_proposta(escrever(dados)).clausulas[0].removivel is False
+
+
+@pytest.mark.parametrize("verbos", [{"reunião": ""}, {"": "Participar da"}])
+def test_regra_dos_passos_sem_texto_vazio(dados_v1, escrever, verbos):
+    dados = copy.deepcopy(dados_v1)
+    dados["padrao"]["passos_como_responsabilidade"] = verbos
+    with pytest.raises(ModeloPropostaInvalido):
+        carregar_modelo_proposta(escrever(dados))
