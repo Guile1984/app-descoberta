@@ -20,6 +20,20 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   ambiente e bloqueia conexões para fora (as locais, como as dos testes no navegador,
   continuam); testes de que nenhum arquivo versionado contém chave de API, de que o `.env`
   e variações ficam fora do Git e de que a chave nunca aparece ao ser exibida.
+- Anonimização (`llm.anonimizacao`), sem LLM e sem internet:
+  - dados conhecidos da sessão (cliente, empresa, consultor, pessoas citadas, cidade…)
+    viram marcadores estáveis (`[CLIENTE]`, `[EMPRESA]`, `[PESSOA_1]`…), sem ligar para
+    acentos e maiúsculas; partes do nome também ("o Marcos" de "Marcos Pereira"), só com
+    maiúscula inicial ("Rosa" é nome, "rosa" é cor); nas empresas, só as partes que não
+    são genéricas ("Alvorada", não "Construtora");
+  - formatos reconhecidos: CPF, CNPJ (inclusive o alfanumérico), e-mail, telefone (com DDD
+    ou celular), CEP e endereço (Rua/Av./Rodovia… com o nome); o mesmo documento escrito
+    de dois jeitos ganha o mesmo marcador; valores, datas e percentuais ficam;
+  - `desfazer` devolve os valores na resposta e avisa marcadores inventados; colchetes do
+    próprio texto ("[IA]" no fluxo to-be) não são confundidos com marcadores;
+  - `restantes`: conferência final do que ainda parece dado pessoal;
+  - `sugerir_nomes`: palavras com maiúscula no meio da frase, para o consultor montar a
+    lista de pessoas citadas (sem siglas, ferramentas e o que já é conhecido).
 
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
