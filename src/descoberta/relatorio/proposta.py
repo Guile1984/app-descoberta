@@ -264,13 +264,6 @@ class _MontadorProposta:
         ]
 
     def _condicoes_gerais(self) -> list[Bloco]:
-        c = self.consultor
-        valores = {
-            "cliente.empresa": self.relatorio.empresa,
-            "consultor.empresa": c.empresa if c else None,
-            "consultor.nome": c.nome if c else None,
-            "foro": c.cidade_uf if c else None,
-        }
         blocos: list[Bloco] = [
             QuebraDePagina(),
             Titulo(TITULO_ANEXO),
@@ -279,10 +272,10 @@ class _MontadorProposta:
                 "da seção de aceite."
             ),
         ]
-        for numero, clausula in enumerate(self.dados.clausulas, start=1):
-            texto = preencher_marcadores(clausula.texto, valores, FALTA)
-            blocos.append(Titulo(f"{numero}. {clausula.titulo}", 2))
-            blocos += [Paragrafo(linha.strip()) for linha in texto.splitlines() if linha.strip()]
+        for numero, clausula in enumerate(condicoes_gerais(self.dados), start=1):
+            blocos.append(Titulo(f"{numero}. {clausula['titulo']}", 2))
+            linhas = clausula["texto"].splitlines()
+            blocos += [Paragrafo(linha.strip()) for linha in linhas if linha.strip()]
         return blocos
 
     def montar(self) -> Documento:
@@ -306,6 +299,24 @@ class _MontadorProposta:
             blocos += [Titulo(f"{numero}. {titulo}"), *montar()]
         blocos += self._condicoes_gerais()
         return Documento(f"{self.dados.modelo.titulo} — {self.relatorio.empresa}", blocos)
+
+
+def condicoes_gerais(dados: DadosProposta) -> list[dict[str, str]]:
+    """As cláusulas como saem impressas (marcadores preenchidos): [{id, titulo, texto}].
+
+    É também o que fica congelado com cada versão registrada.
+    """
+    c = dados.relatorio.consultor
+    valores = {
+        "cliente.empresa": dados.relatorio.empresa,
+        "consultor.empresa": c.empresa if c else None,
+        "consultor.nome": c.nome if c else None,
+        "foro": c.cidade_uf if c else None,
+    }
+    return [
+        {"id": cl.id, "titulo": cl.titulo, "texto": preencher_marcadores(cl.texto, valores, FALTA)}
+        for cl in dados.clausulas
+    ]
 
 
 def montar_proposta(dados: DadosProposta, emissao: EmissaoProposta) -> Documento:

@@ -48,6 +48,7 @@ from .modelos import (
     TextoSecao,
     TipoItemProposta,
     TipoVersao,
+    VersaoProposta,
     VersaoRelatorio,
 )
 from .perfil import (
@@ -97,8 +98,12 @@ from .sessoes import (
 from .versoes import (
     hash_do_conteudo,
     obter_versao,
+    obter_versao_proposta,
     proximo_numero_versao,
+    proximo_numero_versao_proposta,
     registrar_versao,
+    registrar_versao_proposta,
+    versoes_da_proposta,
     versoes_da_sessao,
 )
 
@@ -131,6 +136,7 @@ __all__ = [
     "TextoSecao",
     "TipoItemProposta",
     "TipoVersao",
+    "VersaoProposta",
     "VersaoRelatorio",
     "adicionar_anotacao",
     "adicionar_item",
@@ -171,8 +177,11 @@ __all__ = [
     "obter_relatorio",
     "obter_sessao",
     "obter_versao",
+    "obter_versao_proposta",
     "proximo_numero_versao",
+    "proximo_numero_versao_proposta",
     "registrar_versao",
+    "registrar_versao_proposta",
     "remover_logotipo",
     "respostas_da_sessao",
     "restaurar_clausula",
@@ -187,5 +196,6 @@ __all__ = [
     "sinais_marcados",
     "tempo_do_cronometro",
     "textos_da_sessao",
+    "versoes_da_proposta",
     "versoes_da_sessao",
 ]

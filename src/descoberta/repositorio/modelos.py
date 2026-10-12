@@ -13,7 +13,7 @@ from decimal import Decimal
 from enum import StrEnum, auto
 from typing import Any
 
-from sqlalchemy import LargeBinary, UniqueConstraint
+from sqlalchemy import JSON, LargeBinary, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from descoberta.dominio.revisao import Camada, Nivel, Responsavel
@@ -371,3 +371,26 @@ class ClausulaProposta(SQLModel, table=True):
     texto: str | None = None  # None: vale o texto do modelo
     excluida: bool = False  # só para cláusulas removíveis (conferido com o modelo)
     atualizado_em: datetime = Field(default_factory=agora)
+
+
+class VersaoProposta(SQLModel, table=True):
+    """PDF da proposta registrado como enviado, como no relatório (dois hashes).
+
+    A numeração é própria: renegociar a proposta (versões 2, 3…) não mexe nas versões do
+    relatório. As Condições Gerais ficam congeladas com a versão: o texto impresso de cada
+    cláusula, como estava na emissão, além da versão do modelo usada.
+    """
+
+    __tablename__ = "versao_proposta"
+    __table_args__ = (UniqueConstraint("sessao_id", "numero"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    numero: int
+    emitido_em: datetime
+    conteudo_md: str
+    hash_conteudo: str
+    pdf: bytes = Field(sa_type=LargeBinary)
+    hash_pdf: str
+    versao_modelo: int
+    clausulas: list[dict[str, str]] = Field(sa_type=JSON)  # [{id, titulo, texto}]

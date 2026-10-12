@@ -30,9 +30,11 @@ from descoberta.relatorio import (
     coletar_dados_proposta,
     dados_para_proposta_nova,
     emitir_proposta,
+    exportar_pdf,
 )
 from descoberta.relatorio.dados_proposta import faixa_do_score_final
 from descoberta.relatorio.documento import FALTA
+from descoberta.relatorio.proposta import condicoes_gerais
 from descoberta.repositorio import (
     Sessao,
     ajustar_clausula,
@@ -41,8 +43,12 @@ from descoberta.repositorio import (
     excluir_proposta,
     obter_cliente,
     obter_proposta,
+    obter_versao_proposta,
+    proximo_numero_versao_proposta,
+    registrar_versao_proposta,
     restaurar_clausula,
     salvar_proposta,
+    versoes_da_proposta,
 )
 from descoberta.repositorio.modelos import agora
 
@@ -214,7 +220,39 @@ def documento(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: 
         modelo=dados.modelo,
         documento=emitida.documento,
         a_preencher=emitida.markdown.count(FALTA),
+        versoes=versoes_da_proposta(banco, sessao_id),
     )
+
+
+@router.post("/sessoes/{sessao_id}/proposta/versoes")
+def registrar(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int):
+    """Gera o PDF com o próximo número e guarda (PDF, hashes e Condições Gerais)."""
+    dados = _dados_proposta(banco, catalogo, sessao_id)
+    numero = proximo_numero_versao_proposta(banco, sessao_id)
+    emitida = emitir_proposta(dados, EmissaoProposta(numero=numero, emitido_em=agora()))
+    registrar_versao_proposta(
+        banco,
+        sessao_id,
+        numero=numero,
+        emitido_em=emitida.emissao.emitido_em,
+        conteudo_md=emitida.markdown,
+        pdf=exportar_pdf(emitida),
+        versao_modelo=dados.modelo.versao,
+        clausulas=condicoes_gerais(dados),
+    )
+    # POST → redirecionamento → GET: o F5 na página seguinte não registra de novo.
+    return redirecionar(request, f"/sessoes/{sessao_id}/proposta/documento#versoes")
+
+
+@router.get("/sessoes/{sessao_id}/proposta/versoes/{numero}.pdf")
+def baixar_versao(banco: Banco, catalogo: CatalogoDep, sessao_id: int, numero: int):
+    sessao, _ = exigir_sessao(banco, catalogo, sessao_id)
+    versao = obter_versao_proposta(banco, sessao_id, numero)
+    if versao is None:
+        raise HTTPException(404, f"A proposta não tem a versão {numero} registrada.")
+    empresa = obter_cliente(banco, sessao.cliente_id).empresa
+    nome = _nome_do_arquivo(empresa, sessao.data, "pdf", numero)
+    return arquivo(versao.pdf, "application/pdf", nome)
 
 
 @router.get("/sessoes/{sessao_id}/proposta.{formato}")

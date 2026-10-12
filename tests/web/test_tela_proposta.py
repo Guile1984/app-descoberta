@@ -1,8 +1,10 @@
 """Tela da Proposta Comercial: criação (com o aviso do score), edição e documento."""
 
+import io
 from pathlib import Path
 
 import pytest
+from pypdf import PdfReader
 
 from descoberta.proposta import carregar_modelo_proposta
 from descoberta.repositorio import (
@@ -14,6 +16,8 @@ from descoberta.repositorio import (
     itens_da_sessao,
     obter_proposta,
     salvar_nota,
+    versoes_da_proposta,
+    versoes_da_sessao,
 )
 from descoberta.web.proposta import CAMPOS_DAS_CONDICOES, CAMPOS_DO_CLIENTE
 
@@ -329,3 +333,58 @@ def test_restaurar(cliente_http, banco, com_proposta, modelo):
     assert modelo.clausula("suporte_garantia").texto in resposta.text
     banco.expire_all()
     assert ajustes_das_clausulas(banco, com_proposta.id) == {}
+
+
+# --- Versões registradas ---
+
+
+def test_registrar_versao_da_proposta(cliente_demo, app_demo_banco):
+    cliente, sessao_id = cliente_demo
+    resposta = cliente.post(_url(sessao_id, "/versoes"))
+    assert resposta.status_code == 303
+    assert resposta.headers["location"] == _url(sessao_id, "/documento#versoes")
+    [versao] = versoes_da_proposta(app_demo_banco(), sessao_id)
+    assert versao.numero == 1
+    assert versao.pdf.startswith(b"%PDF")
+    assert any(c["id"] == "foro" and "São Paulo/SP" in c["texto"] for c in versao.clausulas)
+    html = cliente.get(_url(sessao_id, "/documento")).text
+    assert versao.hash_conteudo[:12] in html
+    assert f'href="{_url(sessao_id, "/versoes/1.pdf")}"' in html
+    rodape = PdfReader(io.BytesIO(versao.pdf)).pages[0].extract_text()
+    assert "Proposta · Versão 1, emitida em" in rodape
+    assert versao.hash_conteudo[:12] in rodape
+
+
+def test_versao_registrada_fica_congelada(cliente_demo, app_demo_banco):
+    """Ajustar uma cláusula depois de registrar não muda a versão registrada."""
+    cliente, sessao_id = cliente_demo
+    cliente.post(_url(sessao_id, "/versoes"))
+    antes = cliente.get(_url(sessao_id, "/versoes/1.pdf")).content
+    cliente.post(_clausula(sessao_id, "foro"), data={"texto": "Foro de Campinas/SP."}, headers=HX)
+    cliente.post(_url(sessao_id, "/versoes"))
+    assert cliente.get(_url(sessao_id, "/versoes/1.pdf")).content == antes
+    v2, v1 = versoes_da_proposta(app_demo_banco(), sessao_id)
+    foro = {c["id"]: c["texto"] for c in v1.clausulas}["foro"]
+    assert "São Paulo/SP" in foro
+    assert {c["id"]: c["texto"] for c in v2.clausulas}["foro"] == "Foro de Campinas/SP."
+    assert v1.hash_conteudo != v2.hash_conteudo
+
+
+def test_baixar_versao(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    cliente.post(_url(sessao_id, "/versoes"))
+    resposta = cliente.get(_url(sessao_id, "/versoes/1.pdf"))
+    assert resposta.headers["content-disposition"] == (
+        'attachment; filename="proposta-comercial-construtora-alvorada-2026-10-07-v1.pdf"'
+    )
+    assert cliente.get(_url(sessao_id, "/versoes/2.pdf")).status_code == 404
+
+
+def test_registrar_sem_proposta(cliente_http, sessao):
+    assert cliente_http.post(_url(sessao.id, "/versoes")).status_code == 404
+
+
+def test_versoes_da_proposta_nao_mexem_nas_do_relatorio(cliente_demo, app_demo_banco):
+    cliente, sessao_id = cliente_demo
+    cliente.post(_url(sessao_id, "/versoes"))
+    assert versoes_da_sessao(app_demo_banco(), sessao_id) == []
