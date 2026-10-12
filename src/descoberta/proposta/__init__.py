@@ -8,6 +8,8 @@ from pathlib import Path
 from descoberta.questionario.carregador import ArquivoInvalido, carregar_yaml
 
 from .modelos import (
+    MARCADORES,
+    Clausula,
     CriterioDeAceite,
     FasePadrao,
     ModeloProposta,
@@ -27,6 +29,8 @@ def carregar_modelo_proposta(caminho: Path | str) -> ModeloProposta:
 
 
 __all__ = [
+    "MARCADORES",
+    "Clausula",
     "CriterioDeAceite",
     "FasePadrao",
     "ModeloProposta",

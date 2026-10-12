@@ -52,6 +52,14 @@
       <h2 id="titulo-condicoes">Condições</h2>
       {% for nome, rotulo, tipo in campos_das_condicoes %}{{ campo(nome, rotulo, tipo) }}{% endfor %}
     </section>
+    <section id="condicoes-gerais" class="secao-revisao" aria-labelledby="titulo-condicoes-gerais">
+      <h2 id="titulo-condicoes-gerais">Condições Gerais</h2>
+      <p class="discreto">Anexo final da proposta, coberto pela mesma assinatura e pelo mesmo hash. Ajustar aqui muda só esta proposta, não o modelo. Marcadores que o documento preenche:
+        {% for nome, descricao in marcadores.items() %}<code title="{{ descricao }}">{{ "{" ~ nome ~ "}" }}</code>{{ ", " if not loop.last }}{% endfor %}.</p>
+      {% for clausula in clausulas %}
+      {% with sessao_id = sessao.id, erro = none %}{% include "proposta/_clausula.html" %}{% endwith %}
+      {% endfor %}
+    </section>
   </div>
   <aside class="coluna-apoio">
     <section class="apoio">

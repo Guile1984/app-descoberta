@@ -36,6 +36,7 @@ TABELAS = {
     "proposta",
     "fase_proposta",
     "item_proposta",
+    "clausula_proposta",
 }
 
 

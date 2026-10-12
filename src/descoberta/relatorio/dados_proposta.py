@@ -13,6 +13,7 @@ from sqlmodel import Session
 from descoberta.campos import CAMPO_POR_NOME, CAMPOS_METRICAS
 from descoberta.formatos import moeda, numero
 from descoberta.proposta import ModeloProposta
+from descoberta.proposta.clausulas import ClausulaEfetiva, clausulas_efetivas
 from descoberta.proposta.inicial import DadosDaSessao
 from descoberta.questionario import Questionario
 from descoberta.repositorio import (
@@ -21,6 +22,7 @@ from descoberta.repositorio import (
     RegistroNaoEncontrado,
     TipoItemProposta,
     TipoVersao,
+    ajustes_das_clausulas,
     itens_da_sessao,
     obter_proposta,
     versoes_da_sessao,
@@ -96,6 +98,7 @@ class DadosProposta:
     premissas: list[str]
     responsabilidades: list[str]
     relatorio_registrado: RelatorioReferido | None
+    clausulas: list[ClausulaEfetiva]  # Condições Gerais: o modelo com os ajustes
 
 
 def coletar_dados_proposta(
@@ -146,4 +149,5 @@ def coletar_dados_proposta(
             if registrada
             else None
         ),
+        clausulas=clausulas_efetivas(modelo, ajustes_das_clausulas(session, sessao_id)),
     )

@@ -5,14 +5,18 @@ from decimal import Decimal
 import pytest
 from sqlmodel import select
 
+from descoberta.proposta.clausulas import Ajuste
 from descoberta.proposta.inicial import FaseInicial, PropostaInicial
 from descoberta.repositorio import (
+    ClausulaProposta,
     FaseProposta,
     ItemProposta,
     Proposta,
     RegistroNaoEncontrado,
     TipoItemProposta,
     adicionar_item,
+    ajustar_clausula,
+    ajustes_das_clausulas,
     criar_proposta,
     editar_item,
     excluir_item,
@@ -20,6 +24,7 @@ from descoberta.repositorio import (
     excluir_sessao,
     itens_da_sessao,
     obter_proposta,
+    restaurar_clausula,
     salvar_proposta,
 )
 
@@ -174,5 +179,60 @@ def test_excluir_proposta_apaga_fases_e_itens(session, sessao):
 def test_excluir_sessao_apaga_a_proposta(session, sessao):
     criar_proposta(session, sessao.id, INICIAL, versao_modelo=1)
     excluir_sessao(session, sessao.id)
-    for modelo in (Proposta, FaseProposta, ItemProposta):
+    for modelo in (Proposta, FaseProposta, ItemProposta, ClausulaProposta):
         assert session.exec(select(modelo)).all() == []
+
+
+# --- Ajustes das cláusulas (Condições Gerais) ---
+
+
+def test_ajustar_texto_e_excluir_clausula(session, sessao):
+    criar_proposta(session, sessao.id, INICIAL, versao_modelo=1)
+    ajustar_clausula(session, sessao.id, "suporte_garantia", texto="  60 dias.  ")
+    ajustar_clausula(session, sessao.id, "cancelamento", excluida=True)
+    assert ajustes_das_clausulas(session, sessao.id) == {
+        "suporte_garantia": Ajuste(texto="60 dias."),
+        "cancelamento": Ajuste(excluida=True),
+    }
+
+
+def test_ajustar_de_novo_atualiza(session, sessao):
+    criar_proposta(session, sessao.id, INICIAL, versao_modelo=1)
+    ajustar_clausula(session, sessao.id, "cancelamento", texto="A")
+    ajustar_clausula(session, sessao.id, "cancelamento", texto="B")
+    ajustar_clausula(session, sessao.id, "cancelamento", excluida=True)
+    assert ajustes_das_clausulas(session, sessao.id) == {
+        "cancelamento": Ajuste(texto="B", excluida=True)
+    }
+    ajustar_clausula(session, sessao.id, "cancelamento", excluida=False)
+    assert ajustes_das_clausulas(session, sessao.id) == {"cancelamento": Ajuste(texto="B")}
+
+
+def test_restaurar_volta_ao_modelo(session, sessao):
+    criar_proposta(session, sessao.id, INICIAL, versao_modelo=1)
+    ajustar_clausula(session, sessao.id, "foro", texto="Outro foro.")
+    restaurar_clausula(session, sessao.id, "foro")
+    restaurar_clausula(session, sessao.id, "foro")  # sem ajuste: nada a fazer
+    assert ajustes_das_clausulas(session, sessao.id) == {}
+
+
+@pytest.mark.parametrize(
+    ("campos", "erro"),
+    [({"texto": "   "}, "texto"), ({"texto": 3}, "texto"), ({"excluida": "sim"}, "excluida")],
+)
+def test_ajuste_invalido(session, sessao, campos, erro):
+    criar_proposta(session, sessao.id, INICIAL, versao_modelo=1)
+    with pytest.raises((ValueError, TypeError), match=erro):
+        ajustar_clausula(session, sessao.id, "foro", **campos)
+
+
+def test_ajuste_exige_proposta(session, sessao):
+    with pytest.raises(RegistroNaoEncontrado, match="proposta"):
+        ajustar_clausula(session, sessao.id, "foro", texto="X")
+
+
+def test_recriar_a_proposta_apaga_os_ajustes(session, sessao):
+    criar_proposta(session, sessao.id, INICIAL, versao_modelo=1)
+    ajustar_clausula(session, sessao.id, "foro", texto="X")
+    excluir_proposta(session, sessao.id)
+    assert ajustes_das_clausulas(session, sessao.id) == {}

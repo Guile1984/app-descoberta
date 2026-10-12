@@ -11,6 +11,7 @@ from datetime import datetime
 
 from descoberta.dominio.proposta import cronograma, investimento_total, valida_ate
 from descoberta.formatos import moeda
+from descoberta.proposta.clausulas import preencher_marcadores
 
 from .consultor import AVISO_CONSULTOR_FICTICIO, assinatura_do_consultor, linha_do_consultor
 from .dados_proposta import DadosProposta
@@ -30,6 +31,7 @@ from .documento import (
 from .montagem import data_br, data_hora_local
 
 CARACTERES_DO_HASH = 12
+TITULO_ANEXO = "Anexo — Condições Gerais"
 
 
 @dataclass(frozen=True)
@@ -250,8 +252,9 @@ class _MontadorProposta:
         valores = [("Nome", d.cliente_representante), ("Cargo", d.cliente_cargo)]
         return [
             Paragrafo(
-                "Ao assinar, as partes aceitam esta proposta nos termos acima. A assinatura "
-                "autoriza o início da primeira fase."
+                "Ao assinar, as partes aceitam esta proposta nos termos acima, incluindo as "
+                "Condições Gerais do anexo, que fazem parte dela. A assinatura autoriza o "
+                "início da primeira fase."
             ),
             Assinatura(
                 f"Pelo contratante — {self.relatorio.empresa}",
@@ -259,6 +262,28 @@ class _MontadorProposta:
             ),
             assinatura_do_consultor(self.consultor),
         ]
+
+    def _condicoes_gerais(self) -> list[Bloco]:
+        c = self.consultor
+        valores = {
+            "cliente.empresa": self.relatorio.empresa,
+            "consultor.empresa": c.empresa if c else None,
+            "consultor.nome": c.nome if c else None,
+            "foro": c.cidade_uf if c else None,
+        }
+        blocos: list[Bloco] = [
+            QuebraDePagina(),
+            Titulo(TITULO_ANEXO),
+            Paragrafo(
+                "Estas Condições Gerais fazem parte da proposta e são aceitas com a assinatura "
+                "da seção de aceite."
+            ),
+        ]
+        for numero, clausula in enumerate(self.dados.clausulas, start=1):
+            texto = preencher_marcadores(clausula.texto, valores, FALTA)
+            blocos.append(Titulo(f"{numero}. {clausula.titulo}", 2))
+            blocos += [Paragrafo(linha.strip()) for linha in texto.splitlines() if linha.strip()]
+        return blocos
 
     def montar(self) -> Documento:
         secoes = [
@@ -279,6 +304,7 @@ class _MontadorProposta:
             if montar == self._aceite:
                 blocos.append(QuebraDePagina())  # as duas assinaturas na mesma página
             blocos += [Titulo(f"{numero}. {titulo}"), *montar()]
+        blocos += self._condicoes_gerais()
         return Documento(f"{self.dados.modelo.titulo} — {self.relatorio.empresa}", blocos)
 
 

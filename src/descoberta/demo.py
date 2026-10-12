@@ -38,6 +38,7 @@ from descoberta.repositorio import (
     StatusSessao,
     adicionar_anotacao,
     adicionar_item,
+    ajustar_clausula,
     criar_cliente,
     criar_engine,
     criar_proposta,
@@ -433,6 +434,9 @@ def _popular_proposta(session: Session, sessao_id: int) -> None:
     salvar_proposta(session, sessao_id, **PROPOSTA)
     fase_0 = itens_da_sessao(session, FaseProposta, sessao_id)[0]
     editar_item(session, FaseProposta, fase_0.id, investimento=INVESTIMENTO_FASE_0)
+    # Uma cláusula ajustada só nesta proposta (o modelo continua com 30 dias).
+    suporte = modelo.clausula("suporte_garantia").texto.replace("30 dias", "60 dias")
+    ajustar_clausula(session, sessao_id, "suporte_garantia", texto=suporte)
 
 
 def main(argumentos: list[str] | None = None) -> None:

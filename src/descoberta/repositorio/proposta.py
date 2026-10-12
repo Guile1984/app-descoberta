@@ -6,22 +6,33 @@ As fases e os itens da proposta são listas como as da revisão: são editados c
 
 from typing import Any
 
-from sqlmodel import Session, delete
+from sqlmodel import Session, delete, select
 
+from descoberta.proposta.clausulas import Ajuste
 from descoberta.proposta.inicial import PropostaInicial
 
 from ._comum import (
     RegistroNaoEncontrado,
     aplicar_campos,
+    booleano,
     cpf_cnpj_opcional,
     email_opcional,
     exigir_sessao,
     gravar,
+    id_questionario,
     inteiro,
     texto_obrigatorio,
     texto_opcional,
+    validar_campos,
 )
-from .modelos import FaseProposta, ItemProposta, Proposta, TipoItemProposta
+from .modelos import (
+    ClausulaProposta,
+    FaseProposta,
+    ItemProposta,
+    Proposta,
+    TipoItemProposta,
+    agora,
+)
 
 
 def _dias(nome: str, valor: Any) -> int:
@@ -109,10 +120,58 @@ def salvar_proposta(session: Session, sessao_id: int, **campos: Any) -> Proposta
 
 
 def excluir_proposta(session: Session, sessao_id: int) -> None:
-    """Apaga a proposta com as fases e os itens (as versões registradas ficam)."""
+    """Apaga a proposta com as fases, os itens e os ajustes das cláusulas (as versões
+    registradas ficam)."""
+    session.exec(delete(ClausulaProposta).where(ClausulaProposta.sessao_id == sessao_id))
     session.exec(delete(ItemProposta).where(ItemProposta.sessao_id == sessao_id))
     session.exec(delete(FaseProposta).where(FaseProposta.sessao_id == sessao_id))
     proposta = obter_proposta(session, sessao_id)
     if proposta is not None:
         session.delete(proposta)
     session.commit()
+
+
+# --- Ajustes das cláusulas (Condições Gerais) ---
+
+
+def _ajuste(session: Session, sessao_id: int, clausula_id: str) -> ClausulaProposta | None:
+    return session.exec(
+        select(ClausulaProposta).where(
+            ClausulaProposta.sessao_id == sessao_id,
+            ClausulaProposta.clausula_id == clausula_id,
+        )
+    ).first()
+
+
+def ajustar_clausula(
+    session: Session, sessao_id: int, clausula_id: str, **campos: Any
+) -> ClausulaProposta:
+    """Troca o texto (`texto`) ou exclui/inclui de volta (`excluida`) uma cláusula.
+
+    Quem chama confere com o modelo se a cláusula existe e se pode ser excluída
+    (`proposta.clausulas.conferir_ajuste`).
+    """
+    clausula_id = id_questionario("clausula_id", clausula_id)
+    valores = validar_campos(campos, {"texto": texto_obrigatorio, "excluida": booleano})
+    if obter_proposta(session, sessao_id) is None:
+        raise RegistroNaoEncontrado(f"a sessão {sessao_id} não tem proposta")
+    registro = _ajuste(session, sessao_id, clausula_id) or ClausulaProposta(
+        sessao_id=sessao_id, clausula_id=clausula_id
+    )
+    for nome, valor in valores.items():
+        setattr(registro, nome, valor)
+    registro.atualizado_em = agora()
+    return gravar(session, registro)
+
+
+def restaurar_clausula(session: Session, sessao_id: int, clausula_id: str) -> None:
+    """Volta ao texto do modelo (e inclui a cláusula de volta, se estava excluída)."""
+    registro = _ajuste(session, sessao_id, clausula_id)
+    if registro is not None:
+        session.delete(registro)
+        session.commit()
+
+
+def ajustes_das_clausulas(session: Session, sessao_id: int) -> dict[str, Ajuste]:
+    consulta = select(ClausulaProposta).where(ClausulaProposta.sessao_id == sessao_id)
+    return {r.clausula_id: Ajuste(r.texto, r.excluida) for r in session.exec(consulta)}

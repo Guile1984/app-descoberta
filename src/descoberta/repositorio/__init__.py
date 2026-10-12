@@ -25,6 +25,7 @@ from .metricas import (
 )
 from .modelos import (
     Anotacao,
+    ClausulaProposta,
     Cliente,
     Cronometro,
     FaseProposta,
@@ -57,9 +58,12 @@ from .perfil import (
 )
 from .proposta import (
     CAMPOS_PROPOSTA,
+    ajustar_clausula,
+    ajustes_das_clausulas,
     criar_proposta,
     excluir_proposta,
     obter_proposta,
+    restaurar_clausula,
     salvar_proposta,
 )
 from .registros import (
@@ -103,6 +107,7 @@ __all__ = [
     "CAMINHO_BANCO_PADRAO",
     "CAMPOS_NUMERICOS",
     "CAMPOS_PROPOSTA",
+    "ClausulaProposta",
     "Cliente",
     "Cronometro",
     "FaseProposta",
@@ -129,6 +134,8 @@ __all__ = [
     "VersaoRelatorio",
     "adicionar_anotacao",
     "adicionar_item",
+    "ajustar_clausula",
+    "ajustes_das_clausulas",
     "alternar_cronometro",
     "anotacoes_da_sessao",
     "anotar_sinal",
@@ -168,6 +175,7 @@ __all__ = [
     "registrar_versao",
     "remover_logotipo",
     "respostas_da_sessao",
+    "restaurar_clausula",
     "salvar_logotipo",
     "salvar_metricas",
     "salvar_nota",

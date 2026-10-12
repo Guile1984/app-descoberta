@@ -26,6 +26,7 @@ from descoberta.relatorio.documento import (
 )
 
 EMITIDO_EM = datetime(2026, 10, 11, 17, 5, tzinfo=UTC)
+ANEXO = "Anexo — Condições Gerais"
 
 SECOES = [
     "1. Identificação das partes",
@@ -191,3 +192,58 @@ def test_rodape_do_rascunho_e_da_versao(dados_proposta_roberto, emissao_proposta
 @pytest.mark.parametrize("exportar", [exportar_markdown, exportar_pdf, exportar_docx])
 def test_exporta_nos_tres_formatos(dados_proposta_roberto, emissao_proposta, exportar):
     assert exportar(emitir_proposta(dados_proposta_roberto, emissao_proposta))
+
+
+# --- Condições Gerais (anexo) ---
+
+
+def _anexo(documento):
+    indice = documento.blocos.index(Titulo(ANEXO))
+    return documento.blocos[indice:]
+
+
+def test_condicoes_gerais_no_anexo_final(dados_proposta_roberto, emissao_proposta):
+    documento = montar_proposta(dados_proposta_roberto, emissao_proposta)
+    assert documento.titulos(1)[-1] == ANEXO
+    anexo = _anexo(documento)
+    titulos = [b.texto for b in anexo if isinstance(b, Titulo) and b.nivel == 2]
+    assert titulos[0] == "1. Alterações de escopo"
+    assert titulos[-1] == "9. Contrato detalhado"
+    # O aceite (com as assinaturas) vem antes e diz que o anexo faz parte da proposta.
+    assert any(
+        isinstance(b, Assinatura) for b in documento.blocos[: documento.blocos.index(Titulo(ANEXO))]
+    )
+    assert "Condições Gerais" in _depois(documento, SECOES[10], Paragrafo).texto
+
+
+def test_marcadores_preenchidos(dados_proposta_roberto, emissao_proposta):
+    texto = "\n".join(
+        b.texto
+        for b in _anexo(montar_proposta(dados_proposta_roberto, emissao_proposta))
+        if isinstance(b, Paragrafo)
+    )
+    assert "Construtora Alvorada é a controladora" in texto
+    assert "Exemplo Consultoria em IA Ltda é a operadora" in texto
+    assert "foro da comarca de São Paulo/SP" in texto
+    assert "{" not in texto
+
+
+def test_ajuste_do_demo_aparece(dados_proposta_roberto, emissao_proposta):
+    texto = montar_proposta(dados_proposta_roberto, emissao_proposta).texto()
+    assert "Durante 60 dias depois da entrega de cada fase" in texto
+
+
+def test_clausula_excluida_some_e_a_numeracao_segue(dados_proposta_roberto, emissao_proposta):
+    clausulas = [c for c in dados_proposta_roberto.clausulas if c.id != "alteracoes_escopo"]
+    dados = dataclasses.replace(dados_proposta_roberto, clausulas=clausulas)
+    anexo = _anexo(montar_proposta(dados, emissao_proposta))
+    titulos = [b.texto for b in anexo if isinstance(b, Titulo) and b.nivel == 2]
+    assert titulos[0] == "1. Confidencialidade"
+    assert len(titulos) == 8
+
+
+def test_sem_perfil_o_foro_fica_a_preencher(dados_proposta_roberto, emissao_proposta):
+    relatorio = dataclasses.replace(dados_proposta_roberto.relatorio, consultor=None)
+    dados = dataclasses.replace(dados_proposta_roberto, relatorio=relatorio)
+    texto = montar_proposta(dados, emissao_proposta).texto()
+    assert f"foro da comarca de {FALTA}" in texto

@@ -18,7 +18,8 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from sqlmodel import Session
 
 from descoberta.formatos import slug
-from descoberta.proposta import ModeloProposta
+from descoberta.proposta import MARCADORES, ModeloProposta
+from descoberta.proposta.clausulas import Ajuste, conferir_ajuste
 from descoberta.proposta.inicial import conteudo_inicial
 from descoberta.questionario import Questionario
 from descoberta.relatorio import (
@@ -34,10 +35,13 @@ from descoberta.relatorio.dados_proposta import faixa_do_score_final
 from descoberta.relatorio.documento import FALTA
 from descoberta.repositorio import (
     Sessao,
+    ajustar_clausula,
+    ajustes_das_clausulas,
     criar_proposta,
     excluir_proposta,
     obter_cliente,
     obter_proposta,
+    restaurar_clausula,
     salvar_proposta,
 )
 from descoberta.repositorio.modelos import agora
@@ -49,6 +53,8 @@ from ..proposta import (
     CAMPOS_DO_CLIENTE,
     EVENTO,
     LISTAS,
+    clausula_na_tela,
+    clausulas_na_tela,
     contexto_das_listas,
     converter_campo,
 )
@@ -132,6 +138,8 @@ def pagina(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int
         itens={nome: lista.itens(banco, sessao_id) for nome, lista in LISTAS.items()},
         campos_do_cliente=CAMPOS_DO_CLIENTE,
         campos_das_condicoes=CAMPOS_DAS_CONDICOES,
+        clausulas=clausulas_na_tela(modelo, ajustes_das_clausulas(banco, sessao_id)),
+        marcadores=MARCADORES,
         **contexto_das_listas(banco, sessao, questionario),
     )
 
@@ -218,6 +226,96 @@ def baixar(banco: Banco, catalogo: CatalogoDep, sessao_id: int, formato: str):
     tipo_conteudo, exportar = FORMATOS[formato]
     nome = _nome_do_arquivo(dados.relatorio.empresa, dados.relatorio.data_sessao, formato)
     return arquivo(exportar(emitida), tipo_conteudo, nome)
+
+
+# --- Condições Gerais (ajustes das cláusulas nesta proposta) ---
+
+
+def _modelo_da_proposta(banco: Banco, catalogo: CatalogoDep, sessao_id: int) -> ModeloProposta:
+    exigir_sessao(banco, catalogo, sessao_id)
+    proposta = obter_proposta(banco, sessao_id)
+    if proposta is None:
+        raise HTTPException(404, "A sessão ainda não tem proposta.")
+    return _modelo(catalogo, proposta.versao_modelo)
+
+
+def _exigir_clausula(modelo: ModeloProposta, clausula_id: str) -> None:
+    try:
+        modelo.clausula(clausula_id)
+    except KeyError:
+        raise HTTPException(404, f"O modelo não tem a cláusula '{clausula_id}'.") from None
+
+
+def _clausula(request, banco, sessao_id, modelo, clausula_id, erro=None):
+    ajuste = ajustes_das_clausulas(banco, sessao_id).get(clausula_id, Ajuste())
+    return html(
+        request,
+        "proposta/_clausula.html",
+        status_code=422 if erro else 200,
+        sessao_id=sessao_id,
+        clausula=clausula_na_tela(modelo, clausula_id, ajuste),
+        erro=erro,
+    )
+
+
+@router.post("/sessoes/{sessao_id}/proposta/clausulas/{clausula_id}")
+def ajustar_texto(
+    request: Request,
+    banco: Banco,
+    catalogo: CatalogoDep,
+    sessao_id: int,
+    clausula_id: str,
+    texto: Annotated[str, Form()] = "",
+):
+    """Salvamento automático do texto da cláusula nesta proposta."""
+    modelo = _modelo_da_proposta(banco, catalogo, sessao_id)
+    _exigir_clausula(modelo, clausula_id)
+    if not texto.strip():
+        return aviso(request, "o texto não pode ficar vazio; para tirar a cláusula, use Excluir")
+    try:
+        conferir_ajuste(modelo, clausula_id, texto=texto)
+    except ValueError as erro:
+        return aviso(request, str(erro))
+    if texto.strip() == modelo.clausula(clausula_id).texto.strip():
+        restaurar_clausula(banco, sessao_id, clausula_id)  # igual ao modelo: sem ajuste
+    else:
+        ajustar_clausula(banco, sessao_id, clausula_id, texto=texto)
+    return aviso(request, evento=EVENTO)
+
+
+@router.post("/sessoes/{sessao_id}/proposta/clausulas/{clausula_id}/restaurar")
+def restaurar(
+    request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int, clausula_id: str
+):
+    modelo = _modelo_da_proposta(banco, catalogo, sessao_id)
+    _exigir_clausula(modelo, clausula_id)
+    restaurar_clausula(banco, sessao_id, clausula_id)
+    resposta = _clausula(request, banco, sessao_id, modelo, clausula_id)
+    resposta.headers["HX-Trigger"] = EVENTO
+    return resposta
+
+
+@router.post("/sessoes/{sessao_id}/proposta/clausulas/{clausula_id}/excluir")
+def excluir_ou_incluir(
+    request: Request,
+    banco: Banco,
+    catalogo: CatalogoDep,
+    sessao_id: int,
+    clausula_id: str,
+    excluir: Annotated[str, Form()] = "1",
+):
+    """excluir=1 tira a cláusula desta proposta; excluir=0 inclui de volta."""
+    modelo = _modelo_da_proposta(banco, catalogo, sessao_id)
+    _exigir_clausula(modelo, clausula_id)
+    excluida = excluir == "1"
+    try:
+        conferir_ajuste(modelo, clausula_id, excluida=excluida)
+    except ValueError as erro:
+        return _clausula(request, banco, sessao_id, modelo, clausula_id, str(erro))
+    ajustar_clausula(banco, sessao_id, clausula_id, excluida=excluida)
+    resposta = _clausula(request, banco, sessao_id, modelo, clausula_id)
+    resposta.headers["HX-Trigger"] = EVENTO
+    return resposta
 
 
 # --- Listas (por último: "/proposta/{nome}" combinaria com as rotas acima) ---

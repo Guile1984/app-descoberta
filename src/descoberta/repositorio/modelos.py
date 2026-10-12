@@ -357,3 +357,17 @@ class ItemProposta(SQLModel, table=True):
     )
     texto: str
     criado_em: datetime = Field(default_factory=agora)
+
+
+class ClausulaProposta(SQLModel, table=True):
+    """Ajuste de uma cláusula das Condições Gerais nesta proposta (o modelo não muda)."""
+
+    __tablename__ = "clausula_proposta"
+    __table_args__ = (UniqueConstraint("sessao_id", "clausula_id"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    clausula_id: str  # id do YAML (config/proposta_v{n}.yaml)
+    texto: str | None = None  # None: vale o texto do modelo
+    excluida: bool = False  # só para cláusulas removíveis (conferido com o modelo)
+    atualizado_em: datetime = Field(default_factory=agora)

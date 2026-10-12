@@ -1,12 +1,16 @@
 """Tela da Proposta Comercial: criação (com o aviso do score), edição e documento."""
 
+from pathlib import Path
+
 import pytest
 
+from descoberta.proposta import carregar_modelo_proposta
 from descoberta.repositorio import (
     CAMPOS_PROPOSTA,
     FaseProposta,
     ItemProposta,
     TipoItemProposta,
+    ajustes_das_clausulas,
     itens_da_sessao,
     obter_proposta,
     salvar_nota,
@@ -14,6 +18,13 @@ from descoberta.repositorio import (
 from descoberta.web.proposta import CAMPOS_DAS_CONDICOES, CAMPOS_DO_CLIENTE
 
 HX = {"HX-Request": "true"}
+
+
+@pytest.fixture
+def modelo():
+    return carregar_modelo_proposta(
+        Path(__file__).resolve().parents[2] / "config" / "proposta_v1.yaml"
+    )
 
 
 def _url(sessao_id: int, resto: str = "") -> str:
@@ -241,3 +252,80 @@ def test_links_para_a_proposta(cliente_demo):
     for pagina in ("/revisao", "/relatorio"):
         html = cliente.get(f"/sessoes/{sessao_id}{pagina}").text
         assert f'href="{_url(sessao_id)}"' in html
+
+
+# --- Condições Gerais ---
+
+
+def _clausula(sessao_id, clausula_id, resto=""):
+    return _url(sessao_id, f"/clausulas/{clausula_id}{resto}")
+
+
+def test_condicoes_gerais_na_edicao(cliente_http, com_proposta):
+    html = cliente_http.get(_url(com_proposta.id)).text
+    assert ">Condições Gerais</h2>" in html
+    assert 'id="clausula-foro"' in html
+    assert "{foro}" in html  # o texto mostra o marcador; o documento mostra a cidade
+    assert "Não removível" in html
+
+
+def test_ajustar_texto_salva_sozinho(cliente_http, banco, com_proposta):
+    url = _clausula(com_proposta.id, "suporte_garantia")
+    resposta = cliente_http.post(url, data={"texto": "Garantia de 90 dias."}, headers=HX)
+    assert resposta.status_code == 200
+    assert resposta.headers["HX-Trigger"] == "proposta-mudou"
+    assert ajustes_das_clausulas(banco, com_proposta.id)["suporte_garantia"].texto == (
+        "Garantia de 90 dias."
+    )
+
+
+def test_voltar_ao_texto_do_modelo_desfaz_o_ajuste(cliente_http, banco, com_proposta, modelo):
+    url = _clausula(com_proposta.id, "foro")
+    cliente_http.post(url, data={"texto": "Outro."}, headers=HX)
+    cliente_http.post(url, data={"texto": modelo.clausula("foro").texto + "  "}, headers=HX)
+    banco.expire_all()
+    assert ajustes_das_clausulas(banco, com_proposta.id) == {}
+
+
+@pytest.mark.parametrize(
+    ("texto", "erro"), [("", "Excluir"), ("Foro de {cidade}.", "marcador desconhecido")]
+)
+def test_ajuste_invalido(cliente_http, com_proposta, texto, erro):
+    url = _clausula(com_proposta.id, "foro")
+    resposta = cliente_http.post(url, data={"texto": texto}, headers=HX)
+    assert resposta.status_code == 422
+    assert erro in resposta.text
+
+
+def test_clausula_inexistente(cliente_http, com_proposta):
+    url = _clausula(com_proposta.id, "xyz")
+    assert cliente_http.post(url, data={"texto": "X"}, headers=HX).status_code == 404
+
+
+def test_excluir_e_incluir_de_volta(cliente_http, banco, com_proposta):
+    url = _clausula(com_proposta.id, "cancelamento", "/excluir")
+    resposta = cliente_http.post(url, data={"excluir": "1"}, headers=HX)
+    assert resposta.status_code == 200
+    assert "Fora desta proposta" in resposta.text
+    assert "Incluir de volta" in resposta.text
+    assert ajustes_das_clausulas(banco, com_proposta.id)["cancelamento"].excluida is True
+    resposta = cliente_http.post(url, data={"excluir": "0"}, headers=HX)
+    banco.expire_all()
+    assert ajustes_das_clausulas(banco, com_proposta.id)["cancelamento"].excluida is False
+
+
+def test_nao_removivel_nao_e_excluida(cliente_http, banco, com_proposta):
+    url = _clausula(com_proposta.id, "lgpd", "/excluir")
+    resposta = cliente_http.post(url, data={"excluir": "1"}, headers=HX)
+    assert resposta.status_code == 422
+    assert "não pode ser excluída" in resposta.text
+    assert ajustes_das_clausulas(banco, com_proposta.id) == {}
+
+
+def test_restaurar(cliente_http, banco, com_proposta, modelo):
+    url = _clausula(com_proposta.id, "suporte_garantia")
+    cliente_http.post(url, data={"texto": "Outro."}, headers=HX)
+    resposta = cliente_http.post(url + "/restaurar", headers=HX)
+    assert modelo.clausula("suporte_garantia").texto in resposta.text
+    banco.expire_all()
+    assert ajustes_das_clausulas(banco, com_proposta.id) == {}

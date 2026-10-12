@@ -5,9 +5,18 @@ referências ao questionário (faixas do score final, tabela do critério de ace
 conferidas por `problemas_com_o_questionario`, porque dependem dos dois arquivos.
 """
 
+import re
+from collections import Counter
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, StringConstraints, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 from descoberta.questionario import Questionario
 from descoberta.questionario.modelos import PADRAO_ID
@@ -16,8 +25,41 @@ Id = Annotated[str, StringConstraints(pattern=PADRAO_ID)]
 Texto = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
+# Marcadores que os textos das cláusulas podem usar: a montagem troca pelo valor.
+MARCADORES = {
+    "cliente.empresa": "empresa do cliente",
+    "consultor.empresa": "empresa do consultor",
+    "consultor.nome": "nome do consultor",
+    "foro": "cidade/UF do consultor (perfil)",
+}
+_MARCADOR = re.compile(r"\{([^{}]*)\}")
+
+
+def marcadores_desconhecidos(texto: str) -> list[str]:
+    """Marcadores {…} do texto que a montagem não conhece (lista vazia: tudo certo)."""
+    return [nome for nome in _MARCADOR.findall(texto) if nome not in MARCADORES]
+
+
 class _Modelo(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+
+class Clausula(_Modelo):
+    """Cláusula das Condições Gerais. Removível: pode ser excluída de uma proposta."""
+
+    id: Id
+    titulo: Texto
+    texto: Texto
+    removivel: bool = False
+
+    @field_validator("texto")
+    @classmethod
+    def _marcadores_conhecidos(cls, texto: str) -> str:
+        desconhecidos = marcadores_desconhecidos(texto)
+        if desconhecidos:
+            aceitos = ", ".join(f"{{{m}}}" for m in MARCADORES)
+            raise ValueError(f"marcador desconhecido {{{desconhecidos[0]}}}; use {aceitos}")
+        return texto
 
 
 class FasePadrao(_Modelo):
@@ -64,6 +106,20 @@ class ModeloProposta(_Modelo):
     alerta_score_final: list[Id] = []
     criterio_de_aceite: CriterioDeAceite | None = None
     padrao: Padrao
+    clausulas: list[Clausula] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _ids_de_clausula_unicos(self):
+        repetidos = [id_ for id_, n in Counter(c.id for c in self.clausulas).items() if n > 1]
+        if repetidos:
+            raise ValueError(f"id de cláusula repetido: '{repetidos[0]}'")
+        return self
+
+    def clausula(self, clausula_id: str) -> Clausula:
+        for clausula in self.clausulas:
+            if clausula.id == clausula_id:
+                return clausula
+        raise KeyError(f"o modelo da proposta não tem a cláusula '{clausula_id}'")
 
 
 def problemas_com_o_questionario(modelo: ModeloProposta, questionario: Questionario) -> list[str]:

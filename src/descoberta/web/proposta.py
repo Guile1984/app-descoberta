@@ -5,11 +5,15 @@ exclusões, premissas e responsabilidades dividem uma tabela (ItemProposta); o f
 cada lista (tipo=…) separa os itens.
 """
 
+from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 from sqlmodel import Session
 
 from descoberta.formatos import ler_decimal
+from descoberta.proposta import ModeloProposta
+from descoberta.proposta.clausulas import Ajuste
 from descoberta.questionario import Questionario
 from descoberta.repositorio import (
     FaseProposta,
@@ -143,3 +147,34 @@ def contexto_das_listas(
     """O que os templates das listas da proposta usam: as fases, para escolher e mostrar."""
     fases = itens_da_sessao(banco, FaseProposta, sessao.id)
     return {"fases": fases, "nome_da_fase": {f.id: f.nome for f in fases}}
+
+
+@dataclass(frozen=True)
+class ClausulaNaTela:
+    id: str
+    titulo: str
+    texto: str  # o texto efetivo, com os marcadores ({foro}…)
+    texto_do_modelo: str
+    removivel: bool
+    ajustada: bool
+    excluida: bool
+
+
+def clausula_na_tela(modelo: ModeloProposta, clausula_id: str, ajuste: Ajuste) -> ClausulaNaTela:
+    clausula = modelo.clausula(clausula_id)
+    return ClausulaNaTela(
+        id=clausula.id,
+        titulo=clausula.titulo,
+        texto=ajuste.texto if ajuste.texto is not None else clausula.texto,
+        texto_do_modelo=clausula.texto,
+        removivel=clausula.removivel,
+        ajustada=ajuste.texto is not None,
+        excluida=ajuste.excluida and clausula.removivel,
+    )
+
+
+def clausulas_na_tela(
+    modelo: ModeloProposta, ajustes: Mapping[str, Ajuste]
+) -> list[ClausulaNaTela]:
+    """Todas as cláusulas do modelo (inclusive as excluídas, para incluir de volta)."""
+    return [clausula_na_tela(modelo, c.id, ajustes.get(c.id, Ajuste())) for c in modelo.clausulas]

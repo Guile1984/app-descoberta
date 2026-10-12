@@ -251,3 +251,4 @@ kbd { font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; white-
 
 /* Foco sempre visível: a sessão inteira pode ser conduzida pelo teclado. */
 :focus-visible { outline: 3px solid var(--destaque); outline-offset: 2px; }
+.clausula.excluida .rotulo-texto { color: var(--discreto); text-decoration: line-through; }

@@ -72,3 +72,61 @@ def test_faixas_e_tabela_conferidas_com_o_questionario(dados_v1, questionario_v1
     assert any("nao_existe" in p for p in problemas)
     assert any("outra" in p for p in problemas)
     assert any("Tabela que não existe" in p for p in problemas)
+
+
+# --- Cláusulas (Condições Gerais) ---
+
+NAO_REMOVIVEIS = {
+    "foro",
+    "prevalencia_contrato",
+    "confidencialidade",
+    "lgpd",
+    "limitacao_responsabilidade",
+}
+
+
+def test_clausulas_do_modelo_v1():
+    modelo = carregar_modelo_proposta(MODELO_V1)
+    ids = [c.id for c in modelo.clausulas]
+    assert ids == [
+        "alteracoes_escopo",
+        "confidencialidade",
+        "propriedade_intelectual",
+        "lgpd",
+        "limitacao_responsabilidade",
+        "suporte_garantia",
+        "cancelamento",
+        "foro",
+        "prevalencia_contrato",
+    ]
+    assert {c.id for c in modelo.clausulas if not c.removivel} == NAO_REMOVIVEIS
+    lgpd = modelo.clausula("lgpd")
+    assert "controladora" in lgpd.texto
+    assert "operadora" in lgpd.texto
+    assert "prevalece o contrato" in modelo.clausula("prevalencia_contrato").texto
+    assert "{foro}" in modelo.clausula("foro").texto
+
+
+def test_clausula_inexistente():
+    with pytest.raises(KeyError, match="xyz"):
+        carregar_modelo_proposta(MODELO_V1).clausula("xyz")
+
+
+def test_marcador_desconhecido_e_recusado(dados_v1, escrever):
+    dados = copy.deepcopy(dados_v1)
+    dados["clausulas"][0]["texto"] = "Vale para {cliente.cnpj}."
+    with pytest.raises(ModeloPropostaInvalido, match=r"cliente\.cnpj"):
+        carregar_modelo_proposta(escrever(dados))
+
+
+def test_ids_de_clausula_repetidos(dados_v1, escrever):
+    dados = copy.deepcopy(dados_v1)
+    dados["clausulas"][1]["id"] = dados["clausulas"][0]["id"]
+    with pytest.raises(ModeloPropostaInvalido, match="repetido"):
+        carregar_modelo_proposta(escrever(dados))
+
+
+def test_removivel_e_falso_por_padrao(dados_v1, escrever):
+    dados = copy.deepcopy(dados_v1)
+    del dados["clausulas"][0]["removivel"]
+    assert carregar_modelo_proposta(escrever(dados)).clausulas[0].removivel is False
