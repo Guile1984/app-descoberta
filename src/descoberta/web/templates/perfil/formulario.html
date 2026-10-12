@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block titulo %}Perfil do consultor · Descoberta{% endblock %}
+{% block conteudo %}
+<h1>Perfil do consultor</h1>
+{% if primeiro_uso %}
+<p class="doc-aviso" role="status">
+  <strong>Antes de começar:</strong> preencha seus dados. Eles aparecem no Relatório de
+  Descoberta e na Proposta Comercial, inclusive no bloco de assinatura do consultor.
+</p>
+{% endif %}
+{% if salvo %}<p class="sucesso" role="status">✓ Perfil salvo.</p>{% endif %}
+{% if dados_ficticios %}
+<p class="doc-aviso">Banco de demonstração: estes dados do consultor são fictícios, e os documentos avisam isso.</p>
+{% endif %}
+{% if erro %}<p class="erro" role="alert">⚠ {{ erro }}</p>{% endif %}
+<p class="discreto">O perfil fica só neste computador (no banco local da app) e não é enviado a nenhum serviço.</p>
+<form method="post" action="/perfil" enctype="multipart/form-data" class="formulario">
+  {% if primeiro_uso %}<input type="hidden" name="primeiro_uso" value="1">{% endif %}
+  <label>Nome *
+    <input name="nome" value="{{ valores.nome or '' }}" required autofocus autocomplete="name">
+  </label>
+  <label>Empresa *
+    <input name="empresa" value="{{ valores.empresa or '' }}" required autocomplete="organization">
+  </label>
+  <label>CPF ou CNPJ
+    <input name="cpf_cnpj" value="{{ valores.cpf_cnpj or '' }}" placeholder="000.000.000-00 ou 00.000.000/0000-00">
+  </label>
+  <label>E-mail
+    <input name="email" type="email" value="{{ valores.email or '' }}" autocomplete="email">
+  </label>
+  <label>Telefone
+    <input name="telefone" value="{{ valores.telefone or '' }}" autocomplete="tel">
+  </label>
+  <label>Cidade
+    <input name="cidade" value="{{ valores.cidade or '' }}" autocomplete="address-level2">
+  </label>
+  <label>UF
+    <select name="uf">
+      <option value="">—</option>
+      {% for sigla, nome in ufs.items() %}
+      <option value="{{ sigla }}"{% if valores.uf == sigla %} selected{% endif %}>{{ sigla }} — {{ nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <fieldset class="logotipo">
+    <legend>Logotipo (opcional)</legend>
+    {% if tem_logotipo %}
+    <img src="/perfil/logotipo.png" alt="Logotipo atual" class="logotipo-atual">
+    <label class="opcao"><input type="checkbox" name="remover_logotipo" value="1"> Remover o logotipo</label>
+    {% endif %}
+    <label>{{ "Trocar por outro" if tem_logotipo else "Arquivo" }}
+      <input type="file" name="logotipo" accept="image/png,image/jpeg">
+    </label>
+    <p class="discreto">PNG ou JPEG, até 1 MB. A imagem é regravada sem metadados (como a localização de uma foto de celular).</p>
+  </fieldset>
+  <div class="acoes">
+    <button type="submit" class="botao">Salvar</button>
+    {% if not primeiro_uso %}<a href="/">Cancelar</a>{% endif %}
+  </div>
+</form>
+{% endblock %}

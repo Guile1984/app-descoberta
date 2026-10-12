@@ -1,0 +1,4 @@
+{# Moldura fixa: os avisos se recarregam sozinhos quando a proposta muda (evento proposta-mudou). #}
+<div id="avisos-proposta" hx-get="/sessoes/{{ sessao.id }}/proposta/avisos" hx-trigger="proposta-mudou from:body">
+  {% include "proposta/_avisos_conteudo.html" %}
+</div>

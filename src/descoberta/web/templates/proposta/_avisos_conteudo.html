@@ -1,0 +1,24 @@
+{#
+  Avisos da proposta, para o consultor (não vão para o documento). Só alertam:
+  - item de escopo que parece estar em mais de uma fase (comparação por palavras);
+  - total das fases diferente do investimento da métrica, o do payback do relatório.
+  na_criacao: a página de criação, onde a proposta ainda não pode ser editada.
+#}
+{% if avisos.repetidos %}
+<div class="doc-aviso" role="status">
+  <p><strong>Pode haver item que aparece em mais de uma fase:</strong></p>
+  <ul>
+    {% for r in avisos.repetidos %}
+    <li>“{{ r.item }}” ({{ r.fase }}) e “{{ r.outro_item }}” ({{ r.outra_fase }})</li>
+    {% endfor %}
+  </ul>
+  <p>Deixe cada item só na fase em que ele é feito{% if na_criacao %}: ajuste o escopo na <a href="/sessoes/{{ sessao.id }}/revisao">revisão</a> antes de criar, ou, depois de criar, mova ou exclua o item em “Escopo por fase”{% else %}, em “Escopo por fase”{% endif %}.</p>
+</div>
+{% endif %}
+{% if avisos.diferenca is not none %}
+<div class="doc-aviso" role="status">
+  <p><strong>O total da proposta ({{ avisos.total | moeda }}) é diferente do investimento usado no payback do relatório ({{ avisos.investimento | moeda }})</strong>:
+    {{ avisos.diferenca | abs | moeda }} a {{ "mais" if avisos.diferenca > 0 else "menos" }}.</p>
+  <p>Ajuste o valor das fases ou o investimento na <a href="/sessoes/{{ sessao.id }}">tela da sessão</a>, para a proposta e o relatório usarem o mesmo número.</p>
+</div>
+{% endif %}

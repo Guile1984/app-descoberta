@@ -26,11 +26,14 @@ from descoberta.repositorio import (
     notas_da_sessao,
     obter_cliente,
     obter_metricas,
+    obter_perfil,
     obter_sessao,
     respostas_da_sessao,
     sinais_marcados,
     textos_da_sessao,
 )
+
+from .consultor import Consultor
 
 
 @dataclass(frozen=True)
@@ -67,6 +70,7 @@ class DadosRelatorio:
     sinais: list[SinalDoRelatorio]
     anotacoes: list[AnotacaoDoRelatorio]
     pendencias: PendenciasRevisao
+    consultor: Consultor | None  # None: perfil ainda não preenchido
 
 
 def coletar_dados(session: Session, sessao_id: int, questionario: Questionario) -> DadosRelatorio:
@@ -105,6 +109,7 @@ def coletar_dados(session: Session, sessao_id: int, questionario: Questionario) 
             AnotacaoDoRelatorio(a.bloco, a.texto, a.criado_em)
             for a in anotacoes_da_sessao(session, sessao_id)
         ],
+        consultor=Consultor.do_perfil(obter_perfil(session)),
         pendencias=pendencias_da_revisao(
             [t.id for t in questionario.revisao.textos],
             textos,

@@ -5,13 +5,13 @@ from descoberta.repositorio import listar_clientes, listar_sessoes, obter_client
 HX = {"HX-Request": "true"}
 
 
-def test_lista_vazia_convida_a_cadastrar(cliente_http):
+def test_lista_vazia_convida_a_cadastrar(cliente_http, perfil):
     resposta = cliente_http.get("/")
     assert resposta.status_code == 200
     assert "Nenhum cliente cadastrado" in resposta.text
 
 
-def test_cadastro_valido_redireciona_para_o_cliente(cliente_http, banco):
+def test_cadastro_valido_redireciona_para_o_cliente(cliente_http, banco, perfil):
     resposta = cliente_http.post(
         "/clientes",
         data={

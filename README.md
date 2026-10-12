@@ -44,3 +44,24 @@ O botão "Relatório →" (na sessão ou na revisão) mostra a prévia nas vers�
 interna e baixa o rascunho em PDF, Word ou Markdown, tudo sem internet. "Registrar versão
 enviada" guarda o PDF com número de versão, data e hash SHA-256, que aparecem no rodapé de
 cada página: compare o rodapé da cópia assinada com a lista de versões registradas.
+
+### Perfil do consultor
+
+No primeiro uso, a tela inicial pede o perfil do consultor (nome, empresa, CPF ou CNPJ,
+contato, cidade/UF e logotipo opcional). Ele vai no relatório e na proposta, inclusive no
+bloco de assinatura do consultor, e fica só no banco local. Para mudar depois: menu
+"Perfil". No banco de demonstração, o consultor é fictício e os documentos avisam isso.
+
+### Proposta Comercial
+
+O botão "Proposta →" (na revisão ou no relatório) cria a proposta como cópia do modelo
+`config/proposta_v1.yaml` e da revisão; depois ela é editada à parte, sem mudar o
+relatório. Se o score final indicar "não seguir agora", a app avisa antes de criar.
+
+- As Condições Gerais vêm do modelo. Em cada proposta dá para ajustar o texto de uma
+  cláusula ou excluir as removíveis, sem mudar o modelo.
+- O modelo é um ponto de partida: revise-o com um advogado antes de usar com clientes.
+- "Registrar versão enviada" guarda o PDF da proposta com numeração própria, hash no
+  rodapé e as cláusulas congeladas.
+- "PDF único" junta o relatório (cliente) e a proposta num arquivo só; cada parte mantém o
+  próprio rodapé e hash.

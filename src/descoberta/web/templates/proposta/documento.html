@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block titulo %}Documento da proposta · {{ dados.relatorio.empresa }} · Descoberta{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <p class="discreto"><a href="/clientes/{{ sessao.cliente_id }}">{{ dados.relatorio.empresa }}</a> · {{ dados.relatorio.cliente }}</p>
+    <h1>{{ modelo.titulo }}</h1>
+    <p class="discreto">Sessão de {{ sessao.data | data_br }}</p>
+  </div>
+  <div class="acoes">
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta">← Editar a proposta</a>
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio">← Relatório</a>
+  </div>
+</div>
+
+<div class="colunas">
+  <div>
+    {% if a_preencher %}
+    <p class="doc-aviso" role="status">
+      ⚠ A proposta tem {{ a_preencher }} {{ "trecho" if a_preencher == 1 else "trechos" }} a preencher
+      (marcados com “A preencher”). Complete na <a href="/sessoes/{{ sessao.id }}/proposta">edição da proposta</a>
+      ou no <a href="/perfil">perfil do consultor</a>.
+    </p>
+    {% endif %}
+    {% include "relatorio/_documento.html" %}
+  </div>
+  <aside class="coluna-apoio">
+    <section class="apoio">
+      <h2>Antes de enviar</h2>
+      <p class="doc-aviso">⚖ {{ modelo.aviso }}</p>
+    </section>
+    <section class="apoio">
+      <h2>Baixar (rascunho)</h2>
+      <p class="discreto">Gerado na hora, com os dados atuais. O rodapé diz “Rascunho não registrado”.</p>
+      <p class="acoes">
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta.pdf">PDF</a>
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta.docx">Word</a>
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta.md">Markdown</a>
+      </p>
+    </section>
+    <section class="apoio">
+      <h2>Relatório e proposta num PDF só</h2>
+      {% set relatorio, proposta = pacote %}
+      <p class="discreto">Junta o
+        {% if relatorio %}relatório versão {{ relatorio.numero }} (cliente){% else %}rascunho do relatório (cliente){% endif %}
+        e a
+        {% if proposta %}proposta versão {{ proposta.numero }}{% else %}proposta em rascunho{% endif %}.
+        Cada parte mantém o próprio rodapé, com versão e hash, e a sua numeração de páginas.</p>
+      <p><a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta/relatorio-e-proposta.pdf">PDF único</a></p>
+    </section>
+    <section class="apoio" id="versoes">
+      <h2>Versões registradas</h2>
+      <form method="post" action="/sessoes/{{ sessao.id }}/proposta/versoes">
+        <button type="submit" class="botao">Registrar versão enviada</button>
+      </form>
+      <p class="discreto">Guarda o PDF como foi emitido, com número de versão, data e hash, e congela o texto das Condições Gerais. A numeração é própria: renegociar a proposta não muda o relatório.</p>
+      {% if versoes %}
+      <table class="tabela compacta">
+        <thead><tr><th>Versão</th><th>Emitida em</th><th>Hash</th><th></th></tr></thead>
+        <tbody>
+          {% for v in versoes %}
+          <tr>
+            <td>{{ v.numero }}</td>
+            <td>{{ v.emitido_em | data_hora_local }}</td>
+            <td><code title="Hash do conteúdo (no rodapé): {{ v.hash_conteudo }}&#10;Hash do arquivo PDF: {{ v.hash_pdf }}">{{ v.hash_conteudo[:12] }}</code></td>
+            <td><a href="/sessoes/{{ sessao.id }}/proposta/versoes/{{ v.numero }}.pdf">PDF</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p class="discreto">Nenhuma versão registrada.</p>
+      {% endif %}
+    </section>
+  </aside>
+</div>
+{% endblock %}

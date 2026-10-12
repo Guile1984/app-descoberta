@@ -12,6 +12,7 @@ from pypdf import PdfReader
 from descoberta.relatorio import (
     Emissao,
     emitir,
+    emitir_proposta,
     exportar_docx,
     exportar_markdown,
     exportar_pdf,
@@ -200,3 +201,68 @@ def test_nenhuma_palavra_quebra_nas_tabelas_do_pdf(dados_roberto, tipo):
                     if stringWidth(palavra, fonte, 8.5) > util
                 ]
     assert quebradas == []
+
+
+# --- Logotipo e assinatura do consultor ---
+
+
+def test_logotipo_na_capa_do_pdf_e_do_word(dados_roberto, emissao_cliente):
+    emitido = emitir(dados_roberto, emissao_cliente)
+    primeira = PdfReader(io.BytesIO(exportar_pdf(emitido))).pages[0]
+    assert len(primeira.images) == 1
+    assert len(AbrirDocx(io.BytesIO(exportar_docx(emitido))).inline_shapes) == 1
+
+
+def test_sem_logotipo_nao_ha_imagem(dados_vazios, emissao_cliente):
+    emitido = emitir(dados_vazios, emissao_cliente)
+    assert not PdfReader(io.BytesIO(exportar_pdf(emitido))).pages[0].images
+    assert len(AbrirDocx(io.BytesIO(exportar_docx(emitido))).inline_shapes) == 0
+
+
+def test_assinatura_do_consultor_preenchida_nos_tres_formatos(dados_roberto, emissao_cliente):
+    emitido = emitir(dados_roberto, emissao_cliente)
+    for texto in (
+        exportar_markdown(emitido),
+        _texto_do_pdf(exportar_pdf(emitido)),
+        _texto_do_docx(exportar_docx(emitido)),
+    ):
+        assert "Ana Exemplo" in texto
+        assert "11.222.333/0001-81" in texto
+
+
+# --- Títulos não ficam sozinhos no pé da página ---
+
+
+def _ultima_linha_de_cada_pagina(pdf: bytes) -> list[str]:
+    """A última linha de texto de cada página, sem o rodapé (versão, hash e número)."""
+    ultimas = []
+    for pagina in PdfReader(io.BytesIO(pdf)).pages:
+        linhas = [
+            linha.strip()
+            for linha in pagina.extract_text().splitlines()
+            if linha.strip() and " · hash " not in linha and not linha.startswith("Página ")
+        ]
+        ultimas.append(linhas[-1] if linhas else "")
+    return ultimas
+
+
+@pytest.mark.parametrize("tipo", list(TipoVersao))
+def test_nenhuma_pagina_do_relatorio_termina_num_titulo(dados_roberto, tipo):
+    emitido = emitir(dados_roberto, Emissao(tipo, None, EMITIDO_EM))
+    titulos = set(emitido.documento.titulos(1)) | set(emitido.documento.titulos(2))
+    orfaos = [t for t in _ultima_linha_de_cada_pagina(exportar_pdf(emitido)) if t in titulos]
+    assert orfaos == []
+
+
+def test_nenhuma_pagina_da_proposta_termina_num_titulo(dados_proposta_roberto, emissao_proposta):
+    emitida = emitir_proposta(dados_proposta_roberto, emissao_proposta)
+    titulos = set(emitida.documento.titulos(1)) | set(emitida.documento.titulos(2))
+    orfaos = [t for t in _ultima_linha_de_cada_pagina(exportar_pdf(emitida)) if t in titulos]
+    assert orfaos == []
+
+
+def test_titulos_do_word_ficam_com_o_paragrafo_seguinte(dados_roberto, emissao_cliente):
+    documento = AbrirDocx(io.BytesIO(exportar_docx(emitir(dados_roberto, emissao_cliente))))
+    titulos = [p for p in documento.paragraphs if p.style.name.startswith("Heading")]
+    assert titulos
+    assert all(p.paragraph_format.keep_with_next for p in titulos)

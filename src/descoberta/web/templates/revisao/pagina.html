@@ -11,6 +11,7 @@
   <div class="acoes">
     <a class="botao secundario" href="/sessoes/{{ sessao.id }}">← Tela da sessão</a>
     <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio">Relatório →</a>
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta">Proposta →</a>
   </div>
 </div>
 <p class="discreto">O que o relatório para o cliente precisa e não sai direto das respostas. Os textos salvam sozinhos, como na sessão.</p>
@@ -20,7 +21,7 @@
     {% include "revisao/_textos.html" %}
     {% for lista in listas.values() %}
       {% with itens = itens[lista.nome], valores = {}, erro = none, focar = false %}
-      {% include "revisao/_lista.html" %}
+      {% include "listas/_lista.html" %}
       {% endwith %}
       {% if lista.nome == "riscos" %}{% include "revisao/_matriz.html" %}{% endif %}
     {% endfor %}

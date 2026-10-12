@@ -15,35 +15,68 @@ preenchida, montada pelo consultor a partir desses fatos. O que o cliente não d
 marcado como hipótese.
 """
 
+import io
 import sys
 from datetime import date, timedelta
 from pathlib import Path
 
+from PIL import Image, ImageDraw
 from sqlmodel import Session
 
+from descoberta.proposta import carregar_modelo_proposta
+from descoberta.proposta.inicial import conteudo_inicial
+from descoberta.questionario import carregar_questionario
+from descoberta.relatorio import coletar_dados
+from descoberta.relatorio.dados_proposta import dados_para_proposta_nova
 from descoberta.repositorio import (
     CAMINHO_BANCO_PADRAO,
+    FaseProposta,
     Indicador,
     ItemEscopo,
+    ItemProposta,
     ProximoPasso,
     Risco,
     StatusSessao,
+    TipoItemProposta,
     adicionar_anotacao,
     adicionar_item,
+    ajustar_clausula,
     criar_cliente,
     criar_engine,
+    criar_proposta,
     criar_sessao,
     criar_tabelas,
+    editar_item,
+    excluir_item,
+    itens_da_sessao,
     marcar_hipotese,
     marcar_sinal,
     salvar_metricas,
     salvar_nota,
+    salvar_perfil,
+    salvar_proposta,
     salvar_resposta,
     salvar_texto_secao,
 )
 
 CAMINHO_DEMO = Path("data") / "demo.db"
+PASTA_CONFIG = Path("config")
 VERSAO_QUESTIONARIO = 1
+VERSAO_MODELO_PROPOSTA = 1
+
+# Consultor fictício: o perfil fica marcado com dados_ficticios, e o relatório e a
+# proposta gerados pelo demo avisam isso. O CNPJ é o número clássico de teste
+# (11.222.333/0001-81): os dígitos conferem, mas não é de nenhuma empresa do demo.
+CONSULTOR = {
+    "nome": "Ana Exemplo",
+    "empresa": "Exemplo Consultoria em IA Ltda",
+    "cpf_cnpj": "11.222.333/0001-81",
+    "email": "ana@example.com",
+    "telefone": "(11) 90000-0000",
+    "cidade": "São Paulo",
+    "uf": "SP",
+    "dados_ficticios": True,
+}
 
 CLIENTE = {
     "nome": "Roberto",
@@ -253,10 +286,13 @@ INDICADORES = [
     },
 ]
 
+GUIA_DE_CAPTURA = "Guia de captura de fotos para os mestres de obra (distância, luz, ângulo, régua)"
+ROTULAGEM = "Organização e rotulagem das cerca de 500 fotos com o critério do Marcos"
+
 # (texto, entra no MVP)
 ESCOPO = [
-    ("Guia de captura de fotos para os mestres de obra (distância, luz, ângulo, régua)", True),
-    ("Organização e rotulagem das cerca de 500 fotos com o critério do Marcos", True),
+    (GUIA_DE_CAPTURA, True),
+    (ROTULAGEM, True),
     ("Triagem por foto (grave ou simples), com revisão do Marcos em todos os casos", True),
     ("Envio e devolução pelo WhatsApp ou por upload (integração nível 0 ou 1)", True),
     ("Medição automática da abertura da fissura", False),
@@ -316,6 +352,30 @@ TEXTOS = {
 }
 
 
+# Proposta do Roberto: criada como a tela cria (modelo + revisão) e depois ajustada.
+PROPOSTA = {
+    # CNPJ alfanumérico de exemplo da Receita Federal: os dígitos conferem; é fictício.
+    "cliente_cpf_cnpj": "12.ABC.345/01DE-35",
+    "cliente_representante": "Roberto",
+    "cliente_cargo": "Sócio-diretor",
+    "cliente_email": "roberto@example.com",
+    "cliente_cidade": "Campinas",
+    "cliente_uf": "SP",
+}
+# O total (R$ 20.000) é o investimento da métrica, o mesmo do payback do relatório, e
+# fica dentro do orçamento que o cliente informou (R$ 15 a 20 mil, bloco 9).
+INVESTIMENTO_FASE_0 = 6_000  # o preço da fase 0 é do consultor (o modelo não sugere)
+INVESTIMENTO_MVP = 14_000
+# Escopo da fase 0 no demo: o guia de captura e a rotulagem das fotos, que a revisão
+# levou para o MVP, são trabalho da fase 0 e substituem os itens genéricos do modelo.
+ESCOPO_FASE_0 = [
+    "Diagnóstico das fontes de dados e definição do padrão de coleta",
+    GUIA_DE_CAPTURA,
+    ROTULAGEM,
+    "Nova medição da prontidão dos dados ao fim da fase",
+]
+
+
 def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -> int:
     """Recria o banco de demonstração e devolve o id da sessão do Roberto.
 
@@ -330,6 +390,7 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -
     try:
         criar_tabelas(engine)
         with Session(engine) as session:
+            salvar_perfil(session, **CONSULTOR, logotipo=_logotipo_ficticio())
             cliente = criar_cliente(session, **CLIENTE)
             sessao = criar_sessao(
                 session,
@@ -351,9 +412,20 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -
             for texto, bloco in ANOTACOES:
                 adicionar_anotacao(session, sessao.id, texto, bloco=bloco)
             _popular_revisao(session, sessao.id, hoje or date.today())
+            _popular_proposta(session, sessao.id)
             return sessao.id
     finally:
         engine.dispose()  # no Windows, o arquivo só pode ser apagado depois de fechado
+
+
+def _logotipo_ficticio() -> bytes:
+    """Um retângulo com "EXEMPLO": mostra onde o logotipo aparece nos documentos."""
+    imagem = Image.new("RGB", (360, 120), "#0b5cad")
+    desenho = ImageDraw.Draw(imagem)
+    desenho.text((180, 60), "EXEMPLO", fill="white", anchor="mm", font_size=48)
+    saida = io.BytesIO()
+    imagem.save(saida, "PNG")
+    return saida.getvalue()
 
 
 def _popular_revisao(session: Session, sessao_id: int, hoje: date) -> None:
@@ -370,6 +442,35 @@ def _popular_revisao(session: Session, sessao_id: int, hoje: date) -> None:
         )
     for secao_id, texto in TEXTOS.items():
         salvar_texto_secao(session, sessao_id, secao_id, texto)
+
+
+def _popular_proposta(session: Session, sessao_id: int) -> None:
+    questionario = carregar_questionario(PASTA_CONFIG / f"questionario_v{VERSAO_QUESTIONARIO}.yaml")
+    modelo = carregar_modelo_proposta(PASTA_CONFIG / f"proposta_v{VERSAO_MODELO_PROPOSTA}.yaml")
+    dados = dados_para_proposta_nova(coletar_dados(session, sessao_id, questionario))
+    inicial = conteudo_inicial(modelo.padrao, dados)
+    criar_proposta(session, sessao_id, inicial, versao_modelo=VERSAO_MODELO_PROPOSTA)
+    salvar_proposta(session, sessao_id, **PROPOSTA)
+    fase_0, mvp = itens_da_sessao(session, FaseProposta, sessao_id)
+    editar_item(session, FaseProposta, fase_0.id, investimento=INVESTIMENTO_FASE_0)
+    editar_item(session, FaseProposta, mvp.id, investimento=INVESTIMENTO_MVP)
+    # Cada item numa fase só: o escopo da fase 0 é refeito e sai do MVP.
+    escopo = itens_da_sessao(session, ItemProposta, sessao_id, tipo=TipoItemProposta.escopo)
+    for item in escopo:
+        if item.fase_id == fase_0.id or item.texto in ESCOPO_FASE_0:
+            excluir_item(session, ItemProposta, item.id)
+    for texto in ESCOPO_FASE_0:
+        adicionar_item(
+            session,
+            ItemProposta,
+            sessao_id,
+            tipo=TipoItemProposta.escopo,
+            texto=texto,
+            fase_id=fase_0.id,
+        )
+    # Uma cláusula ajustada só nesta proposta (o modelo continua com 30 dias).
+    suporte = modelo.clausula("suporte_garantia").texto.replace("30 dias", "60 dias")
+    ajustar_clausula(session, sessao_id, "suporte_garantia", texto=suporte)
 
 
 def main(argumentos: list[str] | None = None) -> None:

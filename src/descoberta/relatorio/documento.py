@@ -20,6 +20,9 @@ class Capa:
     linhas: list[tuple[str, str]]  # (rótulo, valor)
     faixa: str | None = None  # destaque no topo (ex.: "USO INTERNO")
     nota: str | None = None  # frase de confidencialidade
+    # PNG do perfil do consultor. Vai no PDF, no Word e na prévia; o Markdown não tem
+    # imagem, então o logotipo não entra no texto canônico (nem no hash do rodapé).
+    logotipo: bytes | None = None
 
 
 @dataclass(frozen=True)
@@ -65,6 +68,12 @@ class Assinatura:
     tipo: ClassVar[str] = "assinatura"
     titulo: str  # "Pelo cliente — Construtora Alvorada"
     campos: tuple[str, ...] = ("Nome", "Cargo", "Data", "Assinatura")
+    # Campos já preenchidos (ex.: nome do consultor, vindo do perfil); os outros ficam
+    # com a linha em branco para preencher à mão.
+    valores: tuple[tuple[str, str], ...] = ()
+
+    def valor(self, campo: str) -> str | None:
+        return dict(self.valores).get(campo)
 
 
 @dataclass(frozen=True)
@@ -98,7 +107,7 @@ class Documento:
                     partes.append(" | ".join(bloco.colunas))
                     partes += [" | ".join(linha) for linha in bloco.linhas]
                 case Assinatura():
-                    partes += [bloco.titulo, *bloco.campos]
+                    partes += [bloco.titulo, *bloco.campos, *(v for _, v in bloco.valores)]
         return "\n".join(partes)
 
     def titulos(self, nivel: int = 1) -> list[str]:

@@ -1,0 +1,501 @@
+"""Tela da Proposta Comercial: criação (com o aviso do score), edição e documento."""
+
+import io
+from pathlib import Path
+
+import pytest
+from pypdf import PdfReader
+
+from descoberta.proposta import carregar_modelo_proposta
+from descoberta.repositorio import (
+    CAMPOS_PROPOSTA,
+    FaseProposta,
+    ItemEscopo,
+    ItemProposta,
+    TipoItemProposta,
+    adicionar_item,
+    ajustes_das_clausulas,
+    itens_da_sessao,
+    obter_proposta,
+    salvar_metricas,
+    salvar_nota,
+    versoes_da_proposta,
+    versoes_da_sessao,
+)
+from descoberta.web.proposta import CAMPOS_DAS_CONDICOES, CAMPOS_DO_CLIENTE
+
+HX = {"HX-Request": "true"}
+
+
+@pytest.fixture
+def modelo():
+    return carregar_modelo_proposta(
+        Path(__file__).resolve().parents[2] / "config" / "proposta_v1.yaml"
+    )
+
+
+def _url(sessao_id: int, resto: str = "") -> str:
+    return f"/sessoes/{sessao_id}/proposta{resto}"
+
+
+def _score_nao_seguir(banco, sessao_id, questionario):
+    """Todas as notas zeradas: score final completo, na faixa "não seguir agora"."""
+    scores = questionario.scores
+    for criterio in scores.prontidao_dados.criterios:
+        salvar_nota(banco, sessao_id, criterio.id, 0)
+    for criterio in scores.viabilidade_final.criterios:
+        if criterio.id != scores.prontidao_dados.criterio_final:
+            salvar_nota(banco, sessao_id, criterio.id, 0)
+
+
+# --- Criação ---
+
+
+def test_sem_proposta_a_pagina_oferece_criar(cliente_http, sessao):
+    html = cliente_http.get(_url(sessao.id)).text
+    assert "Criar proposta" in html
+    assert f'action="{_url(sessao.id)}"' in html
+    assert "advogado" in html  # o aviso do modelo aparece para o consultor
+
+
+def test_criar_proposta_copia_o_modelo_e_volta_para_a_pagina(cliente_http, banco, sessao):
+    resposta = cliente_http.post(_url(sessao.id))
+    assert resposta.status_code == 303
+    assert resposta.headers["location"] == _url(sessao.id)
+    proposta = obter_proposta(banco, sessao.id)
+    assert proposta.versao_modelo == 1
+    assert proposta.criada_com_alerta is False
+    assert len(itens_da_sessao(banco, FaseProposta, sessao.id)) == 2  # score incompleto
+
+
+def test_score_nao_seguir_avisa_antes_de_criar(cliente_http, banco, sessao, questionario_v1):
+    _score_nao_seguir(banco, sessao.id, questionario_v1)
+    html = cliente_http.get(_url(sessao.id)).text
+    assert "Não seguir agora" in html
+    resposta = cliente_http.post(_url(sessao.id))
+    assert resposta.status_code == 409
+    assert "Criar mesmo assim" in resposta.text
+    assert obter_proposta(banco, sessao.id) is None
+
+    resposta = cliente_http.post(_url(sessao.id), data={"confirmar": "1"})
+    assert resposta.status_code == 303
+    assert obter_proposta(banco, sessao.id).criada_com_alerta is True
+
+
+def test_score_incompleto_avisa_de_leve(cliente_http, sessao):
+    html = cliente_http.get(_url(sessao.id)).text
+    assert "score final ainda está incompleto" in html
+
+
+def test_criar_de_novo_e_recusado(cliente_http, sessao):
+    cliente_http.post(_url(sessao.id))
+    assert cliente_http.post(_url(sessao.id)).status_code == 409
+
+
+def test_sessao_inexistente(cliente_http):
+    assert cliente_http.get(_url(999)).status_code == 404
+
+
+# --- Edição ---
+
+
+@pytest.fixture
+def com_proposta(cliente_http, sessao):
+    cliente_http.post(_url(sessao.id))
+    return sessao
+
+
+def test_pagina_de_edicao(cliente_http, com_proposta):
+    html = cliente_http.get(_url(com_proposta.id)).text
+    for titulo in ("Fases", "Escopo por fase", "Entregáveis", "Fora do escopo"):
+        assert f">{titulo}</h2>" in html
+    for campo, rotulo, _ in CAMPOS_DO_CLIENTE + CAMPOS_DAS_CONDICOES:
+        assert f'id="proposta-{campo}"' in html
+        assert rotulo in html
+    assert "advogado" in html
+    assert f'href="{_url(com_proposta.id, "/documento")}"' in html
+
+
+def test_tela_tem_todos_os_campos_da_proposta():
+    na_tela = {campo for campo, _, _ in CAMPOS_DO_CLIENTE + CAMPOS_DAS_CONDICOES}
+    assert na_tela == set(CAMPOS_PROPOSTA)
+
+
+def test_campo_salva_sozinho(cliente_http, banco, com_proposta):
+    url = _url(com_proposta.id, "/campo/cliente_cpf_cnpj")
+    resposta = cliente_http.post(url, data={"valor": "11222333000181"}, headers=HX)
+    assert resposta.status_code == 200
+    assert "Salvo" in resposta.text
+    assert resposta.headers["HX-Trigger"] == "proposta-mudou"
+    banco.expire_all()
+    assert obter_proposta(banco, com_proposta.id).cliente_cpf_cnpj == "11.222.333/0001-81"
+
+
+@pytest.mark.parametrize(
+    ("campo", "valor", "erro"),
+    [
+        ("cliente_cpf_cnpj", "123", "CPF"),
+        ("cliente_uf", "XX", "UF"),
+        ("validade_dias", "quinze", "número inteiro"),
+        ("validade_dias", "0", "validade"),
+        ("reajuste", "", "reajuste"),
+    ],
+)
+def test_campo_invalido(cliente_http, com_proposta, campo, valor, erro):
+    url = _url(com_proposta.id, f"/campo/{campo}")
+    resposta = cliente_http.post(url, data={"valor": valor}, headers=HX)
+    assert resposta.status_code == 422
+    assert erro in resposta.text
+
+
+def test_campo_desconhecido(cliente_http, com_proposta):
+    url = _url(com_proposta.id, "/campo/versao_modelo")
+    assert cliente_http.post(url, data={"valor": "2"}, headers=HX).status_code == 404
+
+
+def test_campo_sem_proposta(cliente_http, sessao):
+    url = _url(sessao.id, "/campo/reajuste")
+    assert cliente_http.post(url, data={"valor": "IPCA"}, headers=HX).status_code == 404
+
+
+def test_incluir_item_de_fase(cliente_http, banco, com_proposta):
+    fase = itens_da_sessao(banco, FaseProposta, com_proposta.id)[1]
+    dados = {"texto": "Painel de acompanhamento", "fase_id": str(fase.id)}
+    resposta = cliente_http.post(_url(com_proposta.id, "/escopo"), data=dados, headers=HX)
+    assert resposta.status_code == 200
+    assert "Painel de acompanhamento" in resposta.text
+    escopo = itens_da_sessao(banco, ItemProposta, com_proposta.id, tipo=TipoItemProposta.escopo)
+    assert escopo[-1].fase_id == fase.id
+
+
+def test_item_de_fase_exige_a_fase(cliente_http, com_proposta):
+    resposta = cliente_http.post(
+        _url(com_proposta.id, "/entregaveis"), data={"texto": "X"}, headers=HX
+    )
+    assert resposta.status_code == 422
+    assert "escolha a fase" in resposta.text
+
+
+def test_mudar_fases_recarrega_o_escopo(cliente_http, com_proposta):
+    dados = {"nome": "Sustentação", "duracao_semanas": "4", "investimento": "1.500"}
+    resposta = cliente_http.post(_url(com_proposta.id, "/fases"), data=dados, headers=HX)
+    assert resposta.headers["HX-Trigger"] == "proposta-mudou, fases-mudaram"
+    assert "R$ 1.500,00" in resposta.text
+    escopo = cliente_http.get(_url(com_proposta.id, "/escopo"), headers=HX).text
+    assert 'hx-trigger="fases-mudaram from:body"' in escopo
+    assert ">Sustentação</option>" in escopo
+
+
+def test_fase_com_numero_invalido(cliente_http, com_proposta):
+    dados = {"nome": "X", "duracao_semanas": "duas"}
+    resposta = cliente_http.post(_url(com_proposta.id, "/fases"), data=dados, headers=HX)
+    assert resposta.status_code == 422
+    assert "número inteiro" in resposta.text
+
+
+def test_editar_fase_mostra_o_valor_como_se_digita(cliente_http, banco, com_proposta):
+    fase = itens_da_sessao(banco, FaseProposta, com_proposta.id)[0]
+    url = _url(com_proposta.id, f"/fases/{fase.id}")
+    cliente_http.post(url, data={"nome": fase.nome, "investimento": "6.000"}, headers=HX)
+    html = cliente_http.get(url + "/editar", headers=HX).text
+    assert 'value="6.000"' in html
+
+
+def test_item_de_outra_lista_nao_e_encontrado(cliente_http, banco, com_proposta):
+    premissa = itens_da_sessao(
+        banco, ItemProposta, com_proposta.id, tipo=TipoItemProposta.premissa
+    )[0]
+    assert cliente_http.get(_url(com_proposta.id, f"/exclusoes/{premissa.id}")).status_code == 404
+
+
+def test_recriar_apaga_e_volta_ao_inicio(cliente_http, banco, com_proposta):
+    resposta = cliente_http.post(_url(com_proposta.id, "/recriar"), headers=HX)
+    assert resposta.headers["HX-Redirect"] == _url(com_proposta.id)
+    assert obter_proposta(banco, com_proposta.id) is None
+
+
+# --- Avisos: itens repetidos entre fases e total diferente do investimento ---
+
+ROTULAGEM = "Organização e rotulagem do histórico com o critério do especialista do cliente"
+REPETIDO = "aparece em mais de uma fase"
+TOTAL_DIFERENTE = "diferente do investimento usado no payback"
+
+
+def test_criacao_avisa_item_da_revisao_que_repete_a_fase_0(cliente_http, banco, sessao):
+    # A rotulagem, marcada "entra no MVP" na revisão, já está no escopo padrão da fase 0.
+    adicionar_item(banco, ItemEscopo, sessao.id, texto=ROTULAGEM.lower(), entra=True)
+    html = cliente_http.get(_url(sessao.id)).text
+    assert REPETIDO in html
+    assert ROTULAGEM in html
+
+
+def test_criacao_sem_repeticao_nao_avisa(cliente_http, banco, sessao):
+    adicionar_item(banco, ItemEscopo, sessao.id, texto="Triagem por foto", entra=True)
+    assert REPETIDO not in cliente_http.get(_url(sessao.id)).text
+
+
+def test_demo_sem_avisos(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    html = cliente.get(_url(sessao_id)).text
+    assert 'hx-trigger="proposta-mudou from:body"' in html  # os avisos se recarregam
+    assert REPETIDO not in html
+    assert TOTAL_DIFERENTE not in html
+
+
+def test_total_diferente_do_investimento_avisa(cliente_demo, app_demo_banco):
+    cliente, sessao_id = cliente_demo
+    fase_0 = itens_da_sessao(app_demo_banco(), FaseProposta, sessao_id)[0]
+    dados = {"nome": fase_0.nome, "duracao_semanas": "4", "investimento": "7.000"}
+    cliente.post(_url(sessao_id, f"/fases/{fase_0.id}"), data=dados, headers=HX)
+    avisos = cliente.get(_url(sessao_id, "/avisos"), headers=HX).text
+    assert TOTAL_DIFERENTE in avisos
+    assert "R$ 21.000,00" in avisos  # total da proposta
+    assert "R$ 20.000,00" in avisos  # investimento da métrica
+
+
+def test_item_repetido_na_edicao_avisa(cliente_http, banco, com_proposta):
+    mvp = itens_da_sessao(banco, FaseProposta, com_proposta.id)[1]
+    dados = {"texto": ROTULAGEM, "fase_id": str(mvp.id)}
+    cliente_http.post(_url(com_proposta.id, "/escopo"), data=dados, headers=HX)
+    avisos = cliente_http.get(_url(com_proposta.id, "/avisos"), headers=HX).text
+    assert REPETIDO in avisos
+
+
+def test_sessao_sem_investimento_nao_compara(cliente_http, banco, com_proposta):
+    for fase in itens_da_sessao(banco, FaseProposta, com_proposta.id):
+        dados = {"nome": fase.nome, "investimento": "1.000"}
+        cliente_http.post(_url(com_proposta.id, f"/fases/{fase.id}"), data=dados, headers=HX)
+    assert TOTAL_DIFERENTE not in cliente_http.get(_url(com_proposta.id, "/avisos")).text
+    salvar_metricas(banco, com_proposta.id, investimento=5_000)
+    assert TOTAL_DIFERENTE in cliente_http.get(_url(com_proposta.id, "/avisos")).text
+
+
+def test_avisos_sem_proposta(cliente_http, sessao):
+    assert cliente_http.get(_url(sessao.id, "/avisos")).status_code == 404
+
+
+# --- Documento ---
+
+
+def test_documento_da_proposta_do_roberto(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    html = cliente.get(_url(sessao_id, "/documento")).text
+    assert "1. Identificação das partes" in html
+    assert "R$ 20.000,00" in html  # total: fase 0 R$ 6.000 + MVP R$ 14.000
+    assert "Campinas/SP" in html
+    assert "advogado" in html  # aviso para o consultor, fora do documento
+    for formato in ("pdf", "docx", "md"):
+        assert f'href="{_url(sessao_id, "." + formato)}"' in html
+
+
+@pytest.mark.parametrize(
+    ("formato", "tipo"),
+    [
+        ("pdf", "application/pdf"),
+        ("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+        ("md", "text/markdown; charset=utf-8"),
+    ],
+)
+def test_baixar_rascunho(cliente_demo, formato, tipo):
+    cliente, sessao_id = cliente_demo
+    resposta = cliente.get(_url(sessao_id, f".{formato}"))
+    assert resposta.status_code == 200
+    assert resposta.headers["content-type"] == tipo
+    assert resposta.headers["content-disposition"] == (
+        f'attachment; filename="proposta-comercial-construtora-alvorada-2026-10-07.{formato}"'
+    )
+
+
+def test_documento_sem_proposta(cliente_http, sessao):
+    assert cliente_http.get(_url(sessao.id, "/documento")).status_code == 404
+    assert cliente_http.get(_url(sessao.id, ".pdf")).status_code == 404
+
+
+def test_formato_desconhecido(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    assert cliente.get(_url(sessao_id, ".odt")).status_code == 404
+
+
+def test_links_para_a_proposta(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    for pagina in ("/revisao", "/relatorio"):
+        html = cliente.get(f"/sessoes/{sessao_id}{pagina}").text
+        assert f'href="{_url(sessao_id)}"' in html
+
+
+# --- Condições Gerais ---
+
+
+def _clausula(sessao_id, clausula_id, resto=""):
+    return _url(sessao_id, f"/clausulas/{clausula_id}{resto}")
+
+
+def test_condicoes_gerais_na_edicao(cliente_http, com_proposta):
+    html = cliente_http.get(_url(com_proposta.id)).text
+    assert ">Condições Gerais</h2>" in html
+    assert 'id="clausula-foro"' in html
+    assert "{foro}" in html  # o texto mostra o marcador; o documento mostra a cidade
+    assert "Não removível" in html
+
+
+def test_ajustar_texto_salva_sozinho(cliente_http, banco, com_proposta):
+    url = _clausula(com_proposta.id, "suporte_garantia")
+    resposta = cliente_http.post(url, data={"texto": "Garantia de 90 dias."}, headers=HX)
+    assert resposta.status_code == 200
+    assert resposta.headers["HX-Trigger"] == "proposta-mudou"
+    assert ajustes_das_clausulas(banco, com_proposta.id)["suporte_garantia"].texto == (
+        "Garantia de 90 dias."
+    )
+
+
+def test_voltar_ao_texto_do_modelo_desfaz_o_ajuste(cliente_http, banco, com_proposta, modelo):
+    url = _clausula(com_proposta.id, "foro")
+    cliente_http.post(url, data={"texto": "Outro."}, headers=HX)
+    cliente_http.post(url, data={"texto": modelo.clausula("foro").texto + "  "}, headers=HX)
+    banco.expire_all()
+    assert ajustes_das_clausulas(banco, com_proposta.id) == {}
+
+
+@pytest.mark.parametrize(
+    ("texto", "erro"), [("", "Excluir"), ("Foro de {cidade}.", "marcador desconhecido")]
+)
+def test_ajuste_invalido(cliente_http, com_proposta, texto, erro):
+    url = _clausula(com_proposta.id, "foro")
+    resposta = cliente_http.post(url, data={"texto": texto}, headers=HX)
+    assert resposta.status_code == 422
+    assert erro in resposta.text
+
+
+def test_clausula_inexistente(cliente_http, com_proposta):
+    url = _clausula(com_proposta.id, "xyz")
+    assert cliente_http.post(url, data={"texto": "X"}, headers=HX).status_code == 404
+
+
+def test_excluir_e_incluir_de_volta(cliente_http, banco, com_proposta):
+    url = _clausula(com_proposta.id, "cancelamento", "/excluir")
+    resposta = cliente_http.post(url, data={"excluir": "1"}, headers=HX)
+    assert resposta.status_code == 200
+    assert "Fora desta proposta" in resposta.text
+    assert "Incluir de volta" in resposta.text
+    assert ajustes_das_clausulas(banco, com_proposta.id)["cancelamento"].excluida is True
+    resposta = cliente_http.post(url, data={"excluir": "0"}, headers=HX)
+    banco.expire_all()
+    assert ajustes_das_clausulas(banco, com_proposta.id)["cancelamento"].excluida is False
+
+
+def test_nao_removivel_nao_e_excluida(cliente_http, banco, com_proposta):
+    url = _clausula(com_proposta.id, "lgpd", "/excluir")
+    resposta = cliente_http.post(url, data={"excluir": "1"}, headers=HX)
+    assert resposta.status_code == 422
+    assert "não pode ser excluída" in resposta.text
+    assert ajustes_das_clausulas(banco, com_proposta.id) == {}
+
+
+def test_restaurar(cliente_http, banco, com_proposta, modelo):
+    url = _clausula(com_proposta.id, "suporte_garantia")
+    cliente_http.post(url, data={"texto": "Outro."}, headers=HX)
+    resposta = cliente_http.post(url + "/restaurar", headers=HX)
+    assert modelo.clausula("suporte_garantia").texto in resposta.text
+    banco.expire_all()
+    assert ajustes_das_clausulas(banco, com_proposta.id) == {}
+
+
+# --- Versões registradas ---
+
+
+def test_registrar_versao_da_proposta(cliente_demo, app_demo_banco):
+    cliente, sessao_id = cliente_demo
+    resposta = cliente.post(_url(sessao_id, "/versoes"))
+    assert resposta.status_code == 303
+    assert resposta.headers["location"] == _url(sessao_id, "/documento#versoes")
+    [versao] = versoes_da_proposta(app_demo_banco(), sessao_id)
+    assert versao.numero == 1
+    assert versao.pdf.startswith(b"%PDF")
+    assert any(c["id"] == "foro" and "São Paulo/SP" in c["texto"] for c in versao.clausulas)
+    html = cliente.get(_url(sessao_id, "/documento")).text
+    assert versao.hash_conteudo[:12] in html
+    assert f'href="{_url(sessao_id, "/versoes/1.pdf")}"' in html
+    rodape = PdfReader(io.BytesIO(versao.pdf)).pages[0].extract_text()
+    assert "Proposta · Versão 1, emitida em" in rodape
+    assert versao.hash_conteudo[:12] in rodape
+
+
+def test_versao_registrada_fica_congelada(cliente_demo, app_demo_banco):
+    """Ajustar uma cláusula depois de registrar não muda a versão registrada."""
+    cliente, sessao_id = cliente_demo
+    cliente.post(_url(sessao_id, "/versoes"))
+    antes = cliente.get(_url(sessao_id, "/versoes/1.pdf")).content
+    cliente.post(_clausula(sessao_id, "foro"), data={"texto": "Foro de Campinas/SP."}, headers=HX)
+    cliente.post(_url(sessao_id, "/versoes"))
+    assert cliente.get(_url(sessao_id, "/versoes/1.pdf")).content == antes
+    v2, v1 = versoes_da_proposta(app_demo_banco(), sessao_id)
+    foro = {c["id"]: c["texto"] for c in v1.clausulas}["foro"]
+    assert "São Paulo/SP" in foro
+    assert {c["id"]: c["texto"] for c in v2.clausulas}["foro"] == "Foro de Campinas/SP."
+    assert v1.hash_conteudo != v2.hash_conteudo
+
+
+def test_baixar_versao(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    cliente.post(_url(sessao_id, "/versoes"))
+    resposta = cliente.get(_url(sessao_id, "/versoes/1.pdf"))
+    assert resposta.headers["content-disposition"] == (
+        'attachment; filename="proposta-comercial-construtora-alvorada-2026-10-07-v1.pdf"'
+    )
+    assert cliente.get(_url(sessao_id, "/versoes/2.pdf")).status_code == 404
+
+
+def test_registrar_sem_proposta(cliente_http, sessao):
+    assert cliente_http.post(_url(sessao.id, "/versoes")).status_code == 404
+
+
+def test_versoes_da_proposta_nao_mexem_nas_do_relatorio(cliente_demo, app_demo_banco):
+    cliente, sessao_id = cliente_demo
+    cliente.post(_url(sessao_id, "/versoes"))
+    assert versoes_da_sessao(app_demo_banco(), sessao_id) == []
+
+
+# --- Relatório e proposta num PDF só ---
+
+JUNTOS = "/relatorio-e-proposta.pdf"
+
+
+def _textos_das_paginas(dados: bytes) -> list[str]:
+    return [p.extract_text() for p in PdfReader(io.BytesIO(dados)).pages]
+
+
+def test_pdf_unico_com_rascunhos(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    html = cliente.get(_url(sessao_id, "/documento")).text
+    assert f'href="{_url(sessao_id, JUNTOS)}"' in html
+    assert "rascunho do relatório" in html
+    resposta = cliente.get(_url(sessao_id, JUNTOS))
+    assert resposta.headers["content-type"] == "application/pdf"
+    assert resposta.headers["content-disposition"] == (
+        'attachment; filename="relatorio-e-proposta-construtora-alvorada-2026-10-07.pdf"'
+    )
+    paginas = _textos_das_paginas(resposta.content)
+    assert "Relatório de Descoberta" in paginas[0]
+    assert "Rascunho não registrado (cliente)" in paginas[0]
+    assert any("Proposta · Rascunho" in p for p in paginas)
+    assert not any("USO INTERNO" in p for p in paginas)  # nunca a versão interna
+
+
+def test_pdf_unico_usa_as_versoes_registradas(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    cliente.post(f"/sessoes/{sessao_id}/relatorio/versoes", data={"versao": "interna"})
+    cliente.post(f"/sessoes/{sessao_id}/relatorio/versoes", data={"versao": "cliente"})
+    cliente.post(_url(sessao_id, "/versoes"))
+    html = cliente.get(_url(sessao_id, "/documento")).text
+    assert "relatório versão 2" in html
+    assert "proposta versão 1" in html
+    junto = cliente.get(_url(sessao_id, JUNTOS)).content
+    relatorio = cliente.get(f"/sessoes/{sessao_id}/relatorio/versoes/2.pdf").content
+    paginas = _textos_das_paginas(junto)
+    quantas = len(_textos_das_paginas(relatorio))
+    assert paginas[:quantas] == _textos_das_paginas(relatorio)
+    assert "Proposta · Versão 1" in paginas[quantas]
+
+
+def test_pdf_unico_sem_proposta(cliente_http, sessao):
+    assert cliente_http.get(_url(sessao.id, JUNTOS)).status_code == 404

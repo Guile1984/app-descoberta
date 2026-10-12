@@ -192,5 +192,5 @@ def test_botao_de_ajuda_visivel_na_sessao(cliente_http, sessao):
     assert "Ctrl+/" in html
 
 
-def test_paginas_fora_da_sessao_nao_carregam_os_atalhos(cliente_http):
+def test_paginas_fora_da_sessao_nao_carregam_os_atalhos(cliente_http, perfil):
     assert "atalhos.js" not in cliente_http.get("/").text

@@ -1,16 +1,14 @@
 """Revisão pós-sessão: as quatro listas da tela e tudo o que a página mostra.
 
-As listas (riscos, indicadores, escopo e próximos passos) usam as mesmas rotas e os
-mesmos templates; o que muda de uma para outra está em `ListaRevisao`: a tabela do banco,
-os campos do formulário e como o texto do formulário vira o valor que o repositório espera.
+As listas (riscos, indicadores, escopo e próximos passos) usam as rotas e os templates
+genéricos de `web/listas.py`; aqui fica o que é próprio de cada uma (`Lista`).
 """
 
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import date
 from typing import Any
 
-from sqlmodel import Session, SQLModel
+from sqlmodel import Session
 
 from descoberta.campos import CAMPO_POR_NOME, CampoNumerico
 from descoberta.dominio.pendencias import obrigatorias_pendentes
@@ -33,6 +31,7 @@ from descoberta.repositorio import (
 from descoberta.rotulos import CAMADAS, ESCOPO, IMPACTOS, PROBABILIDADES, RESPONSAVEIS
 
 from .formularios import data_iso
+from .listas import Formulario, Lista
 
 # Os mesmos rótulos para todos os templates da revisão.
 ROTULOS = {
@@ -42,8 +41,6 @@ ROTULOS = {
     "responsaveis": RESPONSAVEIS,
     "opcoes_escopo": ESCOPO,
 }
-
-Formulario = Mapping[str, str]
 
 
 def _escolha(formulario: Formulario, campo: str, rotulo: str) -> str:
@@ -90,35 +87,10 @@ def _proximo_passo(_questionario: Questionario, formulario: Formulario) -> dict[
     }
 
 
-@dataclass(frozen=True)
-class ListaRevisao:
-    nome: str  # na URL e nos ids do HTML ("lista-riscos", "riscos-3")
-    titulo: str
-    explicacao: str
-    item: str  # "risco": no botão "Incluir risco"
-    modelo: type[SQLModel]
-    campos: tuple[str, ...]  # campos do formulário (os mesmos nomes da tabela)
-    converter: Callable[[Questionario, Formulario], dict[str, Any]]
-
-    def valores(self, registro: SQLModel) -> dict[str, str]:
-        """O registro como o formulário de edição mostra (tudo texto)."""
-        valores = {}
-        for campo in self.campos:
-            valor = getattr(registro, campo)
-            if valor is None:
-                valor = ""
-            elif isinstance(valor, bool):
-                valor = "sim" if valor else "nao"
-            elif isinstance(valor, date):
-                valor = valor.isoformat()  # o <input type="date"> usa AAAA-MM-DD
-            valores[campo] = str(valor)
-        return valores
-
-
 LISTAS = {
     lista.nome: lista
     for lista in (
-        ListaRevisao(
+        Lista(
             "riscos",
             "Matriz de riscos",
             "Riscos altos em probabilidade e impacto exigem mitigação antes do início.",
@@ -127,7 +99,7 @@ LISTAS = {
             ("descricao", "categoria", "probabilidade", "impacto", "mitigacao"),
             _risco,
         ),
-        ListaRevisao(
+        Lista(
             "indicadores",
             "Indicadores de sucesso",
             "Indicador atual → meta → prazo → como medir, nas camadas de negócio e técnica.",
@@ -136,7 +108,7 @@ LISTAS = {
             ("nome", "camada", "valor_atual", "meta", "prazo", "como_medir"),
             _indicador,
         ),
-        ListaRevisao(
+        Lista(
             "escopo",
             "Escopo do MVP",
             "O que entra e o que fica de fora do MVP.",
@@ -145,7 +117,7 @@ LISTAS = {
             ("texto", "entra"),
             _item_escopo,
         ),
-        ListaRevisao(
+        Lista(
             "passos",
             "Próximos passos",
             "O que o cliente envia e o que o consultor entrega, com prazo.",
@@ -197,6 +169,13 @@ def _hipoteses(banco: Session, sessao_id: int) -> list[tuple[CampoNumerico, str,
             texto = f"{numero(valor, 2)} {campo.unidade}".strip()
         linhas.append((campo, texto, nome in marcadas))
     return linhas
+
+
+def contexto_das_listas(
+    _banco: Session, _sessao: Sessao, questionario: Questionario
+) -> dict[str, Any]:
+    """O que os templates das listas da revisão usam (categorias de risco e rótulos)."""
+    return {"questionario": questionario, **ROTULOS}
 
 
 def contexto_da_revisao(banco: Session, sessao: Sessao, questionario: Questionario) -> dict:

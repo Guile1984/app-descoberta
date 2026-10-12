@@ -6,6 +6,7 @@
   {% for bloco in documento.blocos %}
     {% if bloco.tipo == "capa" %}
     <header class="doc-capa">
+      {% if bloco.logotipo %}<img src="/perfil/logotipo.png" alt="Logotipo do consultor" class="doc-logotipo">{% endif %}
       {% if bloco.faixa %}<p class="doc-faixa">{{ bloco.faixa }}</p>{% endif %}
       <h2 class="doc-titulo">{{ bloco.titulo }}</h2>
       <p class="doc-subtitulo">{{ bloco.subtitulo }}</p>
@@ -40,7 +41,7 @@
     {% elif bloco.tipo == "assinatura" %}
     <div class="doc-assinatura">
       <p><strong>{{ bloco.titulo }}</strong></p>
-      {% for campo in bloco.campos %}<p>{{ campo }}: <span class="linha-assinatura"></span></p>{% endfor %}
+      {% for campo in bloco.campos %}<p>{{ campo }}: {% if bloco.valor(campo) %}{{ bloco.valor(campo) }}{% else %}<span class="linha-assinatura"></span>{% endif %}</p>{% endfor %}
     </div>
     {% elif bloco.tipo == "quebra" %}
     <hr class="doc-quebra">

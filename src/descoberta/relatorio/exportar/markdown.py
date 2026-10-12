@@ -62,7 +62,10 @@ def _bloco(bloco) -> str:
         case Tabela():
             return _tabela(bloco)
         case Assinatura():
-            campos = [f"**{campo}:** {LINHA_ASSINATURA}" for campo in bloco.campos]
+            campos = [
+                f"**{campo}:** {escapar(bloco.valor(campo) or '') or LINHA_ASSINATURA}"
+                for campo in bloco.campos
+            ]
             return "\n\n".join([f"**{escapar(bloco.titulo)}**", *campos])
         case QuebraDePagina():
             return "---"

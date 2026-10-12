@@ -1,0 +1,169 @@
+# Modelo da Proposta Comercial — versão 1
+#
+# Ponto de partida editável, fora do código, como o questionário. Cada proposta guarda a
+# versão do modelo com que foi criada.
+#
+# - padrao: o que a app preenche ao criar uma proposta (o consultor edita depois, na tela
+#   da proposta). Escopo, exclusões, premissas e responsabilidades também são copiados da
+#   revisão pós-sessão: a proposta é uma cópia, e mudar a revisão depois não a altera.
+# - faixas_score_final (numa fase): a fase só entra se o score final da sessão estiver numa
+#   destas faixas (ids do questionário); sem a lista, a fase entra sempre.
+# - alerta_score_final: faixas do score final em que a app avisa antes de criar a proposta.
+
+versao: 1
+titulo: Proposta Comercial
+
+aviso: >-
+  Modelo de partida, não é aconselhamento jurídico. Revise o texto da proposta e as
+  Condições Gerais com um advogado antes de usar com clientes, e adapte-os ao seu caso.
+
+alerta_score_final: [nao_seguir]
+
+# Critério de aceite da proposta. O aceite das entregas (o que libera os pagamentos) fica
+# separado das metas de negócio, que são acompanhadas, mas não condicionam aceite nem
+# pagamento. Os indicadores vêm da revisão: os da camada técnica entram no aceite, os de
+# negócio nas metas. A tabela de referência vem do questionário.
+criterio_de_aceite:
+  bloco: 5
+  tabela: Critério de aceite em três fases
+  aceite: >-
+    Cada fase é aceita pelo que foi entregue: o escopo e os entregáveis descritos nesta
+    proposta. No MVP, o aceite também exige que a meta técnica abaixo seja atingida no
+    teste com dados históricos e que o piloto assistido seja concluído.
+  metas_de_negocio: >-
+    As metas de negócio abaixo são objetivos que as partes acompanham depois da entrega,
+    na produção. Não são condição de aceite nem de pagamento.
+
+padrao:
+  validade_dias: 15
+  condicoes_pagamento: >-
+    50% no aceite de cada fase e 50% na entrega da fase, por transferência ou boleto, com
+    vencimento em 10 dias da emissão da nota fiscal.
+  impostos: >-
+    Os valores já incluem os tributos incidentes sobre a prestação de serviços, conforme o
+    regime tributário do consultor.
+  reajuste: >-
+    Valores fixos durante a validade da proposta e a execução das fases contratadas. Fases
+    contratadas mais de 12 meses depois do aceite são reajustadas pelo IPCA do período.
+  fases:
+    - nome: Fase 0 — preparação dos dados
+      objetivo: >-
+        Deixar os dados prontos para o MVP: padronizar a coleta, organizar e rotular o
+        histórico e medir a qualidade dos dados.
+      duracao_semanas: 4
+      faixas_score_final: [seguir_fase_0, nao_seguir]
+      escopo:
+        - Diagnóstico das fontes de dados e definição do padrão de coleta
+        - Organização e rotulagem do histórico com o critério do especialista do cliente
+        - Nova medição da prontidão dos dados ao fim da fase
+      entregaveis:
+        - Guia de coleta de dados para a equipe
+        - Base histórica organizada e rotulada
+        - Relatório de qualidade dos dados, com a recomendação de seguir ou não para o MVP
+    - nome: MVP
+      objetivo: >-
+        Construir a solução e validá-la no processo real, com as metas e o critério de
+        aceite desta proposta.
+      duracao_semanas: 8
+      escopo_da_revisao: true  # itens "entra no MVP" da revisão
+      investimento_da_sessao: true  # investimento informado na sessão (bloco 9)
+      entregaveis:
+        - MVP funcionando no piloto assistido
+        - Relatório de resultados do teste com dados históricos e do piloto
+        - Documentação de uso e treinamento da equipe
+  premissas:
+    - >-
+      Os prazos contam a partir do aceite e do recebimento dos dados e acessos necessários.
+    - >-
+      O escopo é o descrito nesta proposta; mudanças seguem a cláusula de alterações de
+      escopo das Condições Gerais.
+  responsabilidades:
+    - Indicar um responsável com autonomia para decisões e validações
+    - Fornecer os dados e os acessos necessários nos prazos combinados
+    - Disponibilizar o especialista do processo para a rotulagem e as validações
+    - Validar cada entrega em até 5 dias úteis
+
+# Condições Gerais: impressas na proposta, num anexo final, cobertas pela mesma assinatura
+# e pelo mesmo hash. Em cada proposta, o consultor pode ajustar o texto de uma cláusula e
+# excluir as que têm removivel: true, sem mudar este modelo.
+#
+# Marcadores que os textos podem usar (a app troca pelo valor):
+#   {cliente.empresa}  {consultor.empresa}  {consultor.nome}  {foro} (cidade/UF do perfil)
+#
+# ATENÇÃO: ponto de partida, não é aconselhamento jurídico. Revise com um advogado.
+clausulas:
+  - id: alteracoes_escopo
+    titulo: Alterações de escopo
+    removivel: true
+    texto: >-
+      Qualquer mudança no escopo, nos entregáveis ou nos prazos desta proposta será
+      registrada por escrito, com a estimativa de impacto em prazo e valor, e só será
+      executada depois da aprovação do contratante. Ajustes dentro dos entregáveis
+      previstos não geram custo adicional.
+  - id: confidencialidade
+    titulo: Confidencialidade
+    texto: >-
+      As partes manterão em sigilo as informações confidenciais recebidas uma da outra,
+      inclusive dados, processos, documentos e condições comerciais, e só as usarão para
+      executar esta proposta. A obrigação continua por 5 anos depois do fim dos serviços e
+      não se aplica a informações públicas, já conhecidas pela parte que as recebeu ou
+      exigidas por lei ou ordem judicial.
+  - id: propriedade_intelectual
+    titulo: Propriedade intelectual
+    removivel: true
+    texto: >-
+      Os entregáveis desenvolvidos especificamente para o contratante, depois de pagos,
+      podem ser usados livremente por ele no seu negócio. Ferramentas, métodos e
+      componentes que o consultor já tinha ou que são de uso geral continuam sendo do
+      consultor, que concede ao contratante licença de uso não exclusiva e por prazo
+      indeterminado, na medida necessária para usar os entregáveis. Os dados do contratante
+      continuam sendo do contratante.
+  - id: lgpd
+    titulo: Proteção de dados pessoais (LGPD)
+    texto: >-
+      Nos dados pessoais tratados para executar esta proposta, {cliente.empresa} é a
+      controladora e {consultor.empresa} é a operadora, nos termos da Lei nº 13.709/2018
+      (LGPD). A operadora trata os dados apenas conforme as instruções da controladora e
+      para executar esta proposta; adota medidas de segurança adequadas; não compartilha os
+      dados com terceiros sem autorização, salvo obrigação legal; comunica à controladora,
+      em prazo razoável, qualquer incidente de segurança que envolva esses dados; e, ao fim
+      dos serviços, devolve ou elimina os dados, à escolha da controladora, salvo os que a
+      lei exija guardar. A controladora garante que tem base legal para o tratamento e para
+      compartilhar os dados com a operadora.
+  - id: limitacao_responsabilidade
+    titulo: Limitação de responsabilidade
+    texto: >-
+      A responsabilidade total do consultor por danos ligados a esta proposta fica limitada
+      ao valor efetivamente pago pela fase em que o dano ocorreu e não inclui lucros
+      cessantes nem danos indiretos, salvo dolo ou culpa grave. Resultados de modelos de IA
+      são probabilísticos: as decisões tomadas com base neles continuam sob a
+      responsabilidade do contratante, que mantém a revisão humana prevista no escopo.
+  - id: suporte_garantia
+    titulo: Suporte e garantia
+    removivel: true
+    texto: >-
+      Durante 30 dias depois da entrega de cada fase, o consultor corrige sem custo as
+      falhas dos entregáveis em relação ao que esta proposta descreve. A garantia não cobre
+      mudanças de escopo, alterações feitas por terceiros, mudanças nos dados ou nos
+      sistemas do contratante, nem a perda natural de desempenho do modelo com o tempo.
+      Suporte e evolução depois desse prazo podem ser contratados à parte.
+  - id: cancelamento
+    titulo: Cancelamento
+    removivel: true
+    texto: >-
+      Qualquer das partes pode cancelar os serviços com aviso por escrito de 15 dias. Nesse
+      caso, o contratante paga pelas entregas já feitas e, proporcionalmente, pelo trabalho
+      realizado até a data do cancelamento; o consultor entrega o que já foi produzido e
+      devolve valores pagos por trabalho ainda não realizado.
+  - id: foro
+    titulo: Foro
+    texto: >-
+      Fica eleito o foro da comarca de {foro} para resolver questões ligadas a esta
+      proposta. Antes de recorrer ao Judiciário, as partes tentarão resolver a questão por
+      negociação direta.
+  - id: prevalencia_contrato
+    titulo: Contrato detalhado
+    texto: >-
+      As partes podem formalizar um contrato de prestação de serviços mais detalhado. Nesse
+      caso, esta proposta e estas Condições Gerais continuam valendo no que o contrato não
+      tratar e, havendo conflito entre eles, prevalece o contrato.

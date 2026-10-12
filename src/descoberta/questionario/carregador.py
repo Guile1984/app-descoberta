@@ -1,52 +1,69 @@
-"""Leitura do arquivo YAML do questionário, com mensagens de erro em português."""
+"""Leitura dos arquivos YAML de configuração, com mensagens de erro em português.
+
+O questionário usa `carregar_questionario`; o modelo da proposta (pacote `proposta`)
+usa `carregar_yaml`, com a sua própria exceção.
+"""
 
 from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from .modelos import Questionario
 
 
-class QuestionarioInvalido(Exception):
-    """O arquivo do questionário não pôde ser lido ou não passou na validação."""
+class ArquivoInvalido(Exception):
+    """Um arquivo de configuração não pôde ser lido ou não passou na validação."""
+
+    NOME = "Arquivo"
 
     def __init__(self, caminho: Path, erros: list[str]):
         self.caminho = caminho
         self.erros = erros
         linhas = "\n".join(f"  - {erro}" for erro in erros)
-        super().__init__(f"Questionário inválido ({caminho.name}):\n{linhas}")
+        super().__init__(f"{self.NOME} inválido ({caminho.name}):\n{linhas}")
+
+
+class QuestionarioInvalido(ArquivoInvalido):
+    """O arquivo do questionário não pôde ser lido ou não passou na validação."""
+
+    NOME = "Questionário"
 
 
 def carregar_questionario(caminho: Path | str) -> Questionario:
+    return carregar_yaml(caminho, Questionario, QuestionarioInvalido)
+
+
+def carregar_yaml[M: BaseModel](
+    caminho: Path | str, modelo: type[M], excecao: type[ArquivoInvalido]
+) -> M:
+    """Lê o YAML e valida com o modelo Pydantic; os erros viram `excecao`, em português."""
     caminho = Path(caminho)
-    dados = _ler_yaml(caminho)
+    dados = _ler_yaml(caminho, excecao)
     try:
-        return Questionario.model_validate(dados)
+        return modelo.model_validate(dados)
     except ValidationError as erro:
-        raise QuestionarioInvalido(
+        raise excecao(
             caminho, [_descrever_erro(detalhe, dados) for detalhe in erro.errors()]
         ) from erro
 
 
-def _ler_yaml(caminho: Path) -> dict:
+def _ler_yaml(caminho: Path, excecao: type[ArquivoInvalido]) -> dict:
     try:
         texto = caminho.read_text(encoding="utf-8")
     except FileNotFoundError:
-        raise QuestionarioInvalido(caminho, [f"arquivo não encontrado: {caminho}"]) from None
+        raise excecao(caminho, [f"arquivo não encontrado: {caminho}"]) from None
     try:
         # safe_load só monta tipos simples (texto, número, lista, dicionário): nunca executa
         # código vindo do arquivo.
         dados = yaml.safe_load(texto)
     except yaml.YAMLError as erro:
-        raise QuestionarioInvalido(caminho, [_descrever_erro_yaml(erro)]) from erro
+        raise excecao(caminho, [_descrever_erro_yaml(erro)]) from erro
     if dados is None:
-        raise QuestionarioInvalido(caminho, ["o arquivo está vazio"])
+        raise excecao(caminho, ["o arquivo está vazio"])
     if not isinstance(dados, dict):
-        raise QuestionarioInvalido(
-            caminho, ["a raiz do arquivo deve ser um mapeamento (chave: valor)"]
-        )
+        raise excecao(caminho, ["a raiz do arquivo deve ser um mapeamento (chave: valor)"])
     return dados
 
 

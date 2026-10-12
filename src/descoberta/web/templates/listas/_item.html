@@ -2,19 +2,19 @@
   Um item da lista: em leitura (com Editar e Excluir) ou em edição. Salvar e Excluir
   devolvem a lista inteira (hx-target="#lista-…"), porque a numeração pode mudar.
 #}
-{% set url = "/sessoes/%d/revisao/%s/%d" % (sessao.id, lista.nome, item.id) %}
+{% set url = lista.url(sessao.id) ~ "/" ~ item.id %}
 <li id="{{ lista.nome }}-{{ item.id }}" class="item-revisao">
   {% if editando %}
   <form hx-post="{{ url }}" hx-target="#lista-{{ lista.nome }}" hx-swap="outerHTML">
     {% with prefixo = lista.nome ~ "-" ~ item.id, v = valores, focar = true %}
-    {% include "revisao/_campos_" ~ lista.nome ~ ".html" %}
+    {% include lista.templates % "campos" %}
     {% endwith %}
     {% if erro %}<p class="aviso-erro" role="alert">⚠ Não salvo: {{ erro }}</p>{% endif %}
     <button type="submit" class="botao secundario">Salvar</button>
     <button type="button" class="botao secundario" hx-get="{{ url }}" hx-target="#{{ lista.nome }}-{{ item.id }}" hx-swap="outerHTML">Cancelar</button>
   </form>
   {% else %}
-  {% include "revisao/_leitura_" ~ lista.nome ~ ".html" %}
+  {% include lista.templates % "leitura" %}
   <div class="acoes-item">
     <button type="button" class="link" hx-get="{{ url }}/editar" hx-target="#{{ lista.nome }}-{{ item.id }}" hx-swap="outerHTML">Editar</button>
     <button type="button" class="link perigo" hx-post="{{ url }}/excluir" hx-target="#lista-{{ lista.nome }}" hx-swap="outerHTML"

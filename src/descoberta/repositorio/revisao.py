@@ -1,11 +1,13 @@
-"""Saídas da revisão pós-sessão: riscos, indicadores, escopo, próximos passos e textos.
+"""Listas da revisão pós-sessão e da proposta, e os textos do relatório.
 
-As quatro listas funcionam igual (incluir, editar, excluir, listar na ordem de criação),
-então usam as mesmas funções, que recebem a tabela: `adicionar_item(session, Risco, …)`.
-O que muda de uma tabela para outra está em `_LISTAS`: os validadores de cada campo e
-quais campos são obrigatórios.
+As listas (riscos, indicadores, escopo, próximos passos; fases e itens da proposta)
+funcionam igual: incluir, editar, excluir, listar na ordem de criação. Por isso usam as
+mesmas funções, que recebem a tabela: `adicionar_item(session, Risco, …)`. O que muda de
+uma tabela para outra está em `_LISTAS`: os validadores de cada campo, quais campos são
+obrigatórios e, quando preciso, uma conferência que depende do banco.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from typing import Any
@@ -18,21 +20,53 @@ from ._comum import (
     Validadores,
     aplicar_campos,
     booleano,
+    decimal_opcional,
     dia,
     exigir,
     exigir_sessao,
     gravar,
     id_questionario,
+    inteiro,
     opcao,
     texto_obrigatorio,
     texto_opcional,
     validar_campos,
 )
-from .modelos import Indicador, ItemEscopo, ProximoPasso, Risco, TextoSecao, agora
+from .modelos import (
+    FaseProposta,
+    Indicador,
+    ItemEscopo,
+    ItemProposta,
+    ProximoPasso,
+    Risco,
+    TextoSecao,
+    TipoItemProposta,
+    agora,
+)
 
 
 def _data_opcional(nome: str, valor: Any) -> date | None:
     return None if valor is None else dia(nome, valor)
+
+
+def _semanas(nome: str, valor: Any) -> int | None:
+    return None if valor is None else inteiro(nome, valor, minimo=1)
+
+
+def _id_opcional(nome: str, valor: Any) -> int | None:
+    return None if valor is None else inteiro(nome, valor, minimo=1)
+
+
+def _fase_da_mesma_sessao(session: Session, sessao_id: int, valores: dict[str, Any]) -> None:
+    fase_id = valores.get("fase_id")
+    if fase_id is None:
+        return
+    fase = session.get(FaseProposta, fase_id)
+    if fase is None or fase.sessao_id != sessao_id:
+        raise ValueError(f"a fase {fase_id} não é desta proposta")
+
+
+Conferencia = Callable[[Session, int, dict[str, Any]], None]
 
 
 @dataclass(frozen=True)
@@ -40,6 +74,7 @@ class _Lista:
     nome: str  # para as mensagens de erro ("risco 3 não encontrado(a)")
     validadores: Validadores
     obrigatorios: tuple[str, ...]
+    conferir: Conferencia | None = None  # regra que depende do banco (sessão, valores)
 
 
 _LISTAS: dict[type[SQLModel], _Lista] = {
@@ -76,6 +111,26 @@ _LISTAS: dict[type[SQLModel], _Lista] = {
         {"acao": texto_obrigatorio, "responsavel": opcao(Responsavel), "prazo": _data_opcional},
         ("acao", "responsavel"),
     ),
+    FaseProposta: _Lista(
+        "fase",
+        {
+            "nome": texto_obrigatorio,
+            "objetivo": texto_opcional,
+            "duracao_semanas": _semanas,
+            "investimento": decimal_opcional,
+        },
+        ("nome",),
+    ),
+    ItemProposta: _Lista(
+        "item da proposta",
+        {
+            "tipo": opcao(TipoItemProposta),
+            "texto": texto_obrigatorio,
+            "fase_id": _id_opcional,
+        },
+        ("tipo", "texto"),
+        _fase_da_mesma_sessao,
+    ),
 }
 
 
@@ -86,6 +141,8 @@ def adicionar_item[M: SQLModel](session: Session, modelo: type[M], sessao_id: in
         raise ValueError(f"{faltando[0]} é obrigatório")
     valores = validar_campos(campos, lista.validadores)
     exigir_sessao(session, sessao_id)
+    if lista.conferir:
+        lista.conferir(session, sessao_id, valores)
     return gravar(session, modelo(sessao_id=sessao_id, **valores))
 
 
@@ -93,6 +150,8 @@ def editar_item[M: SQLModel](session: Session, modelo: type[M], item_id: int, **
     """Troca só os campos informados; se um deles for inválido, nada é gravado."""
     lista = _LISTAS[modelo]
     registro = exigir(session, modelo, item_id, lista.nome)
+    if lista.conferir:
+        lista.conferir(session, registro.sessao_id, validar_campos(campos, lista.validadores))
     aplicar_campos(registro, campos, lista.validadores)
     return gravar(session, registro)
 
@@ -102,13 +161,17 @@ def excluir_item(session: Session, modelo: type[SQLModel], item_id: int) -> None
     session.commit()
 
 
-def itens_da_sessao[M: SQLModel](session: Session, modelo: type[M], sessao_id: int) -> list[M]:
-    """Itens da sessão na ordem em que foram incluídos (é a numeração R1, R2… dos riscos)."""
-    consulta = (
-        select(modelo)
-        .where(modelo.sessao_id == sessao_id)
-        .order_by(col(modelo.criado_em), col(modelo.id))
-    )
+def itens_da_sessao[M: SQLModel](
+    session: Session, modelo: type[M], sessao_id: int, **filtros: Any
+) -> list[M]:
+    """Itens da sessão na ordem em que foram incluídos (é a numeração R1, R2… dos riscos).
+
+    `filtros`: campo=valor que os itens precisam ter (ex.: tipo="exclusao").
+    """
+    consulta = select(modelo).where(modelo.sessao_id == sessao_id)
+    for campo, valor in filtros.items():
+        consulta = consulta.where(getattr(modelo, campo) == valor)
+    consulta = consulta.order_by(col(modelo.criado_em), col(modelo.id))
     return list(session.exec(consulta))
 
 

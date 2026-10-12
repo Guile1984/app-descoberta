@@ -11,9 +11,11 @@ from dataclasses import dataclass
 from descoberta.repositorio import TipoVersao, hash_do_conteudo
 
 from .dados import DadosRelatorio
+from .dados_proposta import DadosProposta
 from .documento import Documento
 from .exportar.markdown import markdown_do_documento
 from .montagem import Emissao, descricao_da_emissao, montar_relatorio
+from .proposta import EmissaoProposta, descricao_da_emissao_proposta, montar_proposta
 
 CARACTERES_DO_HASH = 12  # quantos caracteres do hash aparecem no rodapé
 
@@ -37,3 +39,24 @@ def emitir(dados: DadosRelatorio, emissao: Emissao) -> RelatorioEmitido:
     documento = montar_relatorio(dados, emissao)
     markdown = markdown_do_documento(documento)
     return RelatorioEmitido(emissao, documento, markdown, hash_do_conteudo(markdown))
+
+
+@dataclass(frozen=True)
+class PropostaEmitida:
+    """A proposta emitida: mesmo esquema do relatório (texto canônico, hash e rodapé)."""
+
+    emissao: EmissaoProposta
+    documento: Documento
+    markdown: str
+    hash_conteudo: str
+
+    @property
+    def rodape(self) -> str:
+        resumo = self.hash_conteudo[:CARACTERES_DO_HASH]
+        return f"Proposta · {descricao_da_emissao_proposta(self.emissao)} · hash {resumo}"
+
+
+def emitir_proposta(dados: DadosProposta, emissao: EmissaoProposta) -> PropostaEmitida:
+    documento = montar_proposta(dados, emissao)
+    markdown = markdown_do_documento(documento)
+    return PropostaEmitida(emissao, documento, markdown, hash_do_conteudo(markdown))

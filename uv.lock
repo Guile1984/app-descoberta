@@ -306,7 +306,9 @@ source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "jinja2" },
+    { name = "pillow" },
     { name = "pydantic" },
+    { name = "pypdf" },
     { name = "python-docx" },
     { name = "python-multipart" },
     { name = "pyyaml" },
@@ -319,7 +321,6 @@ dependencies = [
 dev = [
     { name = "httpx2" },
     { name = "pre-commit" },
-    { name = "pypdf" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-playwright" },
@@ -330,7 +331,9 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.142.4" },
     { name = "jinja2", specifier = ">=3.1.6" },
+    { name = "pillow", specifier = ">=12.3" },
     { name = "pydantic", specifier = ">=2" },
+    { name = "pypdf", specifier = ">=6.20" },
     { name = "python-docx", specifier = ">=1.2" },
     { name = "python-multipart", specifier = ">=0.0.32" },
     { name = "pyyaml", specifier = ">=6" },
@@ -343,7 +346,6 @@ requires-dist = [
 dev = [
     { name = "httpx2", specifier = ">=2.13.1" },
     { name = "pre-commit" },
-    { name = "pypdf", specifier = ">=6.20" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-playwright", specifier = ">=0.9.0" },

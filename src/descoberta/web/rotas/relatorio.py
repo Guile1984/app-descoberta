@@ -7,8 +7,6 @@
   byte a byte, mesmo que os dados da sessão mudem depois.
 """
 
-import re
-import unicodedata
 from datetime import date
 from typing import Annotated
 
@@ -16,6 +14,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import Response
 from sqlmodel import Session
 
+from descoberta.formatos import slug
 from descoberta.questionario import Questionario
 from descoberta.relatorio import (
     DadosRelatorio,
@@ -71,13 +70,11 @@ def _nome_do_arquivo(
     empresa: str, data: date, tipo: TipoVersao, extensao: str, numero: int | None = None
 ) -> str:
     """relatorio-descoberta-construtora-alvorada-2026-10-07-cliente-v1.pdf (só ASCII)."""
-    sem_acento = unicodedata.normalize("NFKD", empresa).encode("ascii", "ignore").decode()
-    nome = re.sub(r"[^a-z0-9]+", "-", sem_acento.lower()).strip("-") or "cliente"
     sufixo = f"-v{numero}" if numero else ""
-    return f"relatorio-descoberta-{nome}-{data.isoformat()}-{tipo}{sufixo}.{extensao}"
+    return f"relatorio-descoberta-{slug(empresa)}-{data.isoformat()}-{tipo}{sufixo}.{extensao}"
 
 
-def _arquivo(conteudo: bytes, tipo_conteudo: str, nome: str) -> Response:
+def arquivo(conteudo: bytes, tipo_conteudo: str, nome: str) -> Response:
     return Response(
         conteudo,
         media_type=tipo_conteudo,
@@ -115,7 +112,7 @@ def baixar(banco: Banco, catalogo: CatalogoDep, sessao_id: int, formato: str, ve
     dados = _dados(banco, sessao, questionario)
     emitido = emitir(dados, Emissao(tipo, numero=None, emitido_em=agora()))
     tipo_conteudo, exportar = FORMATOS[formato]
-    return _arquivo(
+    return arquivo(
         exportar(emitido),
         tipo_conteudo,
         _nome_do_arquivo(dados.empresa, dados.data_sessao, tipo, formato),
@@ -157,4 +154,4 @@ def baixar_versao(banco: Banco, catalogo: CatalogoDep, sessao_id: int, numero: i
         raise HTTPException(404, f"A sessão não tem a versão {numero} registrada.")
     empresa = obter_cliente(banco, sessao.cliente_id).empresa
     nome = _nome_do_arquivo(empresa, sessao.data, versao.tipo, "pdf", numero)
-    return _arquivo(versao.pdf, "application/pdf", nome)
+    return arquivo(versao.pdf, "application/pdf", nome)

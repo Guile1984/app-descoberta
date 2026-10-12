@@ -13,7 +13,7 @@ from decimal import Decimal
 from enum import StrEnum, auto
 from typing import Any
 
-from sqlalchemy import LargeBinary, UniqueConstraint
+from sqlalchemy import JSON, LargeBinary, UniqueConstraint
 from sqlmodel import Field, SQLModel
 
 from descoberta.dominio.revisao import Camada, Nivel, Responsavel
@@ -270,3 +270,129 @@ class VersaoRelatorio(SQLModel, table=True):
     hash_conteudo: str
     pdf: bytes = Field(sa_type=LargeBinary)
     hash_pdf: str
+
+
+# --- Perfil do consultor e Proposta Comercial (Sprint 6c) ---
+
+
+class PerfilConsultor(SQLModel, table=True):
+    """Quem usa a app: aparece no relatório e na proposta. Uma linha só (id 1).
+
+    Fica só no banco local. Antes de qualquer chamada ao LLM (Sprint 7), estes dados
+    entram na anonimização, como os do cliente.
+    """
+
+    __tablename__ = "perfil_consultor"
+
+    id: int = Field(default=1, primary_key=True)
+    nome: str
+    empresa: str
+    cpf_cnpj: str | None = None  # já conferido e formatado
+    email: str | None = None
+    telefone: str | None = None
+    cidade: str | None = None
+    uf: str | None = None
+    logotipo: bytes | None = Field(default=None, sa_type=LargeBinary)  # PNG limpo
+    # Banco de demonstração: os documentos avisam que os dados do consultor são fictícios.
+    dados_ficticios: bool = False
+    atualizado_em: datetime = Field(default_factory=agora)
+
+
+class TipoItemProposta(StrEnum):
+    escopo = auto()  # da fase
+    entregavel = auto()  # da fase
+    exclusao = auto()  # fora do escopo
+    premissa = auto()  # premissas e hipóteses
+    responsabilidade = auto()  # do cliente
+
+
+class Proposta(SQLModel, table=True):
+    """Proposta Comercial da sessão: documento separado do relatório.
+
+    Criada como cópia do modelo (YAML) e da revisão; depois é editada à parte, para que
+    renegociar a proposta nunca altere o relatório.
+    """
+
+    sessao_id: int = Field(primary_key=True, foreign_key="sessao.id", ondelete="CASCADE")
+    versao_modelo: int  # versão do config/proposta_v{n}.yaml usada na criação
+    # Dados do cliente que o cadastro não tem e a proposta precisa.
+    cliente_cpf_cnpj: str | None = None
+    cliente_representante: str | None = None
+    cliente_cargo: str | None = None
+    cliente_email: str | None = None
+    cliente_cidade: str | None = None
+    cliente_uf: str | None = None  # sigla, como SP
+    condicoes_pagamento: str
+    impostos: str
+    reajuste: str
+    validade_dias: int
+    # Criada depois do aviso de que o score final indica "não seguir agora".
+    criada_com_alerta: bool = False
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class FaseProposta(SQLModel, table=True):
+    """Fase da proposta (ex.: fase 0 e MVP), feitas em sequência a partir do aceite."""
+
+    __tablename__ = "fase_proposta"
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    nome: str
+    objetivo: str | None = None
+    duracao_semanas: int | None = None
+    investimento: Decimal | None = _dinheiro_ou_quantidade()
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class ItemProposta(SQLModel, table=True):
+    """Item de lista da proposta. Escopo e entregáveis pertencem a uma fase (fase_id)."""
+
+    __tablename__ = "item_proposta"
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    tipo: TipoItemProposta
+    # Excluir a fase exclui junto o escopo e os entregáveis dela.
+    fase_id: int | None = Field(
+        default=None, foreign_key="fase_proposta.id", ondelete="CASCADE", index=True
+    )
+    texto: str
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class ClausulaProposta(SQLModel, table=True):
+    """Ajuste de uma cláusula das Condições Gerais nesta proposta (o modelo não muda)."""
+
+    __tablename__ = "clausula_proposta"
+    __table_args__ = (UniqueConstraint("sessao_id", "clausula_id"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    clausula_id: str  # id do YAML (config/proposta_v{n}.yaml)
+    texto: str | None = None  # None: vale o texto do modelo
+    excluida: bool = False  # só para cláusulas removíveis (conferido com o modelo)
+    atualizado_em: datetime = Field(default_factory=agora)
+
+
+class VersaoProposta(SQLModel, table=True):
+    """PDF da proposta registrado como enviado, como no relatório (dois hashes).
+
+    A numeração é própria: renegociar a proposta (versões 2, 3…) não mexe nas versões do
+    relatório. As Condições Gerais ficam congeladas com a versão: o texto impresso de cada
+    cláusula, como estava na emissão, além da versão do modelo usada.
+    """
+
+    __tablename__ = "versao_proposta"
+    __table_args__ = (UniqueConstraint("sessao_id", "numero"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    numero: int
+    emitido_em: datetime
+    conteudo_md: str
+    hash_conteudo: str
+    pdf: bytes = Field(sa_type=LargeBinary)
+    hash_pdf: str
+    versao_modelo: int
+    clausulas: list[dict[str, str]] = Field(sa_type=JSON)  # [{id, titulo, texto}]

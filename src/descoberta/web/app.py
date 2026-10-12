@@ -26,6 +26,8 @@ from .rotas import (
     clientes,
     cronometro,
     numeros,
+    perfil,
+    proposta,
     relatorio,
     respostas,
     revisao,
@@ -61,6 +63,7 @@ def criar_app(
     )
     app.mount("/static", StaticFiles(directory=PASTA_STATIC), name="static")
     app.include_router(clientes.router)
+    app.include_router(perfil.router)
     app.include_router(sessoes.router)
     app.include_router(respostas.router)
     app.include_router(sinais.router)
@@ -69,10 +72,14 @@ def criar_app(
     app.include_router(cronometro.router)
     app.include_router(revisao.router)
     app.include_router(relatorio.router)
+    app.include_router(proposta.router)
 
     @app.exception_handler(HTTPException)
     async def pagina_de_erro(request: Request, erro: HTTPException):
-        return html(request, "erro.html", status_code=erro.status_code, mensagem=erro.detail)
+        titulo = "Não encontrado" if erro.status_code == 404 else "Não foi possível continuar"
+        return html(
+            request, "erro.html", status_code=erro.status_code, titulo=titulo, mensagem=erro.detail
+        )
 
     return app
 

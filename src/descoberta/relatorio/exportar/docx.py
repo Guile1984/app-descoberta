@@ -91,6 +91,8 @@ def _tabela(doc, tabela: Tabela) -> None:
 def _bloco(doc, bloco) -> None:
     match bloco:
         case Capa():
+            if bloco.logotipo:
+                doc.add_picture(io.BytesIO(bloco.logotipo), height=Cm(2.5))
             if bloco.faixa:
                 faixa = doc.add_paragraph()
                 run = faixa.add_run(bloco.faixa)
@@ -106,7 +108,8 @@ def _bloco(doc, bloco) -> None:
             if bloco.nota:
                 doc.add_paragraph().add_run(bloco.nota).italic = True
         case Titulo():
-            doc.add_heading(bloco.texto, level=bloco.nivel)
+            titulo = doc.add_heading(bloco.texto, level=bloco.nivel)
+            titulo.paragraph_format.keep_with_next = True  # nunca sozinho no pé da página
         case Paragrafo():
             paragrafo = doc.add_paragraph()
             if bloco.rotulo:
@@ -129,7 +132,7 @@ def _bloco(doc, bloco) -> None:
                 linha = doc.add_paragraph()
                 linha.paragraph_format.space_before = Pt(14 if campo == "Assinatura" else 8)
                 linha.add_run(f"{campo}: ").bold = True
-                linha.add_run("_" * 50)
+                linha.add_run(bloco.valor(campo) or "_" * 50)
         case QuebraDePagina():
             doc.add_page_break()
         case _:

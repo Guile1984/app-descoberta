@@ -1,0 +1,31 @@
+{#
+  Uma cláusula das Condições Gerais nesta proposta. O texto salva sozinho (macro de
+  _salvamento.html); Restaurar e Excluir/Incluir de volta trocam a cláusula inteira.
+#}
+{% from "_salvamento.html" import atributos, estado %}
+{% set url = "/sessoes/%d/proposta/clausulas/%s" % (sessao_id, clausula.id) %}
+<div id="clausula-{{ clausula.id }}" class="texto-revisao clausula{% if clausula.excluida %} excluida{% endif %}">
+  <p class="rotulo-texto">
+    {{ clausula.titulo }}
+    {% if clausula.excluida %}<span class="selo fora">Fora desta proposta</span>
+    {% elif clausula.ajustada %}<span class="selo">Ajustada nesta proposta</span>{% endif %}
+    {% if not clausula.removivel %}<span class="selo fora">Não removível</span>{% endif %}
+  </p>
+  {% if erro %}<p class="aviso-erro" role="alert">⚠ {{ erro }}</p>{% endif %}
+  {% if not clausula.excluida %}
+  <label for="clausula-texto-{{ clausula.id }}" class="discreto">Texto nesta proposta</label>
+  <textarea id="clausula-texto-{{ clausula.id }}" name="texto" rows="4" {{ atributos(url, "clausula-texto-" ~ clausula.id) }}>{{ clausula.texto }}</textarea>
+  {{ estado("clausula-texto-" ~ clausula.id) }}
+  {% endif %}
+  <div class="acoes-item">
+    {% if clausula.ajustada %}
+    <button type="button" class="link" hx-post="{{ url }}/restaurar" hx-target="#clausula-{{ clausula.id }}" hx-swap="outerHTML"
+            hx-confirm="Voltar ao texto do modelo?">Restaurar texto padrão</button>
+    {% endif %}
+    {% if clausula.removivel %}
+    <button type="button" class="link{% if not clausula.excluida %} perigo{% endif %}" hx-post="{{ url }}/excluir"
+            hx-vals='{"excluir": "{{ "0" if clausula.excluida else "1" }}"}' hx-target="#clausula-{{ clausula.id }}" hx-swap="outerHTML">
+      {{ "Incluir de volta" if clausula.excluida else "Excluir desta proposta" }}</button>
+    {% endif %}
+  </div>
+</div>
