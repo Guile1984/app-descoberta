@@ -90,6 +90,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   removíveis).
 - Sprint 7: a anonimização antes do LLM inclui os dados do perfil do consultor e os dados
   do cliente da proposta.
+- Na seção 10 do relatório, informar que a divisão do escopo em fases está na Proposta
+  Comercial.
+- Ao copiar os próximos passos do cliente para as responsabilidades da proposta, ajustar o
+  texto para soar como responsabilidade (ex.: "Participar da reunião…").
 
 ## [0.8.1] — 2026-10-11 — Correção do CI
 
