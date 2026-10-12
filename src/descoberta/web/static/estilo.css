@@ -235,6 +235,7 @@ textarea { width: 100%; box-sizing: border-box; resize: vertical; }
 .doc-subtitulo { font-size: 1.25rem; margin: 0; }
 .doc-faixa { background: var(--erro); color: #fff; font-weight: 700; padding: 0.4rem; border-radius: 4px; }
 .doc-secao { font-size: 1.15rem; margin-top: 1.5rem; border-bottom: 1px solid var(--borda); padding-bottom: 0.2rem; }
+.alerta-forte { border: 2px solid var(--erro); border-radius: 6px; padding: 0.25rem 1rem; margin: 0.75rem 0; }
 .doc-aviso { background: var(--aviso-fundo); padding: 0.5rem 0.75rem; border-radius: 4px; }
 .doc-quebra { border: none; border-top: 2px dashed var(--borda); margin: 1.5rem 0; }
 .doc-assinatura { margin-top: 1.25rem; }

@@ -1,0 +1,14 @@
+{# Item de uma fase (escopo ou entregável): o texto e a fase a que pertence. #}
+<div class="campos-revisao">
+  <label class="campo largo" for="{{ prefixo }}-texto">Item
+    <input id="{{ prefixo }}-texto" name="texto" value="{{ v.texto }}" {% if focar %}autofocus{% endif %}>
+  </label>
+  <label class="campo" for="{{ prefixo }}-fase_id">Fase
+    <select id="{{ prefixo }}-fase_id" name="fase_id">
+      <option value="">Escolha…</option>
+      {% for fase in fases %}
+      <option value="{{ fase.id }}"{% if v.fase_id == fase.id | string %} selected{% endif %}>{{ fase.nome }}</option>
+      {% endfor %}
+    </select>
+  </label>
+</div>

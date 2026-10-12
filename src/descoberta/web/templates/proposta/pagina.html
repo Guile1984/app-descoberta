@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_salvamento.html" import atributos, estado %}
+{% block titulo %}Proposta · {{ cliente.empresa }} · {{ sessao.data | data_br }} · Descoberta{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <p class="discreto"><a href="/clientes/{{ cliente.id }}">{{ cliente.empresa }}</a> · {{ cliente.nome }}</p>
+    <h1>Proposta Comercial</h1>
+    <p class="discreto">Sessão de {{ sessao.data | data_br }} · modelo versão {{ proposta.versao_modelo }}</p>
+  </div>
+  <div class="acoes">
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio">← Relatório</a>
+    <a class="botao" href="/sessoes/{{ sessao.id }}/proposta/documento">Documento da proposta →</a>
+  </div>
+</div>
+
+{% include "proposta/_alerta.html" %}
+{% if proposta.criada_com_alerta %}<p class="discreto">Criada depois do aviso de que o score final não recomendava seguir.</p>{% endif %}
+<p class="discreto">Os campos salvam sozinhos, como na sessão. A proposta é uma cópia: mudar a revisão não a altera.</p>
+
+{% macro campo(nome, rotulo, tipo) %}
+{% set alvo = "proposta-" ~ nome %}
+<div class="texto-revisao">
+  <label for="{{ alvo }}" class="rotulo-texto">{{ rotulo }}</label>
+  {% if tipo == "longo" %}
+  <textarea id="{{ alvo }}" name="valor" rows="3" {{ atributos("/sessoes/%d/proposta/campo/%s" % (sessao.id, nome), alvo) }}>{{ proposta[nome] or "" }}</textarea>
+  {% else %}
+  <input id="{{ alvo }}" name="valor" value="{{ proposta[nome] if proposta[nome] is not none else '' }}"
+         {% if tipo == "numero" %}inputmode="numeric"{% endif %} {{ atributos("/sessoes/%d/proposta/campo/%s" % (sessao.id, nome), alvo) }}>
+  {% endif %}
+  {{ estado(alvo) }}
+</div>
+{% endmacro %}
+
+<div class="colunas">
+  <div>
+    <section id="dados-do-cliente" class="secao-revisao" aria-labelledby="titulo-dados-do-cliente">
+      <h2 id="titulo-dados-do-cliente">Dados do cliente para a proposta</h2>
+      <p class="discreto">Quem assina pela {{ cliente.empresa }}; o CPF ou CNPJ é conferido pelos dígitos.</p>
+      <div class="campos-revisao">
+        {% for nome, rotulo, tipo in campos_do_cliente %}{{ campo(nome, rotulo, tipo) }}{% endfor %}
+      </div>
+    </section>
+
+    {% for lista in listas.values() %}
+      {% with itens = itens[lista.nome], valores = {}, erro = none, focar = false %}
+      {% include "listas/_lista.html" %}
+      {% endwith %}
+    {% endfor %}
+
+    <section id="condicoes" class="secao-revisao" aria-labelledby="titulo-condicoes">
+      <h2 id="titulo-condicoes">Condições</h2>
+      {% for nome, rotulo, tipo in campos_das_condicoes %}{{ campo(nome, rotulo, tipo) }}{% endfor %}
+    </section>
+  </div>
+  <aside class="coluna-apoio">
+    <section class="apoio">
+      <h2>Modelo da proposta</h2>
+      <p class="doc-aviso">⚖ {{ modelo.aviso }}</p>
+    </section>
+    <section class="apoio">
+      <h2>Começar de novo</h2>
+      <p class="discreto">Apaga esta proposta e cria outra a partir da revisão atual. As versões já registradas ficam guardadas.</p>
+      <button type="button" class="botao perigo" hx-post="/sessoes/{{ sessao.id }}/proposta/recriar"
+              hx-confirm="Apagar esta proposta e começar de novo a partir da revisão?">Recriar a partir da revisão</button>
+    </section>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+# Modelo da Proposta Comercial — versão 1
+#
+# Ponto de partida editável, fora do código, como o questionário. Cada proposta guarda a
+# versão do modelo com que foi criada.
+#
+# - padrao: o que a app preenche ao criar uma proposta (o consultor edita depois, na tela
+#   da proposta). Escopo, exclusões, premissas e responsabilidades também são copiados da
+#   revisão pós-sessão: a proposta é uma cópia, e mudar a revisão depois não a altera.
+# - faixas_score_final (numa fase): a fase só entra se o score final da sessão estiver numa
+#   destas faixas (ids do questionário); sem a lista, a fase entra sempre.
+# - alerta_score_final: faixas do score final em que a app avisa antes de criar a proposta.
+
+versao: 1
+titulo: Proposta Comercial
+
+aviso: >-
+  Modelo de partida, não é aconselhamento jurídico. Revise o texto da proposta e as
+  Condições Gerais com um advogado antes de usar com clientes, e adapte-os ao seu caso.
+
+alerta_score_final: [nao_seguir]
+
+# Tabela de referência do questionário que entra no critério de aceite da proposta.
+criterio_de_aceite:
+  bloco: 5
+  tabela: Critério de aceite em três fases
+
+padrao:
+  validade_dias: 15
+  condicoes_pagamento: >-
+    50% no aceite de cada fase e 50% na entrega da fase, por transferência ou boleto, com
+    vencimento em 10 dias da emissão da nota fiscal.
+  impostos: >-
+    Os valores já incluem os tributos incidentes sobre a prestação de serviços, conforme o
+    regime tributário do consultor.
+  reajuste: >-
+    Valores fixos durante a validade da proposta e a execução das fases contratadas. Fases
+    contratadas mais de 12 meses depois do aceite são reajustadas pelo IPCA do período.
+  fases:
+    - nome: Fase 0 — preparação dos dados
+      objetivo: >-
+        Deixar os dados prontos para o MVP: padronizar a coleta, organizar e rotular o
+        histórico e medir a qualidade dos dados.
+      duracao_semanas: 4
+      faixas_score_final: [seguir_fase_0, nao_seguir]
+      escopo:
+        - Diagnóstico das fontes de dados e definição do padrão de coleta
+        - Organização e rotulagem do histórico com o critério do especialista do cliente
+        - Nova medição da prontidão dos dados ao fim da fase
+      entregaveis:
+        - Guia de coleta de dados para a equipe
+        - Base histórica organizada e rotulada
+        - Relatório de qualidade dos dados, com a recomendação de seguir ou não para o MVP
+    - nome: MVP
+      objetivo: >-
+        Construir a solução e validá-la no processo real, com as metas e o critério de
+        aceite desta proposta.
+      duracao_semanas: 8
+      escopo_da_revisao: true  # itens "entra no MVP" da revisão
+      investimento_da_sessao: true  # investimento informado na sessão (bloco 9)
+      entregaveis:
+        - MVP funcionando no piloto assistido
+        - Relatório de resultados do teste com dados históricos e do piloto
+        - Documentação de uso e treinamento da equipe
+  premissas:
+    - >-
+      Os prazos contam a partir do aceite e do recebimento dos dados e acessos necessários.
+    - >-
+      O escopo é o descrito nesta proposta; mudanças seguem a cláusula de alterações de
+      escopo das Condições Gerais.
+  responsabilidades:
+    - Indicar um responsável com autonomia para decisões e validações
+    - Fornecer os dados e os acessos necessários nos prazos combinados
+    - Disponibilizar o especialista do processo para a rotulagem e as validações
+    - Validar cada entrega em até 5 dias úteis

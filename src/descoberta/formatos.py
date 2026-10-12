@@ -11,6 +11,7 @@ campo, que lido de novo dá exatamente o mesmo número).
 """
 
 import re
+import unicodedata
 from decimal import ROUND_HALF_UP, Decimal
 
 _COM_MILHAR = re.compile(r"\d{1,3}(?:\.\d{3})+(?:,\d+)?")
@@ -55,3 +56,9 @@ def numero_campo(valor: Decimal | None) -> str:
         return ""
     casas = max(0, -valor.normalize().as_tuple().exponent)
     return numero(valor, casas)
+
+
+def slug(texto: str) -> str:
+    """Texto para nome de arquivo, só ASCII: "Construtora Alvorada" → "construtora-alvorada"."""
+    sem_acento = unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", sem_acento.lower()).strip("-") or "cliente"

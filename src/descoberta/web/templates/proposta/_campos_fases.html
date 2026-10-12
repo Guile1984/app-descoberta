@@ -1,0 +1,15 @@
+{# Campos de uma fase. Duração em semanas (inteiro); investimento como na sessão (20.000). #}
+<div class="campos-revisao">
+  <label class="campo largo" for="{{ prefixo }}-nome">Nome da fase
+    <input id="{{ prefixo }}-nome" name="nome" value="{{ v.nome }}" {% if focar %}autofocus{% endif %}>
+  </label>
+  <label class="campo largo" for="{{ prefixo }}-objetivo">Objetivo
+    <input id="{{ prefixo }}-objetivo" name="objetivo" value="{{ v.objetivo }}">
+  </label>
+  <label class="campo" for="{{ prefixo }}-duracao_semanas">Duração (semanas)
+    <input id="{{ prefixo }}-duracao_semanas" name="duracao_semanas" value="{{ v.duracao_semanas }}" inputmode="numeric">
+  </label>
+  <label class="campo" for="{{ prefixo }}-investimento">Investimento (R$)
+    <input id="{{ prefixo }}-investimento" name="investimento" value="{{ v.investimento }}" inputmode="decimal">
+  </label>
+</div>

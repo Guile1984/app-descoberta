@@ -23,8 +23,14 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 from sqlmodel import Session
 
+from descoberta.proposta import carregar_modelo_proposta
+from descoberta.proposta.inicial import conteudo_inicial
+from descoberta.questionario import carregar_questionario
+from descoberta.relatorio import coletar_dados
+from descoberta.relatorio.dados_proposta import dados_para_proposta_nova
 from descoberta.repositorio import (
     CAMINHO_BANCO_PADRAO,
+    FaseProposta,
     Indicador,
     ItemEscopo,
     ProximoPasso,
@@ -34,19 +40,25 @@ from descoberta.repositorio import (
     adicionar_item,
     criar_cliente,
     criar_engine,
+    criar_proposta,
     criar_sessao,
     criar_tabelas,
+    editar_item,
+    itens_da_sessao,
     marcar_hipotese,
     marcar_sinal,
     salvar_metricas,
     salvar_nota,
     salvar_perfil,
+    salvar_proposta,
     salvar_resposta,
     salvar_texto_secao,
 )
 
 CAMINHO_DEMO = Path("data") / "demo.db"
+PASTA_CONFIG = Path("config")
 VERSAO_QUESTIONARIO = 1
+VERSAO_MODELO_PROPOSTA = 1
 
 # Consultor fictício: o perfil fica marcado com dados_ficticios, e o relatório e a
 # proposta gerados pelo demo avisam isso. O CNPJ é o número clássico de teste
@@ -333,6 +345,17 @@ TEXTOS = {
 }
 
 
+# Proposta do Roberto: criada como a tela cria (modelo + revisão) e depois ajustada.
+PROPOSTA = {
+    # CNPJ alfanumérico de exemplo da Receita Federal: os dígitos conferem; é fictício.
+    "cliente_cpf_cnpj": "12.ABC.345/01DE-35",
+    "cliente_representante": "Roberto",
+    "cliente_cargo": "Sócio-diretor",
+    "cliente_email": "roberto@example.com",
+}
+INVESTIMENTO_FASE_0 = 6_000  # o preço da fase 0 é do consultor (o modelo não sugere)
+
+
 def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -> int:
     """Recria o banco de demonstração e devolve o id da sessão do Roberto.
 
@@ -369,6 +392,7 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -
             for texto, bloco in ANOTACOES:
                 adicionar_anotacao(session, sessao.id, texto, bloco=bloco)
             _popular_revisao(session, sessao.id, hoje or date.today())
+            _popular_proposta(session, sessao.id)
             return sessao.id
     finally:
         engine.dispose()  # no Windows, o arquivo só pode ser apagado depois de fechado
@@ -398,6 +422,17 @@ def _popular_revisao(session: Session, sessao_id: int, hoje: date) -> None:
         )
     for secao_id, texto in TEXTOS.items():
         salvar_texto_secao(session, sessao_id, secao_id, texto)
+
+
+def _popular_proposta(session: Session, sessao_id: int) -> None:
+    questionario = carregar_questionario(PASTA_CONFIG / f"questionario_v{VERSAO_QUESTIONARIO}.yaml")
+    modelo = carregar_modelo_proposta(PASTA_CONFIG / f"proposta_v{VERSAO_MODELO_PROPOSTA}.yaml")
+    dados = dados_para_proposta_nova(coletar_dados(session, sessao_id, questionario))
+    inicial = conteudo_inicial(modelo.padrao, dados)
+    criar_proposta(session, sessao_id, inicial, versao_modelo=VERSAO_MODELO_PROPOSTA)
+    salvar_proposta(session, sessao_id, **PROPOSTA)
+    fase_0 = itens_da_sessao(session, FaseProposta, sessao_id)[0]
+    editar_item(session, FaseProposta, fase_0.id, investimento=INVESTIMENTO_FASE_0)
 
 
 def main(argumentos: list[str] | None = None) -> None:

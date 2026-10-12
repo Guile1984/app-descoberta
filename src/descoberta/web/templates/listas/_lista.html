@@ -1,0 +1,29 @@
+{#
+  Uma lista editável (da revisão ou da proposta): os itens e o formulário de inclusão.
+  Incluir, salvar e excluir devolvem esta seção inteira (hx-swap="outerHTML"): com o
+  formulário vazio, ou com o que foi digitado e o erro. Os campos de cada lista ficam em
+  <pagina>/_campos_<lista>.html; a leitura, em <pagina>/_leitura_<lista>.html (web/listas.py).
+#}
+<section id="lista-{{ lista.nome }}" class="secao-revisao" aria-labelledby="titulo-{{ lista.nome }}"
+  {%- if lista.recarregar_em %} hx-get="{{ lista.url(sessao.id) }}" hx-trigger="{{ lista.recarregar_em }} from:body" hx-swap="outerHTML"{% endif %}>
+  <h2 id="titulo-{{ lista.nome }}">{{ lista.titulo }}</h2>
+  <p class="discreto">{{ lista.explicacao }}</p>
+  <ol class="itens-revisao">
+    {% for item in itens %}
+    {% with numero = loop.index, editando = false %}
+    {% include "listas/_item.html" %}
+    {% endwith %}
+    {% else %}
+    <li class="discreto">Nada incluído ainda.</li>
+    {% endfor %}
+  </ol>
+  <form class="form-revisao" hx-post="{{ lista.url(sessao.id) }}"
+        hx-target="#lista-{{ lista.nome }}" hx-swap="outerHTML">
+    <h3>Incluir {{ lista.item }}</h3>
+    {% with prefixo = "novo-" ~ lista.nome, v = valores %}
+    {% include lista.templates % "campos" %}
+    {% endwith %}
+    {% if erro %}<p class="aviso-erro" role="alert">⚠ Não salvo: {{ erro }}</p>{% endif %}
+    <button type="submit" class="botao secundario">Incluir</button>
+  </form>
+</section>

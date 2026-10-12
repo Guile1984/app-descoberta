@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}Proposta · {{ cliente.empresa }} · {{ sessao.data | data_br }} · Descoberta{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <p class="discreto"><a href="/clientes/{{ cliente.id }}">{{ cliente.empresa }}</a> · {{ cliente.nome }}</p>
+    <h1>Proposta Comercial</h1>
+    <p class="discreto">Sessão de {{ sessao.data | data_br }}</p>
+  </div>
+  <div class="acoes">
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/revisao">← Revisão pós-sessão</a>
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio">← Relatório</a>
+  </div>
+</div>
+
+{% include "proposta/_alerta.html" %}
+
+<p>A proposta é um documento separado do Relatório de Descoberta. Ela começa como uma cópia do
+  modelo (<code>config/proposta_v{{ modelo.versao }}.yaml</code>) e da revisão pós-sessão; depois
+  você edita à vontade, e mudar a revisão não altera a proposta.</p>
+
+<h2>O que entra ao criar</h2>
+<ul>
+  {% for fase in inicial.fases %}
+  <li><strong>{{ fase.nome }}</strong>: {{ fase.duracao_semanas }} semanas,
+    {{ fase.escopo | length }} {{ "item" if fase.escopo | length == 1 else "itens" }} de escopo,
+    {% if fase.investimento is not none %}investimento de {{ fase.investimento | moeda }}{% else %}investimento a definir{% endif %}</li>
+  {% endfor %}
+  <li>{{ inicial.exclusoes | length }} {{ "item" if inicial.exclusoes | length == 1 else "itens" }} fora do escopo (da revisão)</li>
+  <li>{{ inicial.premissas | length }} premissas (do modelo e das hipóteses marcadas)</li>
+  <li>{{ inicial.responsabilidades | length }} responsabilidades do cliente (do modelo e dos próximos passos)</li>
+</ul>
+
+<p class="doc-aviso">⚖ {{ modelo.aviso }}</p>
+
+<form method="post" action="/sessoes/{{ sessao.id }}/proposta" class="acoes">
+  {% if alerta == "nao_seguir" %}
+  <input type="hidden" name="confirmar" value="1">
+  <button type="submit" class="botao perigo">Criar mesmo assim</button>
+  {% else %}
+  <button type="submit" class="botao">Criar proposta</button>
+  {% endif %}
+</form>
+{% endblock %}

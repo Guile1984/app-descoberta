@@ -1,0 +1,14 @@
+{#
+  Aviso do score final antes (e depois) de criar a proposta. "nao_seguir": o score está numa
+  faixa de alerta do modelo (alerta_score_final); "incompleto": ainda faltam notas.
+#}
+{% if alerta == "nao_seguir" %}
+<div class="alerta-forte" role="alert">
+  <p><strong>O score final indica: {{ score_final.resultado.faixa.rotulo }}</strong>
+    ({{ score_final.pontuacao }} de {{ score_final.maximo }}).</p>
+  {% if score_final.resultado.faixa.descricao %}<p>{{ score_final.resultado.faixa.descricao }}</p>{% endif %}
+  <p>Uma proposta agora contraria a recomendação do Relatório de Descoberta. Se for mesmo o caso, explique ao cliente o motivo e o que precisa mudar.</p>
+</div>
+{% elif alerta == "incompleto" %}
+<p class="doc-aviso" role="status">O score final ainda está incompleto: confira as notas na <a href="/sessoes/{{ sessao.id }}">tela da sessão</a> antes de enviar a proposta.</p>
+{% endif %}

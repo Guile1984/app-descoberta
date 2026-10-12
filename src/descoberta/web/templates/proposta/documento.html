@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titulo %}Documento da proposta · {{ dados.relatorio.empresa }} · Descoberta{% endblock %}
+{% block conteudo %}
+<div class="cabecalho-pagina">
+  <div>
+    <p class="discreto"><a href="/clientes/{{ sessao.cliente_id }}">{{ dados.relatorio.empresa }}</a> · {{ dados.relatorio.cliente }}</p>
+    <h1>{{ modelo.titulo }}</h1>
+    <p class="discreto">Sessão de {{ sessao.data | data_br }}</p>
+  </div>
+  <div class="acoes">
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta">← Editar a proposta</a>
+    <a class="botao secundario" href="/sessoes/{{ sessao.id }}/relatorio">← Relatório</a>
+  </div>
+</div>
+
+<div class="colunas">
+  <div>
+    {% if a_preencher %}
+    <p class="doc-aviso" role="status">
+      ⚠ A proposta tem {{ a_preencher }} {{ "trecho" if a_preencher == 1 else "trechos" }} a preencher
+      (marcados com “A preencher”). Complete na <a href="/sessoes/{{ sessao.id }}/proposta">edição da proposta</a>
+      ou no <a href="/perfil">perfil do consultor</a>.
+    </p>
+    {% endif %}
+    {% include "relatorio/_documento.html" %}
+  </div>
+  <aside class="coluna-apoio">
+    <section class="apoio">
+      <h2>Antes de enviar</h2>
+      <p class="doc-aviso">⚖ {{ modelo.aviso }}</p>
+    </section>
+    <section class="apoio">
+      <h2>Baixar (rascunho)</h2>
+      <p class="discreto">Gerado na hora, com os dados atuais. O rodapé diz “Rascunho não registrado”.</p>
+      <p class="acoes">
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta.pdf">PDF</a>
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta.docx">Word</a>
+        <a class="botao secundario" href="/sessoes/{{ sessao.id }}/proposta.md">Markdown</a>
+      </p>
+    </section>
+  </aside>
+</div>
+{% endblock %}

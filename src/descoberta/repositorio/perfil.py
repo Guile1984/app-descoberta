@@ -1,31 +1,24 @@
 """Perfil do consultor: uma linha só no banco local, preenchida no primeiro uso."""
 
-import re
 from typing import Any
 
 from sqlmodel import Session
 
-from descoberta.dominio.documento_fiscal import formatar_cpf_cnpj
 from descoberta.imagens import preparar_logotipo
 from descoberta.rotulos import UFS
 
-from ._comum import aplicar_campos, booleano, gravar, texto_obrigatorio, texto_opcional
+from ._comum import (
+    aplicar_campos,
+    booleano,
+    cpf_cnpj_opcional,
+    email_opcional,
+    gravar,
+    texto_obrigatorio,
+    texto_opcional,
+)
 from .modelos import PerfilConsultor, agora
 
 ID_PERFIL = 1
-_EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
-
-
-def _cpf_cnpj(nome: str, valor: Any) -> str | None:
-    texto = texto_opcional(nome, valor)
-    return None if texto is None else formatar_cpf_cnpj(texto)
-
-
-def _email(nome: str, valor: Any) -> str | None:
-    texto = texto_opcional(nome, valor)
-    if texto is not None and not _EMAIL.fullmatch(texto):
-        raise ValueError(f"e-mail {texto!r} inválido")
-    return texto
 
 
 def _uf(nome: str, valor: Any) -> str | None:
@@ -44,8 +37,8 @@ def _logotipo(nome: str, valor: Any) -> bytes | None:
 _VALIDADORES = {
     "nome": texto_obrigatorio,
     "empresa": texto_obrigatorio,
-    "cpf_cnpj": _cpf_cnpj,
-    "email": _email,
+    "cpf_cnpj": cpf_cnpj_opcional,
+    "email": email_opcional,
     "telefone": texto_opcional,
     "cidade": texto_opcional,
     "uf": _uf,

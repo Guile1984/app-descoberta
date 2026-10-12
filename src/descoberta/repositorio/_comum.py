@@ -9,6 +9,7 @@ from typing import Any
 
 from sqlmodel import Session, SQLModel
 
+from descoberta.dominio.documento_fiscal import formatar_cpf_cnpj
 from descoberta.dominio.valores import Numero, como_decimal
 from descoberta.questionario.modelos import NOTA_MAXIMA_POR_CRITERIO, PADRAO_ID
 
@@ -73,6 +74,23 @@ def texto_opcional(nome: str, valor: Any) -> str | None:
     if not isinstance(valor, str):
         raise TypeError(f"{nome} precisa ser texto (recebido {valor!r})")
     return valor.strip() or None
+
+
+_EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")
+
+
+def email_opcional(nome: str, valor: Any) -> str | None:
+    """Confere só a forma (algo@dominio.tld): pega erro de digitação, não se o e-mail existe."""
+    texto = texto_opcional(nome, valor)
+    if texto is not None and not _EMAIL.fullmatch(texto):
+        raise ValueError(f"e-mail {texto!r} inválido")
+    return texto
+
+
+def cpf_cnpj_opcional(nome: str, valor: Any) -> str | None:
+    """CPF ou CNPJ conferido pelos dígitos verificadores e guardado já formatado."""
+    texto = texto_opcional(nome, valor)
+    return None if texto is None else formatar_cpf_cnpj(texto)
 
 
 def inteiro(nome: str, valor: Any, minimo: int = 0, maximo: int | None = None) -> int:

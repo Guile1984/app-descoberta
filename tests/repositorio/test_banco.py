@@ -33,6 +33,9 @@ TABELAS = {
     "hipotese_metrica",
     "versao_relatorio",
     "perfil_consultor",
+    "proposta",
+    "fase_proposta",
+    "item_proposta",
 }
 
 

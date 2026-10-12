@@ -41,3 +41,10 @@ def sessao(session, cliente):
     return criar_sessao(
         session, cliente_id=cliente.id, data=date(2026, 10, 7), versao_questionario=1
     )
+
+
+@pytest.fixture
+def outra_sessao(session, cliente):
+    return criar_sessao(
+        session, cliente_id=cliente.id, data=date(2026, 10, 9), versao_questionario=1
+    )

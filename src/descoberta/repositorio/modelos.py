@@ -296,3 +296,64 @@ class PerfilConsultor(SQLModel, table=True):
     # Banco de demonstração: os documentos avisam que os dados do consultor são fictícios.
     dados_ficticios: bool = False
     atualizado_em: datetime = Field(default_factory=agora)
+
+
+class TipoItemProposta(StrEnum):
+    escopo = auto()  # da fase
+    entregavel = auto()  # da fase
+    exclusao = auto()  # fora do escopo
+    premissa = auto()  # premissas e hipóteses
+    responsabilidade = auto()  # do cliente
+
+
+class Proposta(SQLModel, table=True):
+    """Proposta Comercial da sessão: documento separado do relatório.
+
+    Criada como cópia do modelo (YAML) e da revisão; depois é editada à parte, para que
+    renegociar a proposta nunca altere o relatório.
+    """
+
+    sessao_id: int = Field(primary_key=True, foreign_key="sessao.id", ondelete="CASCADE")
+    versao_modelo: int  # versão do config/proposta_v{n}.yaml usada na criação
+    # Dados do cliente que o cadastro não tem e a proposta precisa.
+    cliente_cpf_cnpj: str | None = None
+    cliente_representante: str | None = None
+    cliente_cargo: str | None = None
+    cliente_email: str | None = None
+    condicoes_pagamento: str
+    impostos: str
+    reajuste: str
+    validade_dias: int
+    # Criada depois do aviso de que o score final indica "não seguir agora".
+    criada_com_alerta: bool = False
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class FaseProposta(SQLModel, table=True):
+    """Fase da proposta (ex.: fase 0 e MVP), feitas em sequência a partir do aceite."""
+
+    __tablename__ = "fase_proposta"
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    nome: str
+    objetivo: str | None = None
+    duracao_semanas: int | None = None
+    investimento: Decimal | None = _dinheiro_ou_quantidade()
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class ItemProposta(SQLModel, table=True):
+    """Item de lista da proposta. Escopo e entregáveis pertencem a uma fase (fase_id)."""
+
+    __tablename__ = "item_proposta"
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    tipo: TipoItemProposta
+    # Excluir a fase exclui junto o escopo e os entregáveis dela.
+    fase_id: int | None = Field(
+        default=None, foreign_key="fase_proposta.id", ondelete="CASCADE", index=True
+    )
+    texto: str
+    criado_em: datetime = Field(default_factory=agora)
