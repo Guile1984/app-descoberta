@@ -15,6 +15,7 @@ from descoberta.repositorio import (
     listar_clientes,
     listar_sessoes,
     obter_cliente,
+    obter_perfil,
 )
 
 from ..dependencias import Banco, CatalogoDep, html, redirecionar
@@ -55,6 +56,10 @@ def _pagina_do_cliente(request: Request, banco: Banco, cliente: Cliente, erro=No
 
 @router.get("/")
 def lista(request: Request, banco: Banco):
+    # Primeiro uso: antes da lista de clientes, o perfil do consultor (vai nos documentos).
+    # Só a tela inicial redireciona; as outras páginas continuam abertas.
+    if obter_perfil(banco) is None:
+        return redirecionar(request, "/perfil?primeiro_uso=1")
     return html(request, "clientes/lista.html", clientes=listar_clientes(banco))
 
 

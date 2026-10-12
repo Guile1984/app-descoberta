@@ -21,6 +21,7 @@ from descoberta.questionario import SecaoRelatorio, perguntas_visiveis
 from descoberta.repositorio import TipoVersao
 from descoberta.rotulos import CAMADAS, IMPACTOS, NIVEIS, PROBABILIDADES, RESPONSAVEIS
 
+from .consultor import AVISO_CONSULTOR_FICTICIO, assinatura_do_consultor, linha_do_consultor
 from .dados import DadosRelatorio
 from .documento import (
     FALTA,
@@ -442,6 +443,9 @@ class _Montador:
         linhas = [("Cliente", d.cliente)]
         if d.setor:
             linhas.append(("Setor", d.setor))
+        linhas.append(("Consultor", linha_do_consultor(d.consultor)))
+        if d.consultor and d.consultor.dados_ficticios:
+            linhas.append(("Atenção", AVISO_CONSULTOR_FICTICIO))
         linhas += [
             ("Data da sessão", data_br(d.data_sessao)),
             ("Emissão", descricao_da_emissao(self.emissao)),
@@ -454,6 +458,7 @@ class _Montador:
             linhas=linhas,
             faixa=FAIXA_INTERNA if interna else None,
             nota=f"Documento confidencial, preparado para {d.empresa}.",
+            logotipo=d.consultor.logotipo if d.consultor else None,
         )
 
     def _anexo_a(self) -> list[Bloco]:
@@ -607,7 +612,7 @@ class _Montador:
             Paragrafo(TERMO.format(data=data_br(self.dados.data_sessao))),
             Aviso(AVISO_TERMO),
             Assinatura(f"Pelo cliente — {self.dados.empresa}"),
-            Assinatura("Pelo consultor"),
+            assinatura_do_consultor(self.dados.consultor),
         ]
 
     def montar(self) -> Documento:

@@ -200,3 +200,30 @@ def test_nenhuma_palavra_quebra_nas_tabelas_do_pdf(dados_roberto, tipo):
                     if stringWidth(palavra, fonte, 8.5) > util
                 ]
     assert quebradas == []
+
+
+# --- Logotipo e assinatura do consultor ---
+
+
+def test_logotipo_na_capa_do_pdf_e_do_word(dados_roberto, emissao_cliente):
+    emitido = emitir(dados_roberto, emissao_cliente)
+    primeira = PdfReader(io.BytesIO(exportar_pdf(emitido))).pages[0]
+    assert len(primeira.images) == 1
+    assert len(AbrirDocx(io.BytesIO(exportar_docx(emitido))).inline_shapes) == 1
+
+
+def test_sem_logotipo_nao_ha_imagem(dados_vazios, emissao_cliente):
+    emitido = emitir(dados_vazios, emissao_cliente)
+    assert not PdfReader(io.BytesIO(exportar_pdf(emitido))).pages[0].images
+    assert len(AbrirDocx(io.BytesIO(exportar_docx(emitido))).inline_shapes) == 0
+
+
+def test_assinatura_do_consultor_preenchida_nos_tres_formatos(dados_roberto, emissao_cliente):
+    emitido = emitir(dados_roberto, emissao_cliente)
+    for texto in (
+        exportar_markdown(emitido),
+        _texto_do_pdf(exportar_pdf(emitido)),
+        _texto_do_docx(exportar_docx(emitido)),
+    ):
+        assert "Ana Exemplo" in texto
+        assert "11.222.333/0001-81" in texto

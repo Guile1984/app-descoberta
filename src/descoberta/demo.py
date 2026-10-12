@@ -15,10 +15,12 @@ preenchida, montada pelo consultor a partir desses fatos. O que o cliente não d
 marcado como hipótese.
 """
 
+import io
 import sys
 from datetime import date, timedelta
 from pathlib import Path
 
+from PIL import Image, ImageDraw
 from sqlmodel import Session
 
 from descoberta.repositorio import (
@@ -38,12 +40,27 @@ from descoberta.repositorio import (
     marcar_sinal,
     salvar_metricas,
     salvar_nota,
+    salvar_perfil,
     salvar_resposta,
     salvar_texto_secao,
 )
 
 CAMINHO_DEMO = Path("data") / "demo.db"
 VERSAO_QUESTIONARIO = 1
+
+# Consultor fictício: o perfil fica marcado com dados_ficticios, e o relatório e a
+# proposta gerados pelo demo avisam isso. O CNPJ é o número clássico de teste
+# (11.222.333/0001-81): os dígitos conferem, mas não é de nenhuma empresa do demo.
+CONSULTOR = {
+    "nome": "Ana Exemplo",
+    "empresa": "Exemplo Consultoria em IA Ltda",
+    "cpf_cnpj": "11.222.333/0001-81",
+    "email": "ana@example.com",
+    "telefone": "(11) 90000-0000",
+    "cidade": "São Paulo",
+    "uf": "SP",
+    "dados_ficticios": True,
+}
 
 CLIENTE = {
     "nome": "Roberto",
@@ -330,6 +347,7 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -
     try:
         criar_tabelas(engine)
         with Session(engine) as session:
+            salvar_perfil(session, **CONSULTOR, logotipo=_logotipo_ficticio())
             cliente = criar_cliente(session, **CLIENTE)
             sessao = criar_sessao(
                 session,
@@ -354,6 +372,16 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -
             return sessao.id
     finally:
         engine.dispose()  # no Windows, o arquivo só pode ser apagado depois de fechado
+
+
+def _logotipo_ficticio() -> bytes:
+    """Um retângulo com "EXEMPLO": mostra onde o logotipo aparece nos documentos."""
+    imagem = Image.new("RGB", (360, 120), "#0b5cad")
+    desenho = ImageDraw.Draw(imagem)
+    desenho.text((180, 60), "EXEMPLO", fill="white", anchor="mm", font_size=48)
+    saida = io.BytesIO()
+    imagem.save(saida, "PNG")
+    return saida.getvalue()
 
 
 def _popular_revisao(session: Session, sessao_id: int, hoje: date) -> None:

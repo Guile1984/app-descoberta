@@ -26,6 +26,7 @@ from .rotas import (
     clientes,
     cronometro,
     numeros,
+    perfil,
     relatorio,
     respostas,
     revisao,
@@ -61,6 +62,7 @@ def criar_app(
     )
     app.mount("/static", StaticFiles(directory=PASTA_STATIC), name="static")
     app.include_router(clientes.router)
+    app.include_router(perfil.router)
     app.include_router(sessoes.router)
     app.include_router(respostas.router)
     app.include_router(sinais.router)

@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session
 
 from descoberta.demo import popular_demo
-from descoberta.repositorio import criar_cliente, criar_sessao
+from descoberta.repositorio import criar_cliente, criar_sessao, salvar_perfil
 from descoberta.web.app import criar_app
 
 RAIZ_PROJETO = Path(__file__).resolve().parents[2]
@@ -32,6 +32,12 @@ def banco(app, cliente_http):
     """Sessão do banco para preparar dados e conferir o que a tela gravou."""
     with Session(app.state.engine) as session:
         yield session
+
+
+@pytest.fixture
+def perfil(banco):
+    """Perfil do consultor preenchido: sem ele, a tela inicial leva ao formulário do perfil."""
+    return salvar_perfil(banco, nome="Ana Exemplo", empresa="Exemplo Consultoria")
 
 
 @pytest.fixture

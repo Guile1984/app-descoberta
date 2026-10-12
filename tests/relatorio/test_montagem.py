@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 import pytest
 
 from descoberta.relatorio import Emissao, coletar_dados, montar_relatorio
+from descoberta.relatorio.consultor import AVISO_CONSULTOR_FICTICIO
 from descoberta.relatorio.documento import (
     FALTA,
     Assinatura,
@@ -256,13 +257,47 @@ def test_termo_de_ciencia(dados_roberto, emissao_cliente):
     assert isinstance(documento.blocos[indice - 1], QuebraDePagina)
     termo = documento.blocos[indice:]
     assinaturas = [b for b in termo if isinstance(b, Assinatura)]
-    assert [a.titulo for a in assinaturas] == [
-        "Pelo cliente — Construtora Alvorada",
-        "Pelo consultor",
-    ]
-    assert all(a.campos == ("Nome", "Cargo", "Data", "Assinatura") for a in assinaturas)
+    cliente, consultor = assinaturas
+    assert cliente.titulo == "Pelo cliente — Construtora Alvorada"
+    assert cliente.campos == ("Nome", "Cargo", "Data", "Assinatura")
+    assert cliente.valores == ()
+    # O consultor vem do perfil: nome, empresa e CPF/CNPJ já preenchidos.
+    assert consultor.titulo.startswith("Pelo consultor — Exemplo Consultoria em IA Ltda")
+    assert consultor.campos == ("Nome", "CPF/CNPJ", "Data", "Assinatura")
+    assert dict(consultor.valores) == {"Nome": "Ana Exemplo", "CPF/CNPJ": "11.222.333/0001-81"}
     avisos = [b.texto for b in termo if isinstance(b, Aviso)]
     assert any("não é proposta comercial nem contrato" in a for a in avisos)
+
+
+def test_termo_sem_perfil_deixa_o_consultor_em_branco(dados_vazios, emissao_cliente):
+    documento = montar_relatorio(dados_vazios, emissao_cliente)
+    consultor = [b for b in documento.blocos if isinstance(b, Assinatura)][-1]
+    assert consultor.titulo == "Pelo consultor"
+    assert consultor.valores == ()
+
+
+# --- Consultor (perfil) ---
+
+
+def test_capa_mostra_o_consultor_e_o_logotipo(dados_roberto, emissao_cliente):
+    capa = montar_relatorio(dados_roberto, emissao_cliente).blocos[0]
+    linhas = dict(capa.linhas)
+    assert linhas["Consultor"] == "Ana Exemplo · Exemplo Consultoria em IA Ltda"
+    assert capa.logotipo.startswith(b"\x89PNG")
+
+
+def test_demo_avisa_que_os_dados_do_consultor_sao_ficticios(dados_roberto, emissao_cliente):
+    documento = montar_relatorio(dados_roberto, emissao_cliente)
+    assert AVISO_CONSULTOR_FICTICIO in dict(documento.blocos[0].linhas).values()
+    consultor = [b for b in documento.blocos if isinstance(b, Assinatura)][-1]
+    assert "dados fictícios" in consultor.titulo
+
+
+def test_sem_perfil_o_consultor_fica_a_preencher(dados_vazios, emissao_cliente):
+    capa = montar_relatorio(dados_vazios, emissao_cliente).blocos[0]
+    assert dict(capa.linhas)["Consultor"] == FALTA
+    assert capa.logotipo is None
+    assert AVISO_CONSULTOR_FICTICIO not in dict(capa.linhas).values()
 
 
 # --- O que falta ---

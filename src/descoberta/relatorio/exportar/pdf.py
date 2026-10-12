@@ -19,6 +19,7 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
+    Image,
     KeepTogether,
     PageBreak,
     Paragraph,
@@ -149,9 +150,23 @@ def _caixa(conteudo, fundo: str) -> Table:
     return caixa
 
 
+def _logotipo(dados: bytes) -> Image:
+    """O logotipo cabe em 6 × 2,5 cm, sem distorcer."""
+    imagem = Image(io.BytesIO(dados))
+    escala = min(6 * cm / imagem.imageWidth, 2.5 * cm / imagem.imageHeight)
+    imagem.drawWidth = imagem.imageWidth * escala
+    imagem.drawHeight = imagem.imageHeight * escala
+    return imagem
+
+
 def _assinatura(bloco: Assinatura, estilos) -> KeepTogether:
-    linhas = [[_p(f"{campo}:", estilos["base"]), ""] for campo in bloco.campos]
-    grade = Table(linhas, colWidths=[3 * cm, LARGURA_UTIL - 3 * cm], rowHeights=[22] * 3 + [40])
+    linhas = [
+        [_p(f"{campo}:", estilos["base"]), _p(bloco.valor(campo) or "", estilos["base"])]
+        for campo in bloco.campos
+    ]
+    # A última linha (a assinatura em si) é mais alta, para caber a assinatura à mão.
+    alturas = [22] * (len(bloco.campos) - 1) + [40]
+    grade = Table(linhas, colWidths=[3 * cm, LARGURA_UTIL - 3 * cm], rowHeights=alturas)
     grade.setStyle(
         TableStyle(
             [
@@ -168,6 +183,8 @@ def _flowables(bloco, estilos) -> list:
     match bloco:
         case Capa():
             itens: list = [Spacer(1, 4 * cm)]
+            if bloco.logotipo:
+                itens = [Spacer(1, 1.5 * cm), _logotipo(bloco.logotipo), Spacer(1, 1.5 * cm)]
             if bloco.faixa:
                 itens += [_caixa(_p(bloco.faixa, estilos["faixa"]), COR_DESTAQUE), Spacer(1, 20)]
             itens += [_p(bloco.titulo, estilos["capa"]), _p(bloco.subtitulo, estilos["subcapa"])]

@@ -270,3 +270,29 @@ class VersaoRelatorio(SQLModel, table=True):
     hash_conteudo: str
     pdf: bytes = Field(sa_type=LargeBinary)
     hash_pdf: str
+
+
+# --- Perfil do consultor e Proposta Comercial (Sprint 6c) ---
+
+
+class PerfilConsultor(SQLModel, table=True):
+    """Quem usa a app: aparece no relatório e na proposta. Uma linha só (id 1).
+
+    Fica só no banco local. Antes de qualquer chamada ao LLM (Sprint 7), estes dados
+    entram na anonimização, como os do cliente.
+    """
+
+    __tablename__ = "perfil_consultor"
+
+    id: int = Field(default=1, primary_key=True)
+    nome: str
+    empresa: str
+    cpf_cnpj: str | None = None  # já conferido e formatado
+    email: str | None = None
+    telefone: str | None = None
+    cidade: str | None = None
+    uf: str | None = None
+    logotipo: bytes | None = Field(default=None, sa_type=LargeBinary)  # PNG limpo
+    # Banco de demonstração: os documentos avisam que os dados do consultor são fictícios.
+    dados_ficticios: bool = False
+    atualizado_em: datetime = Field(default_factory=agora)

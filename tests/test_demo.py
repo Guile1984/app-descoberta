@@ -38,6 +38,7 @@ from descoberta.repositorio import (
     listar_sessoes,
     notas_da_sessao,
     obter_metricas,
+    obter_perfil,
     respostas_da_sessao,
     sinais_marcados,
     textos_da_sessao,
@@ -181,3 +182,11 @@ def test_proximos_passos_vencem_depois_da_criacao_do_demo(tmp_path):
     engine.dispose()
     assert prazos == sorted(prazos)
     assert all(prazo > date(2027, 3, 1) for prazo in prazos)
+
+
+def test_consultor_ficticio_com_logotipo(banco_demo):
+    perfil = obter_perfil(banco_demo)
+    assert perfil.dados_ficticios is True
+    assert perfil.cpf_cnpj == "11.222.333/0001-81"
+    assert perfil.email.endswith("@example.com")  # domínio reservado para exemplos
+    assert perfil.logotipo.startswith(b"\x89PNG")

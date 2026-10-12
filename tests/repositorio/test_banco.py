@@ -32,6 +32,7 @@ TABELAS = {
     # Sprint 6b: relatório.
     "hipotese_metrica",
     "versao_relatorio",
+    "perfil_consultor",
 }
 
 
