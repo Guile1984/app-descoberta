@@ -2,6 +2,29 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [Não publicado] — Sprint 7: LLM
+
+### Adicionado
+- Configuração do LLM em `config/llm.yaml` (pacote `llm.configuracao`, validada com
+  Pydantic quando a app liga): provedor `desligado` (padrão), `claude` ou `ollama`;
+  modelo padrão da API `claude-opus-5-5` com esforço `medium`; Ollama aceito só nesta
+  máquina (localhost). A variável `DESCOBERTA_LLM_PROVEDOR` vale mais que o arquivo; um
+  valor inválido impede a app de ligar, com mensagem clara.
+- Chave da API só na variável de ambiente `ANTHROPIC_API_KEY`, lida na hora de usar e
+  guardada como `SecretStr` (aparece como `**********` em log, erro ou repr).
+- `.env.example` com `DESCOBERTA_LLM_PROVEDOR` e `ANTHROPIC_API_KEY` em branco; a app lê o
+  `.env` com `uv run --env-file .env uvicorn ...`, sem dependência nova.
+- `.claude/settings.json`: o Claude Code não lê nem edita `.env` e variações (exceto o
+  `.env.example`) e não exibe a `ANTHROPIC_API_KEY` no terminal.
+- Testes que nunca saem da máquina: uma fixture automática tira a chave e o provedor do
+  ambiente e bloqueia conexões para fora (as locais, como as dos testes no navegador,
+  continuam); testes de que nenhum arquivo versionado contém chave de API, de que o `.env`
+  e variações ficam fora do Git e de que a chave nunca aparece ao ser exibida.
+
+### Alterado
+- `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
+- Regra de arquitetura: `llm` não importa `web` nem `repositorio`.
+
 ## [0.9.0] — 2026-10-11 — Sprint 6c: Proposta comercial
 
 ### Adicionado

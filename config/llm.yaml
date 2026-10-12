@@ -1,0 +1,24 @@
+# Rascunhos por LLM — configuração
+#
+# O LLM só é usado depois da sessão, para sugerir rascunhos de textos que o consultor
+# revisa e aceita ou descarta. Nunca durante a sessão ao vivo, nunca para cálculos.
+#
+# provedor: desligado (padrão), claude (API da Anthropic) ou ollama (modelo local).
+# A variável de ambiente DESCOBERTA_LLM_PROVEDOR, se preenchida, vale mais que este arquivo
+# (veja o .env.example).
+#
+# A chave da API NÃO fica aqui: só na variável de ambiente ANTHROPIC_API_KEY.
+
+provedor: desligado
+
+claude:
+  modelo: claude-opus-5-5
+  esforco: medium  # low | medium | high | xhigh | max
+  max_tokens: 16000  # teto da resposta; os rascunhos costumam ser bem menores
+  tempo_limite_s: 60
+  tentativas: 2  # novas tentativas automáticas em falha de rede ou sobrecarga
+
+ollama:
+  url: http://localhost:11434  # só nesta máquina
+  modelo: llama3.1:8b
+  tempo_limite_s: 180

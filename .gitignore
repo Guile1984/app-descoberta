@@ -21,8 +21,10 @@ coverage.xml
 data/
 exports/
 
-# Segredos
+# Segredos (o .env.example, sem valores, fica no Git)
 .env
+.env.*
+!.env.example
 
 # Editores e SO
 .vscode/

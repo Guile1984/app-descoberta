@@ -6,7 +6,8 @@ usam um banco temporário); `app` é a instância que o uvicorn roda:
     uv run uvicorn descoberta.web.app:app --reload
 
 O banco vem da variável de ambiente DESCOBERTA_BANCO (ex.: data/demo.db); sem ela, é o
-banco real em data/descoberta.db.
+banco real em data/descoberta.db. O LLM (rascunhos depois da sessão) vem de config/llm.yaml
+e da variável DESCOBERTA_LLM_PROVEDOR; por padrão, fica desligado.
 """
 
 import os
@@ -17,6 +18,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
+from descoberta.llm.configuracao import carregar_configuracao_llm
 from descoberta.repositorio import CAMINHO_BANCO_PADRAO, criar_engine, criar_tabelas
 
 from .catalogo import Catalogo
@@ -48,6 +50,8 @@ def criar_app(
     async def ciclo_de_vida(app: FastAPI):
         # Roda ao ligar a app (antes do primeiro pedido) e, depois do yield, ao desligar.
         app.state.catalogo = Catalogo(pasta_config)
+        # Conferida ao ligar, como os YAMLs: um erro aparece agora, não no meio do uso.
+        app.state.config_llm = carregar_configuracao_llm(Path(pasta_config) / "llm.yaml")
         app.state.engine = criar_engine(caminho_banco)
         criar_tabelas(app.state.engine)
         yield

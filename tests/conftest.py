@@ -1,5 +1,7 @@
 """Fixtures compartilhadas por todos os testes."""
 
+import ipaddress
+import socket
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -9,6 +11,68 @@ from descoberta.questionario import Questionario, carregar_questionario
 
 RAIZ_PROJETO = Path(__file__).resolve().parents[1]
 CAMINHO_QUESTIONARIO_V1 = RAIZ_PROJETO / "config" / "questionario_v1.yaml"
+
+
+# --- Os testes nunca saem da máquina ---
+#
+# Nenhum teste chama o LLM de verdade: a chave e o provedor saem do ambiente, e qualquer
+# conexão para fora da máquina falha como se não houvesse internet. As conexões locais
+# (o servidor dos testes no navegador, o Playwright) continuam funcionando.
+
+_NOMES_LOCAIS = {"localhost", "localhost.localdomain"}
+_VARIAVEIS_DO_LLM = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "DESCOBERTA_LLM_PROVEDOR")
+
+
+def _eh_local(host) -> bool:
+    if host is None:
+        return True
+    if isinstance(host, bytes):
+        host = host.decode()
+    host = str(host).strip("[]")
+    if host.lower() in _NOMES_LOCAIS:
+        return True
+    try:
+        return ipaddress.ip_address(host.split("%")[0]).is_loopback
+    except ValueError:
+        return False
+
+
+def _bloquear(destino) -> ConnectionRefusedError:
+    return ConnectionRefusedError(f"conexão para fora da máquina bloqueada nos testes: {destino}")
+
+
+@pytest.fixture(autouse=True)
+def sem_rede_externa(monkeypatch):
+    for variavel in _VARIAVEIS_DO_LLM:
+        monkeypatch.delenv(variavel, raising=False)
+
+    getaddrinfo, connect, connect_ex = (
+        socket.getaddrinfo,
+        socket.socket.connect,
+        socket.socket.connect_ex,
+    )
+
+    def getaddrinfo_local(host, *args, **kwargs):
+        if not _eh_local(host):
+            raise _bloquear(host)
+        return getaddrinfo(host, *args, **kwargs)
+
+    def destino_permitido(sock, endereco) -> bool:
+        return sock.family not in (socket.AF_INET, socket.AF_INET6) or _eh_local(endereco[0])
+
+    def connect_local(sock, endereco):
+        if not destino_permitido(sock, endereco):
+            raise _bloquear(endereco)
+        return connect(sock, endereco)
+
+    def connect_ex_local(sock, endereco):
+        if not destino_permitido(sock, endereco):
+            raise _bloquear(endereco)
+        return connect_ex(sock, endereco)
+
+    monkeypatch.setattr(socket, "getaddrinfo", getaddrinfo_local)
+    monkeypatch.setattr(socket.socket, "connect", connect_local)
+    monkeypatch.setattr(socket.socket, "connect_ex", connect_ex_local)
 
 
 @pytest.fixture(scope="session")
