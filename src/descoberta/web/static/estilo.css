@@ -221,7 +221,9 @@ textarea { width: 100%; box-sizing: border-box; resize: vertical; }
 .matriz .nivel-medio { background: var(--nivel-medio); }
 .matriz .nivel-alto { background: var(--nivel-alto); }
 
-.pendencias-revisao { position: sticky; top: 1rem; }
+/* Sem position: sticky: fixo na rolagem, o quadro cobria o painel do LLM que vem depois
+   dele na coluna (teste e2e test_layout_sem_sobreposicao). */
+.pendencias-revisao { margin-bottom: 1.25rem; }
 .pendencias-revisao h3 { font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }
 .lista-pendencias { margin: 0; padding-left: 1.2rem; font-size: 0.9rem; color: var(--atencao-texto); }
 .completo { color: var(--ok); }
