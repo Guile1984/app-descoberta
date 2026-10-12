@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from sqlmodel import Session, col, select
 
 from ._comum import (
+    booleano,
     exigir,
     exigir_sessao,
     gravar,
@@ -42,6 +43,7 @@ def registrar_rascunho(
     modelo: str,
     versao_prompt: str,
     alertas: Sequence[str] = (),
+    com_anotacoes_internas: bool = False,
 ) -> Rascunho:
     """Guarda um rascunho pendente; um pendente anterior do mesmo campo vira substituído."""
     rascunho = Rascunho(
@@ -53,6 +55,7 @@ def registrar_rascunho(
         modelo=texto_obrigatorio("modelo", modelo),
         versao_prompt=texto_obrigatorio("versao_prompt", versao_prompt),
         alertas="\n".join(a.strip() for a in alertas if a.strip()) or None,
+        com_anotacoes_internas=booleano("com_anotacoes_internas", com_anotacoes_internas),
     )
     exigir_sessao(session, sessao_id)
     anterior = rascunho_pendente(session, sessao_id, rascunho.destino, rascunho.campo)

@@ -426,6 +426,8 @@ class Rascunho(SQLModel, table=True):
     modelo: str  # o modelo que de fato respondeu
     versao_prompt: str  # ex.: "rascunho_revisao_v1"
     alertas: str | None = None  # um por linha (marcador inventado, resposta cortada…)
+    # O consultor pediu para usar as anotações internas e os sinais de alerta como contexto.
+    com_anotacoes_internas: bool = False
     situacao: SituacaoRascunho = SituacaoRascunho.pendente
     criado_em: datetime = Field(default_factory=agora)
     decidido_em: datetime | None = None

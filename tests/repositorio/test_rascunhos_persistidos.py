@@ -64,6 +64,11 @@ def test_registrar_guarda_modelo_e_versao_do_prompt(session, sessao):
     )
     assert rascunho.lista_de_alertas == ["Confira [PESSOA_9]."]
     assert rascunho.decidido_em is None
+    assert rascunho.com_anotacoes_internas is False
+
+
+def test_registra_se_usou_anotacoes_internas(session, sessao):
+    assert _registrar(session, sessao.id, com_anotacoes_internas=True).com_anotacoes_internas
 
 
 def test_registrar_nao_mexe_no_texto_do_consultor(session, sessao):

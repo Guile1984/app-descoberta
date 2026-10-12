@@ -24,10 +24,9 @@ def test_numeros_vem_prontos_do_painel(dados_roberto):
     assert "Investimento: R$ 20.000,00" in texto
 
 
-def test_respostas_anotacoes_e_saidas_da_revisao(dados_roberto):
+def test_respostas_e_saidas_da_revisao(dados_roberto):
     texto = contexto_da_sessao(dados_roberto)
     assert "Não há padrão de distância, luz ou ângulo." in texto  # b4.vc2
-    assert "Pedir uma amostra com os 40 casos graves" in texto  # anotação
     assert "Uma fissura grave classificada como simples pela IA." in texto  # risco
     assert "Recall de fissuras graves" in texto  # indicador
     assert "Fica de fora: Laudo técnico gerado automaticamente" in texto
@@ -35,9 +34,24 @@ def test_respostas_anotacoes_e_saidas_da_revisao(dados_roberto):
     assert "Bloco 4 — " in texto
 
 
-def test_sinais_de_alerta_pelo_texto(dados_roberto, questionario_v1):
-    sinal = next(s for b in questionario_v1.blocos for s in b.sinais if s.id == "b1.s4")
-    assert sinal.texto in contexto_da_sessao(dados_roberto)
+def _texto_do_sinal(questionario, sinal_id):
+    return next(s.texto for b in questionario.blocos for s in b.sinais if s.id == sinal_id)
+
+
+def test_por_padrao_sem_anotacoes_nem_sinais(dados_roberto, questionario_v1):
+    """Como na versão cliente do relatório: o texto gerado é lido pelo cliente."""
+    texto = contexto_da_sessao(dados_roberto)
+    assert "Pedir uma amostra com os 40 casos graves" not in texto  # anotação
+    assert "Anotações do consultor" not in texto
+    assert "Sinais de alerta" not in texto
+    for sinal in dados_roberto.sinais:
+        assert _texto_do_sinal(questionario_v1, sinal.id) not in texto
+
+
+def test_com_anotacoes_internas(dados_roberto, questionario_v1):
+    texto = contexto_da_sessao(dados_roberto, anotacoes_internas=True)
+    assert "Pedir uma amostra com os 40 casos graves" in texto
+    assert _texto_do_sinal(questionario_v1, "b1.s4") in texto
 
 
 def test_respostas_de_condicionais_ocultas_ficam_de_fora(dados_roberto, questionario_v1):
@@ -59,6 +73,26 @@ def test_pedido_da_revisao(prompts, dados_roberto):
     assert dados_roberto.textos["frase_problema"] in pedido.mensagem  # texto atual
     assert "Horas da dor por mês: 60 h" in pedido.mensagem
     assert "{{" not in pedido.mensagem
+
+
+def test_pedidos_repassam_a_opcao(prompts, dados_roberto, proposta_roberto):
+    anotacao = "Pedir uma amostra com os 40 casos graves"
+    revisao = prompts["rascunho_revisao"]
+    proposta = prompts["rascunho_proposta"]
+    assert anotacao not in pedido_da_revisao(revisao, dados_roberto, "recomendacao").mensagem
+    assert (
+        anotacao
+        in pedido_da_revisao(
+            revisao, dados_roberto, "recomendacao", anotacoes_internas=True
+        ).mensagem
+    )
+    assert anotacao not in pedido_da_proposta(proposta, proposta_roberto, "contexto").mensagem
+    assert (
+        anotacao
+        in pedido_da_proposta(
+            proposta, proposta_roberto, "contexto", anotacoes_internas=True
+        ).mensagem
+    )
 
 
 def test_pedido_da_revisao_sem_texto_atual(prompts, dados_roberto):
@@ -133,7 +167,9 @@ def test_sem_perfil_e_sem_proposta(dados_roberto):
 def test_contexto_anonimizado_do_roberto_nao_tem_nomes(dados_roberto, proposta_roberto):
     a = Anonimizador(conhecidos_da_sessao(dados_roberto, proposta_roberto, ["Marcos", "Cida"]))
     texto = a.anonimizar(
-        contexto_da_sessao(dados_roberto) + "\n" + contexto_da_proposta(proposta_roberto)
+        contexto_da_sessao(dados_roberto, anotacoes_internas=True)
+        + "\n"
+        + contexto_da_proposta(proposta_roberto)
     )
     for nome in ("Roberto", "Alvorada", "Marcos", "Cida", "Campinas"):
         assert nome not in texto

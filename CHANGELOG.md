@@ -86,6 +86,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   `textos_para_sugestao` junta os textos livres da sessão. No caso Roberto, a sugestão
   traz exatamente "Marcos" e "Cida".
 
+- Os rascunhos são para textos que o cliente lê: como na versão cliente do relatório, o
+  contexto enviado ao LLM não inclui as anotações do consultor nem os sinais de alerta
+  (com as observações), a não ser com a opção `anotacoes_internas`; o rascunho registra se
+  ela foi usada (`com_anotacoes_internas`). O teste do payload confere que, por padrão,
+  nenhuma anotação nem sinal sai no pedido.
+
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.

@@ -1,5 +1,9 @@
 """O que vai no pedido ao LLM: os fatos da sessão e da proposta, em texto simples.
 
+Os rascunhos são para textos que o cliente lê. Por isso, como na versão cliente do
+relatório, as anotações do consultor e os sinais de alerta (com as observações) só entram
+com `anotacoes_internas=True`, opção que o consultor liga na tela.
+
 Os números vêm prontos do Painel do domínio (os mesmos da tela e do relatório) e só são
 formatados aqui: o LLM recebe "Payback: 7,7 meses" e é instruído a copiar, nunca a
 calcular. Respostas de perguntas condicionais ocultas pelo tipo de solução ficam de fora,
@@ -168,8 +172,13 @@ def _revisao(dados: DadosRelatorio) -> list[str]:
     ]
 
 
-def contexto_da_sessao(dados: DadosRelatorio, sem_o_texto: str | None = None) -> str:
-    """Os fatos da sessão; `sem_o_texto` deixa de fora o texto que está sendo rascunhado."""
+def contexto_da_sessao(
+    dados: DadosRelatorio, sem_o_texto: str | None = None, anotacoes_internas: bool = False
+) -> str:
+    """Os fatos da sessão; `sem_o_texto` deixa de fora o texto que está sendo rascunhado.
+
+    Sem `anotacoes_internas`, ficam de fora as anotações e os sinais de alerta.
+    """
     q = dados.questionario
     tipo = next((t.rotulo for t in q.tipos_solucao if t.id == dados.tipo_solucao), None)
     empresa = [
@@ -194,22 +203,31 @@ def contexto_da_sessao(dados: DadosRelatorio, sem_o_texto: str | None = None) ->
             _Numeros(dados).linhas(),
         ),
         *_respostas(dados),
-        _secao("Sinais de alerta marcados na sessão", _sinais(dados)),
-        _secao("Anotações do consultor", anotacoes),
+    ]
+    if anotacoes_internas:
+        partes += [
+            _secao("Sinais de alerta marcados na sessão (uso interno)", _sinais(dados)),
+            _secao("Anotações do consultor (uso interno)", anotacoes),
+        ]
+    partes += [
         *_revisao(dados),
         _secao("Outros textos já escritos pelo consultor", textos),
     ]
     return "\n\n".join(partes)
 
 
-def pedido_da_revisao(prompt: Prompt, dados: DadosRelatorio, texto_id: str) -> Pedido:
+def pedido_da_revisao(
+    prompt: Prompt, dados: DadosRelatorio, texto_id: str, anotacoes_internas: bool = False
+) -> Pedido:
     """O pedido de rascunho de um texto da revisão (KeyError se o id não existe)."""
     texto = dados.questionario.texto_revisao(texto_id)
     return prompt.preencher(
         titulo=texto.titulo,
         orientacao=texto.orientacao,
         texto_atual=(dados.textos.get(texto_id) or "").strip() or VAZIO,
-        contexto=contexto_da_sessao(dados, sem_o_texto=texto_id),
+        contexto=contexto_da_sessao(
+            dados, sem_o_texto=texto_id, anotacoes_internas=anotacoes_internas
+        ),
     )
 
 
@@ -251,6 +269,7 @@ def pedido_da_proposta(
     alvo: str,
     fase: int | None = None,
     texto_atual: str = "",
+    anotacoes_internas: bool = False,
 ) -> Pedido:
     """Pedido de rascunho de um texto da proposta.
 
@@ -272,7 +291,7 @@ def pedido_da_proposta(
         orientacao=prompt.alvos[alvo],
         texto_atual=texto_atual.strip() or VAZIO,
         proposta=contexto_da_proposta(dados),
-        contexto=contexto_da_sessao(dados.relatorio),
+        contexto=contexto_da_sessao(dados.relatorio, anotacoes_internas=anotacoes_internas),
     )
 
 

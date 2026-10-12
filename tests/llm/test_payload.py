@@ -125,6 +125,42 @@ def test_nenhum_dado_pessoal_sai_no_payload(
     assert rascunhos[0].alertas == ()
 
 
+def test_por_padrao_nenhuma_anotacao_nem_sinal_sai(
+    api, provedor, prompts, dados_roberto, proposta_roberto
+):
+    """Os rascunhos são para textos que o cliente lê: como na versão cliente do relatório,
+    anotações do consultor e sinais de alerta só saem se ele pedir."""
+    conhecidos = conhecidos_da_sessao(dados_roberto, proposta_roberto, PESSOAS_CITADAS)
+    for pedido in _pedidos(prompts, dados_roberto, proposta_roberto):
+        gerar_rascunho(provedor, "rascunho_vX", pedido, Anonimizador(conhecidos))
+    questionario = dados_roberto.questionario
+    textos_dos_sinais = {s.id: s.texto for b in questionario.blocos for s in b.sinais}
+    internos = [textos_dos_sinais[s.id] for s in dados_roberto.sinais]
+    internos += [s.observacao for s in dados_roberto.sinais if s.observacao]
+    # As anotações como sairiam (anonimizadas): nem assim podem aparecer.
+    anonimizador = Anonimizador(conhecidos)
+    internos += [anonimizador.anonimizar(a.texto) for a in dados_roberto.anotacoes]
+    assert dados_roberto.anotacoes
+    assert dados_roberto.sinais
+    for corpo in api.corpos:
+        mensagem = json.loads(corpo)["messages"][0]["content"]
+        assert "Anotações do consultor" not in mensagem
+        assert "Sinais de alerta" not in mensagem
+        for texto in internos:
+            assert texto not in mensagem, texto
+
+
+def test_com_a_opcao_as_anotacoes_saem_anonimizadas(api, provedor, prompts, dados_roberto):
+    conhecidos = conhecidos_da_sessao(dados_roberto, None, PESSOAS_CITADAS)
+    pedido = pedido_da_revisao(
+        prompts["rascunho_revisao"], dados_roberto, "recomendacao", anotacoes_internas=True
+    )
+    gerar_rascunho(provedor, "rascunho_vX", pedido, Anonimizador(conhecidos))
+    mensagem = json.loads(api.corpos[-1])["messages"][0]["content"]
+    assert "[PESSOA_1] não participou" in mensagem  # anotação, com o nome trocado
+    assert "Marcos" not in mensagem
+
+
 def test_a_sugestao_de_nomes_pega_as_pessoas_citadas_do_demo(dados_roberto):
     """Sem a lista, "Marcos" e "Cida" sairiam: por isso a prévia é obrigatória e a app
     sugere os nomes. No caso Roberto, a sugestão traz exatamente os dois."""
