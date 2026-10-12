@@ -19,6 +19,7 @@ from descoberta.repositorio import (
 
 from ..dependencias import Banco, CatalogoDep, aviso, exigir_sessao, html
 from ..listas import registrar_rotas_de_listas
+from ..llm import sessao_para_llm, situacao_do_provedor
 from ..revisao import LISTAS, contexto_da_revisao, contexto_das_listas
 
 router = APIRouter()
@@ -36,6 +37,9 @@ def pagina(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int
         request,
         "revisao/pagina.html",
         cliente=obter_cliente(banco, sessao.cliente_id),
+        pagina="revisao",
+        llm=sessao_para_llm(banco, sessao, questionario, catalogo),
+        provedor=situacao_do_provedor(request),
         **contexto_da_revisao(banco, sessao, questionario),
     )
 

@@ -19,6 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
 from descoberta.llm.configuracao import carregar_configuracao_llm
+from descoberta.llm.prompts import carregar_prompts
 from descoberta.repositorio import CAMINHO_BANCO_PADRAO, criar_engine, criar_tabelas
 
 from .catalogo import Catalogo
@@ -30,6 +31,7 @@ from .rotas import (
     numeros,
     perfil,
     proposta,
+    rascunhos,
     relatorio,
     respostas,
     revisao,
@@ -42,8 +44,14 @@ PASTA_STATIC = Path(__file__).parent / "static"
 
 
 def criar_app(
-    caminho_banco: Path | str | None = None, pasta_config: Path | str = PASTA_CONFIG_PADRAO
+    caminho_banco: Path | str | None = None,
+    pasta_config: Path | str = PASTA_CONFIG_PADRAO,
+    provedor_llm=None,
 ) -> FastAPI:
+    """`provedor_llm`: só nos testes (um provedor falso); sem ele, vale config/llm.yaml.
+
+    Os prompts ficam na pasta prompts/, ao lado da pasta de configuração.
+    """
     caminho_banco = caminho_banco or os.environ.get("DESCOBERTA_BANCO") or CAMINHO_BANCO_PADRAO
 
     @asynccontextmanager
@@ -52,6 +60,8 @@ def criar_app(
         app.state.catalogo = Catalogo(pasta_config)
         # Conferida ao ligar, como os YAMLs: um erro aparece agora, não no meio do uso.
         app.state.config_llm = carregar_configuracao_llm(Path(pasta_config) / "llm.yaml")
+        app.state.prompts = carregar_prompts(Path(pasta_config).parent / "prompts")
+        app.state.provedor_llm = provedor_llm
         app.state.engine = criar_engine(caminho_banco)
         criar_tabelas(app.state.engine)
         yield
@@ -76,6 +86,7 @@ def criar_app(
     app.include_router(cronometro.router)
     app.include_router(revisao.router)
     app.include_router(relatorio.router)
+    app.include_router(rascunhos.router)
     app.include_router(proposta.router)
 
     @app.exception_handler(HTTPException)

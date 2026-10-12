@@ -1,0 +1,51 @@
+{# Situação do LLM, pessoas citadas e prévia. Recarregado pelo evento llm-mudou. #}
+{% if erro %}<p class="aviso-erro" role="alert">⚠ {{ erro }}</p>{% endif %}
+{% if provedor.ativo %}
+<p>Provedor: <strong>{{ provedor.descricao }}</strong></p>
+{% else %}
+<p class="doc-aviso">{{ provedor.descricao }}</p>
+{% endif %}
+{% if llm.ao_vivo %}
+<p class="alerta" role="status">O cronômetro está rodando: o LLM não é usado durante a sessão ao vivo.</p>
+{% endif %}
+
+<h3>Pessoas citadas</h3>
+<p class="discreto">Nomes citados nas respostas e anotações que devem virar marcadores antes do envio. O cliente, a empresa, o consultor e os dados da proposta já são trocados.</p>
+<ul class="lista-pessoas">
+  {% for pessoa in llm.pessoas %}
+  <li>{{ pessoa.nome }}
+    <form class="em-linha" hx-post="/sessoes/{{ sessao.id }}/llm/pessoas/{{ pessoa.id }}/remover" hx-target="#painel-llm">
+      <input type="hidden" name="pagina" value="{{ pagina }}">
+      <button type="submit" class="link">remover</button>
+    </form>
+  </li>
+  {% else %}
+  <li class="vazio">Nenhuma pessoa na lista.</li>
+  {% endfor %}
+</ul>
+<form class="em-linha" hx-post="/sessoes/{{ sessao.id }}/llm/pessoas" hx-target="#painel-llm">
+  <input type="hidden" name="pagina" value="{{ pagina }}">
+  <label for="nova-pessoa" class="visualmente-oculto">Nome da pessoa citada</label>
+  <input id="nova-pessoa" name="nome" placeholder="Nome" autocomplete="off">
+  <button type="submit" class="botao secundario">Incluir</button>
+</form>
+{% if llm.sugestoes %}
+<p class="discreto">Parecem nomes de pessoas (confira):</p>
+<div class="sugestoes">
+  {% for nome in llm.sugestoes %}
+  <form class="em-linha" hx-post="/sessoes/{{ sessao.id }}/llm/pessoas" hx-target="#painel-llm">
+    <input type="hidden" name="pagina" value="{{ pagina }}">
+    <input type="hidden" name="nome" value="{{ nome }}">
+    <button type="submit" class="botao secundario">+ {{ nome }}</button>
+  </form>
+  {% endfor %}
+</div>
+{% endif %}
+
+<h3>Prévia do que sai</h3>
+{% if llm.previa_ok %}
+<p class="sucesso">✓ Prévia confirmada para os dados atuais.</p>
+{% else %}
+<p class="atencao">Veja a prévia do que sai para o LLM e confirme antes do primeiro rascunho. Ela vale até a lista de pessoas ou os dados do cliente mudarem.</p>
+{% endif %}
+<button type="button" class="botao secundario" hx-get="/sessoes/{{ sessao.id }}/llm/previa?pagina={{ pagina }}" hx-include="#anotacoes-internas" hx-target="#previa-llm">Ver prévia</button>

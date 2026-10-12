@@ -40,6 +40,7 @@ from descoberta.repositorio import (
     TipoItemProposta,
     adicionar_anotacao,
     adicionar_item,
+    adicionar_pessoa_citada,
     ajustar_clausula,
     criar_cliente,
     criar_engine,
@@ -219,6 +220,10 @@ RESPOSTAS = {
     "enc.participantes": "O Marcos, para validar o critério de gravidade das fissuras.",
     "enc.prazo": "Relatório em até 2 dias; amostra dos 40 casos em até uma semana.",
 }
+
+# Pessoas citadas que a anonimização troca por marcadores antes do LLM. A Cida fica de fora de
+# propósito: a tela a sugere, para mostrar a sugestão e a prévia.
+PESSOAS_CITADAS = ["Marcos"]
 
 # --- Revisão pós-sessão ---
 
@@ -442,6 +447,8 @@ def _popular_revisao(session: Session, sessao_id: int, hoje: date) -> None:
         )
     for secao_id, texto in TEXTOS.items():
         salvar_texto_secao(session, sessao_id, secao_id, texto)
+    for nome in PESSOAS_CITADAS:
+        adicionar_pessoa_citada(session, sessao_id, nome)
 
 
 def _popular_proposta(session: Session, sessao_id: int) -> None:

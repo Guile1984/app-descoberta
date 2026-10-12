@@ -17,14 +17,17 @@ from descoberta.formatos import moeda, numero
 from descoberta.questionario import Questionario
 from descoberta.repositorio import (
     CAMPOS_NUMERICOS,
+    DestinoRascunho,
     Indicador,
     ItemEscopo,
     ProximoPasso,
     Risco,
     Sessao,
+    SituacaoRascunho,
     hipoteses_da_sessao,
     itens_da_sessao,
     obter_metricas,
+    rascunhos_da_sessao,
     respostas_da_sessao,
     textos_da_sessao,
 )
@@ -32,6 +35,7 @@ from descoberta.rotulos import CAMADAS, ESCOPO, IMPACTOS, PROBABILIDADES, RESPON
 
 from .formularios import data_iso
 from .listas import Formulario, Lista
+from .llm import alvo_da_revisao
 
 # Os mesmos rótulos para todos os templates da revisão.
 ROTULOS = {
@@ -216,5 +220,16 @@ def contexto_da_revisao(banco: Session, sessao: Sessao, questionario: Questionar
         "total_pendencias": pendencias.total,
         "obrigatorias_sem_resposta": sum(len(ids) for ids in obrigatorias.values()),
         "hipoteses": _hipoteses(banco, sessao.id),
+        # Rascunhos do LLM esperando decisão, por texto, e onde cada um aparece na tela.
+        "rascunhos": {
+            r.campo: r
+            for r in rascunhos_da_sessao(
+                banco,
+                sessao.id,
+                destino=DestinoRascunho.revisao,
+                situacao=SituacaoRascunho.pendente,
+            )
+        },
+        "alvos": {t.id: alvo_da_revisao(sessao.id, t.id) for t in questionario.revisao.textos},
         **ROTULOS,
     }

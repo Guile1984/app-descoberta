@@ -92,6 +92,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   ela foi usada (`com_anotacoes_internas`). O teste do payload confere que, por padrão,
   nenhuma anotação nem sinal sai no pedido.
 
+- Rascunhos por LLM na tela da revisão (`web/llm.py`, `web/rotas/rascunhos.py`):
+  - painel ao lado dos textos: situação do provedor (desligado, sem chave ou ativo, com o
+    modelo), aviso enquanto o cronômetro roda, lista de pessoas citadas (incluir, remover
+    e sugestões com um clique) e a prévia do que sai;
+  - opção "Usar anotações internas como contexto", desligada por padrão, com o aviso de
+    que o conteúdo delas pode aparecer no texto gerado;
+  - prévia obrigatória: mostra o pedido exatamente como sai e a tabela das trocas
+    (marcador → valor real, que fica na máquina); confirmada, vale até a lista de pessoas
+    ou os dados do cliente mudarem;
+  - em cada texto, "Sugerir rascunho": o rascunho aparece ao lado do texto do consultor,
+    com provedor, modelo, versão do prompt e alertas; "Aceitar" (com confirmação)
+    substitui o texto, "Descartar" só marca;
+  - recusas claras: sessão ao vivo (cronômetro rodando), prévia não confirmada, LLM
+    desligado ou indisponível; o aviso lembra que o texto atual e o relatório por
+    template continuam.
+- Demo: "Marcos" na lista de pessoas citadas; "Cida" fica como sugestão, para mostrar a
+  sugestão e a prévia.
+- `criar_app(provedor_llm=...)`: provedor falso nos testes; os prompts são lidos da pasta
+  `prompts/` quando a app liga.
+
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.

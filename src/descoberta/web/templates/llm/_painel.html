@@ -1,0 +1,15 @@
+{#
+  Painel dos rascunhos por LLM (revisão e proposta). A caixa "usar anotações internas" fica
+  fora da parte que se recarrega (evento llm-mudou), para não desmarcar sozinha; os botões
+  de gerar a enviam com hx-include="#anotacoes-internas".
+#}
+<section class="apoio painel-llm" aria-labelledby="titulo-llm">
+  <h2 id="titulo-llm">Rascunhos por LLM</h2>
+  <p class="discreto">Só depois da sessão. O LLM sugere um rascunho; você revisa e aceita ou descarta. Nada muda no seu texto sem você aceitar.</p>
+  <label class="caixa"><input type="checkbox" id="anotacoes-internas" name="anotacoes" value="1"> Usar anotações internas como contexto</label>
+  <p class="doc-aviso">Desligado por padrão, como na versão cliente do relatório. Ligado, as anotações do consultor e os sinais de alerta vão no pedido (anonimizados), e o conteúdo delas pode aparecer no texto gerado, que o cliente vai ler. Revise o rascunho antes de aceitar.</p>
+  <div id="painel-llm" hx-get="/sessoes/{{ sessao.id }}/llm/painel?pagina={{ pagina }}" hx-trigger="llm-mudou from:body">
+    {% include "llm/_painel_conteudo.html" %}
+  </div>
+  <div id="previa-llm"></div>
+</section>

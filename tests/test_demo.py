@@ -214,3 +214,11 @@ def test_proposta_do_demo(banco_demo):
     assert any(t.startswith("Guia de captura de fotos") for t in fase_0)
     assert any(t.startswith("Organização e rotulagem das cerca de 500 fotos") for t in fase_0)
     assert all(t.startswith(("Triagem", "Envio")) for t in mvp)
+
+
+def test_pessoas_citadas_do_demo(banco_demo):
+    from descoberta.demo import PESSOAS_CITADAS
+    from descoberta.repositorio import pessoas_citadas
+
+    _, sessao = _sessao(banco_demo)
+    assert [p.nome for p in pessoas_citadas(banco_demo, sessao.id)] == PESSOAS_CITADAS == ["Marcos"]
