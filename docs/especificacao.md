@@ -15,17 +15,22 @@ A app digitaliza o Modelo de Descoberta: roteiro guiado durante a reunião, cál
 - Resposta por pergunta, sinais de alerta com um clique e anotações livres.
 - Cálculos automáticos: custo da dor, score de dados, custo de operação, payback e score final.
 - Relatório de Descoberta por template e rascunho redigido por LLM, ambos exportáveis (Markdown, DOCX, PDF).
+- Proposta Comercial como documento separado, a partir da sessão e da revisão, com Condições Gerais editáveis (Sprint 6c).
 
 **Fica para versões futuras**
 
 - Gravação e transcrição da reunião.
 - Vários consultores na mesma conta.
-- Proposta comercial gerada a partir do relatório.
+- Inclusão de cláusulas extras numa proposta (hoje: ajustar o texto e excluir as removíveis).
 - Sugestão automática de sinais de alerta nas respostas.
 
 ## Fluxo de uso
 
 A tela principal é feita para anotar ao vivo no notebook, sem travar a conversa.
+
+**Primeiro uso**
+
+1. Preencher o perfil do consultor (nome, empresa, CPF ou CNPJ, contato, cidade/UF e logotipo opcional). Ele vai em todos os documentos, inclusive no bloco de assinatura do consultor, e fica só no banco local.
 
 **Antes da sessão**
 
@@ -51,6 +56,8 @@ A tela principal é feita para anotar ao vivo no notebook, sem travar a conversa
 3. Marcar na revisão quais números são hipóteses do consultor (o relatório os destaca).
 4. Conferir a prévia do relatório (versão cliente e versão interna) e baixar em Markdown, Word ou PDF. O texto narrativo poderá vir de um rascunho por LLM (Sprint 7).
 5. Registrar a versão enviada: o PDF fica guardado com número de versão, data e hash SHA-256, que aparecem no rodapé de cada página para conferir a cópia assinada.
+6. Criar a Proposta Comercial, como cópia do modelo da proposta e da revisão (escopo, exclusões, hipóteses, passos do cliente). Se o score final indicar "não seguir agora", a app avisa antes e só cria com confirmação.
+7. Editar a proposta (fases, escopo, entregáveis, condições, Condições Gerais), registrar a versão enviada (numeração própria, com hash no rodapé e as cláusulas congeladas) e, se quiser, baixar relatório e proposta num PDF só.
 
 ## Modelo de dados
 
@@ -67,6 +74,14 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Duração da sessão | minutos do aviso e do limite (o cronômetro muda de cor) |
 | Revisão | categorias de risco (as da tabela do bloco 7, mais "outro"); textos narrativos do relatório (id, título, orientação e perguntas de apoio) |
 | Seção do relatório | id, título; blocos cujas respostas entram na seção, outras respostas e tabelas de referência |
+
+**Modelo da proposta (`config/proposta_v{n}.yaml`, validado com Pydantic e conferido com o questionário)**
+
+| Entidade | Campos principais |
+| --- | --- |
+| Modelo | versão, título, aviso de que é ponto de partida a revisar com advogado, faixas do score final que pedem alerta, tabela do critério de aceite |
+| Padrão | validade, pagamento, impostos, reajuste, fases (nome, objetivo, duração, escopo, entregáveis, se recebe o escopo e o investimento da sessão, faixas do score em que entra), premissas, responsabilidades do cliente |
+| Cláusula | id, título, texto com marcadores de uma lista fechada ({cliente.empresa}, {consultor.empresa}, {consultor.nome}, {foro}), removível |
 
 **Banco (SQLite + SQLModel)**
 
@@ -88,6 +103,12 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Hipótese | sessão, campo da métrica assumido pelo consultor |
 | Versão do relatório | sessão, número, tipo (cliente/interna), emissão, Markdown canônico, hash do conteúdo, PDF, hash do PDF |
 | Relatório | sessão, origem (template/LLM), conteúdo, modelo, versão do prompt, data |
+| Perfil do consultor | nome, empresa, CPF/CNPJ (conferido), e-mail, telefone, cidade/UF, logotipo (PNG sem metadados), dados fictícios (demo) |
+| Proposta | sessão, versão do modelo, dados do cliente (CPF/CNPJ, representante, cargo, e-mail), pagamento, impostos, reajuste, validade, criada apesar do alerta |
+| Fase da proposta | sessão, nome, objetivo, duração (semanas), investimento |
+| Item da proposta | sessão, tipo (escopo, entregável, exclusão, premissa, responsabilidade), fase (escopo e entregáveis), texto |
+| Cláusula da proposta | sessão, id da cláusula, texto ajustado, excluída |
+| Versão da proposta | sessão, número, emissão, Markdown canônico, hash do conteúdo, PDF, hash do PDF, versão do modelo, Condições Gerais congeladas |
 
 Um cliente tem várias sessões; uma sessão tem muitas respostas, sinais e anotações, e um conjunto de métricas. Métricas ficam em campos numéricos próprios, nunca extraídas do texto.
 
@@ -98,21 +119,22 @@ FastAPI + HTMX com SQLite, rodando localmente. Escolhida por manter Python quase
 | Camada | Tecnologia | Responsabilidade |
 | --- | --- | --- |
 | questionario | Pydantic + YAML | Carregar e validar o catálogo; resolver condicionais |
+| proposta | Pydantic + YAML | Carregar e validar o modelo da proposta; conteúdo inicial e cláusulas efetivas |
 | dominio | Python puro | Cálculos e regras, sem dependência de banco ou web |
 | repositorio | SQLModel + SQLite | Persistência |
-| relatorio | Python puro + python-docx + ReportLab | Monta o relatório como documento neutro (blocos) e exporta para Markdown, DOCX e PDF; os números vêm do Painel do domínio |
+| relatorio | Python puro + python-docx + ReportLab + pypdf | Monta o relatório e a proposta como documentos neutros (blocos) e exporta para Markdown, DOCX e PDF (e os dois num PDF só); os números vêm do Painel do domínio |
 | llm | Cliente abstrato | Provedor (API Claude ou modelo local), anonimização, prompts versionados |
 | web | FastAPI + Jinja2 + HTMX | Rotas, telas e atalhos de teclado (JS mínimo) |
 
 Dependências apontam para dentro: `web` usa `dominio`, nunca o contrário. Ferramentas: uv, ruff, pytest (com cobertura), pre-commit.
 
-**Exportação offline no Windows:** só bibliotecas que instalam com `uv sync`, sem programas externos. DOCX com python-docx (MIT); PDF com ReportLab (BSD, Python puro), com a fonte DejaVu Sans embutida para caracteres como "≥" e "→". WeasyPrint (exige GTK), pandoc, wkhtmltopdf e LibreOffice foram descartados.
+**Exportação offline no Windows:** só bibliotecas que instalam com `uv sync`, sem programas externos. DOCX com python-docx (MIT); PDF com ReportLab (BSD, Python puro), com a fonte DejaVu Sans embutida para caracteres como "≥" e "→". WeasyPrint (exige GTK), pandoc, wkhtmltopdf e LibreOffice foram descartados. Para juntar relatório e proposta num PDF só, pypdf (BSD, Python puro): as páginas são copiadas como estão, e cada parte mantém rodapé, versão e hash. O logotipo do consultor é conferido e regravado com Pillow (licença HPND, que já vinha com o ReportLab).
 
 ## Uso de LLM
 
 O LLM atua só depois da sessão, para redigir o rascunho do relatório, que o consultor revisa antes de enviar. Cálculos e condicionais nunca passam pelo LLM.
 
-- **Anonimização:** antes do envio à API, nomes, CPFs, telefones, e-mails e endereços viram marcadores (\[CLIENTE\], \[PESSOA\_1\]); a substituição é desfeita localmente na resposta.
+- **Anonimização:** antes do envio à API, nomes, CPFs, telefones, e-mails e endereços viram marcadores (\[CLIENTE\], \[PESSOA\_1\]); a substituição é desfeita localmente na resposta. Vale também para os dados do perfil do consultor e para os dados do cliente na proposta.
 - **Abstração de provedor:** interface única com implementações para a API Claude e para modelo local (Ollama), escolhidas por configuração.
 - **Prompts versionados:** arquivos de prompt no repositório; cada relatório guarda modelo e versão do prompt.
 - **Falha segura:** sem internet ou com erro na API, a app oferece o relatório por template.
@@ -132,9 +154,17 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
 | 5 — Uso ao vivo | Sinais com um clique, anotações, atalhos, cronômetro, cálculos ao vivo | Sessão completa conduzida só com teclado |
 | 6a — Saídas estruturadas | Revisão pós-sessão: matriz de riscos (com visualização 3×3), indicadores de sucesso, escopo do MVP, próximos passos e textos narrativos editáveis, com indicação do que falta | Caso Roberto com todas as saídas preenchidas e nenhuma pendência na revisão |
 | 6b — Relatório | Relatório por template em versão cliente e versão interna (com sinais de alerta e anotações), capa, 12 seções, Anexo A (respostas), Anexo B (memória de cálculo com hipóteses destacadas) e termo de ciência e validação; exportação Markdown, DOCX, PDF; registro das versões enviadas com hash no rodapé. Usa `dominio.painel` (os mesmos números da tela) e ignora respostas de condicionais ocultas | Relatório do caso Roberto gerado offline nos três formatos |
+| 6c — Proposta comercial | Perfil do consultor (primeiro uso); Proposta Comercial separada do relatório, a partir da sessão e da revisão; Condições Gerais num modelo editável fora do código, com ajuste e exclusão por proposta; versões registradas com hash e cláusulas congeladas; aviso antes de propor com score "não seguir agora"; relatório e proposta num PDF só; títulos que não ficam sozinhos no pé da página | Proposta do caso Roberto gerada offline nos três formatos e registrada, sem alterar o relatório |
 | 7 — LLM | Provedor abstrato, anonimização, prompts versionados; rascunhos sugeridos para os textos narrativos da revisão | Nenhum dado pessoal no payload enviado (teste automatizado) |
 | 8 — Validação e lançamento | Caso Roberto de ponta a ponta; escolha de licença; README para quem não programa, com GIF de demonstração; transparência sobre o desenvolvimento com Claude Code; limitações declaradas; SECURITY.md; aviso de uso local; verificações de segurança no CI; revisão de dados e segredos no histórico do Git; repositório público | Sessão simulada completa, relatório revisado e repositório público sem dados pessoais nem segredos no histórico |
 | 9 — Documentação | Documentação no modelo Diátaxis (tutorial, guias práticos, referência e explicação, incluindo a metodologia do Modelo de Descoberta); site com MkDocs e tema Material no GitHub Pages; guia de uso em produção com modelo de ameaças; CONTRIBUTING; CI da documentação | Site publicado, compilando sem avisos e sem links quebrados |
+
+### Sprint 6c — Proposta comercial
+
+- A proposta é um documento separado do relatório: renegociar (novas versões da proposta) nunca altera o relatório nem as versões dele.
+- O modelo (`config/proposta_v1.yaml`) traz o aviso de que é ponto de partida e deve ser revisado por advogado; o aviso aparece para o consultor na tela e não vai ao documento do cliente.
+- Condições Gerais no anexo final, cobertas pela mesma assinatura e pelo mesmo hash. Foro, prevalência do contrato detalhado, confidencialidade, LGPD e limitação de responsabilidade não podem ser excluídas de uma proposta.
+- Ao registrar uma versão, o texto impresso das cláusulas fica congelado com ela.
 
 ### Sprint 8 — Validação e lançamento
 

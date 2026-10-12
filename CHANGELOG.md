@@ -2,6 +2,81 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.9.0] — 2026-10-11 — Sprint 6c: Proposta comercial
+
+### Adicionado
+- Perfil do consultor (tabela `perfil_consultor`, uma linha só, no banco local):
+  - nome, empresa, CPF ou CNPJ, e-mail, telefone, cidade/UF e logotipo opcional;
+  - tela `/perfil`; no primeiro uso, a tela inicial leva ao perfil (as outras páginas
+    continuam abertas);
+  - CPF e CNPJ conferidos pelos dígitos verificadores (`dominio.documento_fiscal`),
+    inclusive o CNPJ alfanumérico, em vigor desde julho de 2026;
+  - logotipo só PNG ou JPEG até 1 MB, regravado como PNG sem metadados (uma foto de
+    celular pode trazer a localização) e reduzido a 800 px (`descoberta.imagens`);
+  - no relatório: consultor e logotipo na capa e assinatura do consultor com nome e
+    CPF/CNPJ preenchidos.
+- Modelo da proposta em `config/proposta_v1.yaml` (pacote `proposta`, validado com
+  Pydantic e conferido com o questionário quando a app liga):
+  - valores padrão (validade, pagamento, impostos, reajuste), fases (fase 0 e MVP, com as
+    faixas do score em que entram), premissas e responsabilidades do cliente;
+  - faixas do score final que pedem alerta e a tabela do critério de aceite;
+  - Condições Gerais: alterações de escopo, confidencialidade, propriedade intelectual,
+    LGPD (controladora e operadora), limitação de responsabilidade, suporte e garantia,
+    cancelamento, foro e prevalência do contrato detalhado. Foro, prevalência,
+    confidencialidade, LGPD e limitação não são removíveis;
+  - marcadores numa lista fechada (`{cliente.empresa}`, `{consultor.empresa}`,
+    `{consultor.nome}`, `{foro}`); marcador desconhecido é recusado;
+  - aviso de que o modelo é ponto de partida e deve ser revisado por advogado (na tela,
+    não no documento do cliente).
+- Proposta Comercial, documento separado do relatório:
+  - tabelas `proposta`, `fase_proposta`, `item_proposta`, `clausula_proposta` e
+    `versao_proposta` (sem migração);
+  - criada como cópia do modelo e da revisão (escopo do MVP, exclusões, hipóteses e passos
+    do cliente): mudar a revisão depois não altera a proposta;
+  - capa (com a referência à última versão registrada do relatório), identificação das
+    partes, contexto, escopo por fase, entregáveis e cronograma em semanas a partir do
+    aceite, investimento por fase e total, pagamento, impostos e reajuste, premissas e
+    hipóteses, responsabilidades do cliente, critério de aceite, validade, aceite com as
+    duas assinaturas e o anexo "Condições Gerais", coberto pela mesma assinatura e pelo
+    mesmo hash;
+  - contas da proposta (cronograma, total, validade) em `dominio.proposta`;
+  - em cada proposta, o consultor ajusta o texto de uma cláusula ou exclui as removíveis,
+    sem mudar o modelo; "Restaurar texto padrão" volta ao modelo;
+  - score final em "não seguir agora": a app avisa antes e só cria com confirmação;
+  - versões registradas com numeração própria, hash no rodapé e as Condições Gerais
+    congeladas (texto impresso de cada cláusula e versão do modelo);
+  - telas `/sessoes/{id}/proposta` (edição com salvamento automático) e
+    `/proposta/documento` (prévia, downloads, versões); links a partir da revisão e do
+    relatório.
+- Relatório e proposta num PDF só (`/proposta/relatorio-e-proposta.pdf`): a última versão
+  registrada do relatório para o cliente (nunca a interna) e a última da proposta, ou os
+  rascunhos; cada parte mantém rodapé, versão, hash e numeração.
+- Demo: consultora fictícia (Ana Exemplo, CNPJ de teste 11.222.333/0001-81, e-mails
+  `@example.com`, logotipo "EXEMPLO"), com aviso de dados fictícios nos documentos; proposta
+  do Roberto (fase 0 R$ 6.000, MVP R$ 20.000) com a cláusula de suporte ajustada para 60
+  dias.
+- Testes: modelo da proposta, CPF/CNPJ, logotipo, repositório, montagem, versões
+  congeladas, PDF único, telas e um teste no navegador do fluxo da proposta.
+
+### Alterado
+- Dependências: `pillow` passa a ser direta (já vinha com o ReportLab; o código agora o
+  importa) e `pypdf` passa de desenvolvimento para a app (juntar os PDFs). Nenhum pacote
+  novo foi baixado.
+- As rotas de listas da revisão viraram genéricas (`web/listas.py`, templates em
+  `listas/`) e atendem também a proposta.
+- O leitor de YAML do questionário passou a servir também ao modelo da proposta.
+- Especificação: fluxo, modelo de dados, camadas e linha do Sprint 6c.
+
+### Pendências resolvidas do Sprint 6b
+- No PDF, títulos não ficam mais sozinhos no pé da página (`keepWithNext`; no Word,
+  `keep_with_next`), com teste que confere todas as páginas do caso Roberto.
+
+### Pendências
+- Inclusão de cláusulas extras numa proposta (hoje: ajustar o texto e excluir as
+  removíveis).
+- Sprint 7: a anonimização antes do LLM inclui os dados do perfil do consultor e os dados
+  do cliente da proposta.
+
 ## [0.8.1] — 2026-10-11 — Correção do CI
 
 ### Corrigido
