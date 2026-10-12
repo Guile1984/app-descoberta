@@ -50,6 +50,26 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   lista os dados pessoais da sessão, do perfil do consultor e da proposta (com a lista de
   pessoas citadas) para a anonimização.
 
+- Provedores de LLM (`llm.provedor`, interface única, escolhida por `criar_provedor`):
+  - API da Anthropic (`llm.claude`), com o SDK oficial: Messages API com o modelo e o
+    esforço da configuração; a chave só vai no cabeçalho; recusa do modelo vira aviso,
+    sem reenvio para outro modelo; resposta cortada vira alerta; guarda o modelo que de
+    fato respondeu;
+  - Ollama local (`llm.ollama`), pela biblioteca padrão, ignorando proxies do sistema;
+  - falso (`llm.falso`), para os testes e a demonstração;
+  - falha segura: sem internet, tempo esgotado, chave recusada, sem permissão, modelo não
+    encontrado, limite de uso, pedido recusado, serviço fora do ar, Ollama parado ou sem o
+    modelo viram `LLMIndisponivel` com mensagem fixa em português (o erro original não
+    passa adiante, nem no log).
+- Geração do rascunho (`llm.rascunho`): anonimiza o pedido, faz a conferência final
+  (com dado pessoal restante, o pedido não sai), envia, desfaz os marcadores na resposta e
+  avisa marcadores inventados; `previa_do_pedido` mostra o que sairia e as substituições.
+- Teste do critério de aceite (`tests/llm/test_payload.py`): os 6 textos da revisão, o
+  contexto da proposta e o objetivo de cada fase do caso Roberto passam pelo SDK de verdade
+  com um transporte falso, e o corpo de cada pedido HTTP é conferido contra todos os dados
+  pessoais do demo (sem ligar para maiúsculas e acentos).
+- Dependência `anthropic` (SDK oficial, MIT), que usa o `httpx2` já presente no projeto.
+
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.
