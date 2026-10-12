@@ -2,7 +2,7 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
-## [Não publicado] — Sprint 7: LLM
+## [0.10.0] — 2026-10-12 — Sprint 7: LLM
 
 ### Adicionado
 - Configuração do LLM em `config/llm.yaml` (pacote `llm.configuracao`, validada com
@@ -34,7 +34,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   - `restantes`: conferência final do que ainda parece dado pessoal;
   - `sugerir_nomes`: palavras com maiúscula no meio da frase, para o consultor montar a
     lista de pessoas citadas (sem siglas, ferramentas e o que já é conhecido).
-
 - Prompts versionados em arquivo (`prompts/rascunho_revisao_v1.md` e
   `prompts/rascunho_proposta_v1.md`, lidos por `llm.prompts`): cabeçalho com id, versão e
   campos; seções "# Sistema" e "# Pedido"; o arquivo é conferido (nome × versão, campos
@@ -49,7 +48,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   entregáveis), total, exclusões, premissas e responsabilidades. `conhecidos_da_sessao`
   lista os dados pessoais da sessão, do perfil do consultor e da proposta (com a lista de
   pessoas citadas) para a anonimização.
-
 - Provedores de LLM (`llm.provedor`, interface única, escolhida por `criar_provedor`):
   - API da Anthropic (`llm.claude`), com o SDK oficial: Messages API com o modelo e o
     esforço da configuração; a chave só vai no cabeçalho; recusa do modelo vira aviso,
@@ -69,7 +67,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   com um transporte falso, e o corpo de cada pedido HTTP é conferido contra todos os dados
   pessoais do demo (sem ligar para maiúsculas e acentos).
 - Dependência `anthropic` (SDK oficial, MIT), que usa o `httpx2` já presente no projeto.
-
 - `repositorio`: tabelas novas, sem migração (pendência do Sprint 6a resolvida):
   - `rascunho`: texto sugerido pelo LLM, com destino (revisão ou proposta), campo,
     provedor, modelo que respondeu, versão do prompt, alertas e situação (pendente,
@@ -85,13 +82,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - `sugerir_nomes` trata como começo de frase também as linhas de lista e de título;
   `textos_para_sugestao` junta os textos livres da sessão. No caso Roberto, a sugestão
   traz exatamente "Marcos" e "Cida".
-
 - Os rascunhos são para textos que o cliente lê: como na versão cliente do relatório, o
   contexto enviado ao LLM não inclui as anotações do consultor nem os sinais de alerta
   (com as observações), a não ser com a opção `anotacoes_internas`; o rascunho registra se
   ela foi usada (`com_anotacoes_internas`). O teste do payload confere que, por padrão,
   nenhuma anotação nem sinal sai no pedido.
-
 - Rascunhos por LLM na tela da revisão (`web/llm.py`, `web/rotas/rascunhos.py`):
   - painel ao lado dos textos: situação do provedor (desligado, sem chave ou ativo, com o
     modelo), aviso enquanto o cronômetro roda, lista de pessoas citadas (incluir, remover
@@ -111,7 +106,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   sugestão e a prévia.
 - `criar_app(provedor_llm=...)`: provedor falso nos testes; os prompts são lidos da pasta
   `prompts/` quando a app liga.
-
 - Proposta Comercial com textos narrativos e rascunhos por LLM:
   - "Contexto da proposta" (tabela nova `texto_proposta`, sem migração: a tabela
     `proposta` já existe em bancos em uso): campo na tela com salvamento automático; no
@@ -120,12 +114,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   - rascunhos por LLM para o contexto e para o objetivo de cada fase, com o mesmo painel
     da revisão (pessoas citadas, prévia, anotações internas desligadas por padrão);
     aceitar copia o texto para o contexto ou para o objetivo da fase numa transação só.
+- README (como ativar o LLM e a proteção dos dados) e especificação (fluxo, modelo de
+  dados, uso de LLM e seção do Sprint 7).
+- Teste no navegador do rascunho por LLM no caso Roberto (sugestão de nome, prévia,
+  gerar com LLM falso e aceitar).
 
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.
 
-### Pendências resolvidas do Sprint 6c
+### Pendências resolvidas (Sprints 6a e 6c)
 - Seção 10 do relatório ("Escopo do MVP"): uma nota diz que a divisão do escopo em fases,
   com prazos e investimento, fica na Proposta Comercial.
 - Responsabilidades da proposta nova: os próximos passos do cliente que começam com um
@@ -134,6 +132,19 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   `config/proposta_v1.yaml`, campo opcional); os que já começam com verbo ficam como estão.
   Propostas já criadas não mudam (a proposta é uma cópia).
 - Anonimização antes do LLM com os dados do perfil do consultor e do cliente da proposta.
+- Rascunhos do LLM numa tabela própria, com modelo e versão do prompt, sem sobrescrever o
+  texto do consultor (pendência do Sprint 6a).
+
+### Pendências
+- Inclusão de cláusulas extras numa proposta (continua da 6c).
+- Nomes citados de passagem só são anonimizados se estiverem na lista de pessoas citadas
+  (a app sugere; a prévia obrigatória mostra o que sai). Telefone fixo de 8 dígitos sem
+  DDD não é reconhecido.
+- Relatório inteiro redigido por LLM (a tabela `relatorio` já guarda origem, modelo e
+  versão do prompt): fora deste sprint, que cobre os textos narrativos.
+- Testar com a API real e com o Ollama na máquina do consultor (os testes automáticos não
+  fazem chamadas reais, de propósito).
+- Continuam valendo as pendências "antes do primeiro uso com cliente real" do Sprint 3.
 
 ## [0.9.0] — 2026-10-11 — Sprint 6c: Proposta comercial
 

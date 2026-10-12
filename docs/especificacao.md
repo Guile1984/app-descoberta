@@ -54,10 +54,11 @@ A tela principal é feita para anotar ao vivo no notebook, sem travar a conversa
 1. Revisar e completar respostas.
 2. Na área de revisão pós-sessão (página separada da tela ao vivo), preencher as saídas que o relatório usa: matriz de riscos, indicadores de sucesso, escopo do MVP, próximos passos e os textos narrativos. Um quadro mostra o que ainda falta.
 3. Marcar na revisão quais números são hipóteses do consultor (o relatório os destaca).
-4. Conferir a prévia do relatório (versão cliente e versão interna) e baixar em Markdown, Word ou PDF. O texto narrativo poderá vir de um rascunho por LLM (Sprint 7).
-5. Registrar a versão enviada: o PDF fica guardado com número de versão, data e hash SHA-256, que aparecem no rodapé de cada página para conferir a cópia assinada.
-6. Criar a Proposta Comercial, como cópia do modelo da proposta e da revisão (escopo, exclusões, hipóteses, passos do cliente). Se o score final indicar "não seguir agora", a app avisa antes e só cria com confirmação.
-7. Editar a proposta (fases, escopo, entregáveis, condições, Condições Gerais), registrar a versão enviada (numeração própria, com hash no rodapé e as cláusulas congeladas) e, se quiser, baixar relatório e proposta num PDF só.
+4. Se quiser, pedir ao LLM rascunhos dos textos narrativos da revisão (e, na proposta, do contexto e do objetivo das fases): o rascunho fica ao lado do texto e só o substitui se o consultor aceitar. Antes do primeiro, conferir a lista de pessoas citadas e a prévia do que sai.
+5. Conferir a prévia do relatório (versão cliente e versão interna) e baixar em Markdown, Word ou PDF.
+6. Registrar a versão enviada: o PDF fica guardado com número de versão, data e hash SHA-256, que aparecem no rodapé de cada página para conferir a cópia assinada.
+7. Criar a Proposta Comercial, como cópia do modelo da proposta e da revisão (escopo, exclusões, hipóteses, passos do cliente). Se o score final indicar "não seguir agora", a app avisa antes e só cria com confirmação.
+8. Editar a proposta (contexto, fases, escopo, entregáveis, condições, Condições Gerais), registrar a versão enviada (numeração própria, com hash no rodapé e as cláusulas congeladas) e, se quiser, baixar relatório e proposta num PDF só.
 
 ## Modelo de dados
 
@@ -109,6 +110,10 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Item da proposta | sessão, tipo (escopo, entregável, exclusão, premissa, responsabilidade), fase (escopo e entregáveis), texto |
 | Cláusula da proposta | sessão, id da cláusula, texto ajustado, excluída |
 | Versão da proposta | sessão, número, emissão, Markdown canônico, hash do conteúdo, PDF, hash do PDF, versão do modelo, Condições Gerais congeladas |
+| Texto da proposta | sessão, campo ("contexto"), texto |
+| Rascunho | sessão, destino (revisão/proposta), campo, texto, provedor, modelo, versão do prompt, alertas, com anotações internas, situação (pendente/aceito/descartado/substituído), datas |
+| Pessoa citada | sessão, nome (trocado por marcador antes do LLM) |
+| Prévia do LLM | sessão, impressão (sha256) dos dados conhecidos, confirmada em |
 
 Um cliente tem várias sessões; uma sessão tem muitas respostas, sinais e anotações, e um conjunto de métricas. Métricas ficam em campos numéricos próprios, nunca extraídas do texto.
 
@@ -134,11 +139,15 @@ Dependências apontam para dentro: `web` usa `dominio`, nunca o contrário. Ferr
 
 O LLM atua só depois da sessão, para redigir o rascunho do relatório, que o consultor revisa antes de enviar. Cálculos e condicionais nunca passam pelo LLM.
 
-- **Anonimização:** antes do envio à API, nomes, CPFs, telefones, e-mails e endereços viram marcadores (\[CLIENTE\], \[PESSOA\_1\]); a substituição é desfeita localmente na resposta. Vale também para os dados do perfil do consultor e para os dados do cliente na proposta.
+- **Anonimização:** antes do envio, nomes, CPFs, CNPJs, telefones, e-mails, CEPs, endereços e cidades viram marcadores (\[CLIENTE\], \[PESSOA\_1\]); a substituição é desfeita localmente na resposta. Vale também para os dados do perfil do consultor, para os dados do cliente na proposta e para a lista de pessoas citadas da sessão (a app sugere os nomes). Uma conferência final impede o envio se algo ainda parecer dado pessoal.
+- **Prévia obrigatória:** antes do primeiro rascunho, o consultor vê o pedido exato e confirma; a confirmação vale enquanto os dados conhecidos não mudam.
+- **Contexto como na versão cliente:** anotações do consultor e sinais de alerta só vão no pedido se o consultor ligar "usar anotações internas como contexto".
+- **Rascunhos à parte:** cada sugestão fica numa tabela própria (provedor, modelo, versão do prompt) e só substitui o texto do consultor quando ele aceita.
+- **Nunca ao vivo:** com o cronômetro da sessão rodando, a app recusa gerar rascunhos.
 - **Abstração de provedor:** interface única com implementações para a API Claude e para modelo local (Ollama), escolhidas por configuração.
-- **Prompts versionados:** arquivos de prompt no repositório; cada relatório guarda modelo e versão do prompt.
-- **Falha segura:** sem internet ou com erro na API, a app oferece o relatório por template.
-- **Segredos:** chave de API apenas em variável de ambiente (.env fora do Git).
+- **Prompts versionados:** arquivos `prompts/<id>_v<n>.md` no repositório, conferidos ao carregar; cada rascunho guarda o modelo e a versão do prompt.
+- **Falha segura:** sem internet, sem chave ou com erro na API (ou recusa do modelo, sem reenvio para outro), a app avisa e mantém o texto atual e o relatório por template.
+- **Segredos:** chave de API apenas em variável de ambiente (.env fora do Git); provedor escolhido por `config/llm.yaml` ou `DESCOBERTA_LLM_PROVEDOR`, desligado por padrão; testes sem nenhuma chamada real.
 
 ## Sprints
 
@@ -155,7 +164,7 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
 | 6a — Saídas estruturadas | Revisão pós-sessão: matriz de riscos (com visualização 3×3), indicadores de sucesso, escopo do MVP, próximos passos e textos narrativos editáveis, com indicação do que falta | Caso Roberto com todas as saídas preenchidas e nenhuma pendência na revisão |
 | 6b — Relatório | Relatório por template em versão cliente e versão interna (com sinais de alerta e anotações), capa, 12 seções, Anexo A (respostas), Anexo B (memória de cálculo com hipóteses destacadas) e termo de ciência e validação; exportação Markdown, DOCX, PDF; registro das versões enviadas com hash no rodapé. Usa `dominio.painel` (os mesmos números da tela) e ignora respostas de condicionais ocultas | Relatório do caso Roberto gerado offline nos três formatos |
 | 6c — Proposta comercial | Perfil do consultor (primeiro uso); Proposta Comercial separada do relatório, a partir da sessão e da revisão; Condições Gerais num modelo editável fora do código, com ajuste e exclusão por proposta; versões registradas com hash e cláusulas congeladas; aviso antes de propor com score "não seguir agora"; relatório e proposta num PDF só; títulos que não ficam sozinhos no pé da página | Proposta do caso Roberto gerada offline nos três formatos e registrada, sem alterar o relatório |
-| 7 — LLM | Provedor abstrato, anonimização, prompts versionados; rascunhos sugeridos para os textos narrativos da revisão | Nenhum dado pessoal no payload enviado (teste automatizado) |
+| 7 — LLM | Provedor abstrato (API Claude e Ollama), anonimização com lista de pessoas citadas e prévia obrigatória, prompts versionados; rascunhos sugeridos para os textos narrativos da revisão e da proposta, numa tabela própria | Nenhum dado pessoal no payload enviado (teste automatizado) |
 | 8 — Validação e lançamento | Caso Roberto de ponta a ponta; escolha de licença; README para quem não programa, com GIF de demonstração; transparência sobre o desenvolvimento com Claude Code; limitações declaradas; SECURITY.md; aviso de uso local; verificações de segurança no CI; revisão de dados e segredos no histórico do Git; repositório público | Sessão simulada completa, relatório revisado e repositório público sem dados pessoais nem segredos no histórico |
 | 9 — Documentação | Documentação no modelo Diátaxis (tutorial, guias práticos, referência e explicação, incluindo a metodologia do Modelo de Descoberta); site com MkDocs e tema Material no GitHub Pages; guia de uso em produção com modelo de ameaças; CONTRIBUTING; CI da documentação | Site publicado, compilando sem avisos e sem links quebrados |
 
@@ -165,6 +174,13 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
 - O modelo (`config/proposta_v1.yaml`) traz o aviso de que é ponto de partida e deve ser revisado por advogado; o aviso aparece para o consultor na tela e não vai ao documento do cliente.
 - Condições Gerais no anexo final, cobertas pela mesma assinatura e pelo mesmo hash. Foro, prevalência do contrato detalhado, confidencialidade, LGPD e limitação de responsabilidade não podem ser excluídas de uma proposta.
 - Ao registrar uma versão, o texto impresso das cláusulas fica congelado com ela.
+
+### Sprint 7 — LLM
+
+- O LLM só sugere: os rascunhos ficam numa tabela própria e o consultor aceita ou descarta. Cálculos e condicionais nunca passam pelo LLM; os números vão prontos do Painel.
+- Provedor desligado por padrão; API Claude (`claude-opus-5-5`) ou Ollama local, escolhidos por configuração. Recusa do modelo vira aviso, sem reenvio.
+- Os rascunhos são para textos que o cliente lê: o contexto segue a versão cliente do relatório (sem anotações e sinais, a não ser por escolha do consultor).
+- Critério de aceite: o caso Roberto inteiro passa pelo SDK real com transporte falso, e o corpo de cada pedido HTTP é conferido contra todos os dados pessoais do demo.
 
 ### Sprint 8 — Validação e lançamento
 
