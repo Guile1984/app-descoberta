@@ -23,6 +23,7 @@ from ._comum import (
     inteiro,
     texto_obrigatorio,
     texto_opcional,
+    uf_opcional,
     validar_campos,
 )
 from .modelos import (
@@ -44,6 +45,8 @@ _VALIDADORES = {
     "cliente_representante": texto_opcional,
     "cliente_cargo": texto_opcional,
     "cliente_email": email_opcional,
+    "cliente_cidade": texto_opcional,
+    "cliente_uf": uf_opcional,
     "condicoes_pagamento": texto_obrigatorio,
     "impostos": texto_obrigatorio,
     "reajuste": texto_obrigatorio,

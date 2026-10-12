@@ -14,6 +14,7 @@
 </div>
 
 {% include "proposta/_alerta.html" %}
+{% with na_criacao = true %}{% include "proposta/_avisos_conteudo.html" %}{% endwith %}
 
 <p>A proposta é um documento separado do Relatório de Descoberta. Ela começa como uma cópia do
   modelo (<code>config/proposta_v{{ modelo.versao }}.yaml</code>) e da revisão pós-sessão; depois

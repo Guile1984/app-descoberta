@@ -12,6 +12,7 @@ from sqlmodel import Session, SQLModel
 from descoberta.dominio.documento_fiscal import formatar_cpf_cnpj
 from descoberta.dominio.valores import Numero, como_decimal
 from descoberta.questionario.modelos import NOTA_MAXIMA_POR_CRITERIO, PADRAO_ID
+from descoberta.rotulos import UFS
 
 from .modelos import Sessao
 
@@ -74,6 +75,16 @@ def texto_opcional(nome: str, valor: Any) -> str | None:
     if not isinstance(valor, str):
         raise TypeError(f"{nome} precisa ser texto (recebido {valor!r})")
     return valor.strip() or None
+
+
+def uf_opcional(nome: str, valor: Any) -> str | None:
+    """Sigla da UF em maiúsculas; em branco vira None."""
+    texto = texto_opcional(nome, valor)
+    if texto is None:
+        return None
+    if texto.upper() not in UFS:
+        raise ValueError(f"UF {texto!r} inválida; use a sigla, como SP ou MG")
+    return texto.upper()
 
 
 _EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")

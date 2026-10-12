@@ -93,10 +93,12 @@ class Padrao(_Modelo):
 
 
 class CriterioDeAceite(_Modelo):
-    """Tabela de referência do questionário que entra no critério de aceite."""
+    """Textos do critério de aceite e a tabela de referência do questionário."""
 
     bloco: int = Field(ge=1)
     tabela: Texto
+    aceite: Texto  # o que faz cada fase ser aceita (antes da tabela das metas técnicas)
+    metas_de_negocio: Texto  # metas acompanhadas, que não condicionam aceite nem pagamento
 
 
 class ModeloProposta(_Modelo):

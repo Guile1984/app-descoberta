@@ -320,6 +320,8 @@ class Proposta(SQLModel, table=True):
     cliente_representante: str | None = None
     cliente_cargo: str | None = None
     cliente_email: str | None = None
+    cliente_cidade: str | None = None
+    cliente_uf: str | None = None  # sigla, como SP
     condicoes_pagamento: str
     impostos: str
     reajuste: str

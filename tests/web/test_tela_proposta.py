@@ -10,11 +10,14 @@ from descoberta.proposta import carregar_modelo_proposta
 from descoberta.repositorio import (
     CAMPOS_PROPOSTA,
     FaseProposta,
+    ItemEscopo,
     ItemProposta,
     TipoItemProposta,
+    adicionar_item,
     ajustes_das_clausulas,
     itens_da_sessao,
     obter_proposta,
+    salvar_metricas,
     salvar_nota,
     versoes_da_proposta,
     versoes_da_sessao,
@@ -132,6 +135,7 @@ def test_campo_salva_sozinho(cliente_http, banco, com_proposta):
     ("campo", "valor", "erro"),
     [
         ("cliente_cpf_cnpj", "123", "CPF"),
+        ("cliente_uf", "XX", "UF"),
         ("validade_dias", "quinze", "número inteiro"),
         ("validade_dias", "0", "validade"),
         ("reajuste", "", "reajuste"),
@@ -210,6 +214,66 @@ def test_recriar_apaga_e_volta_ao_inicio(cliente_http, banco, com_proposta):
     assert obter_proposta(banco, com_proposta.id) is None
 
 
+# --- Avisos: itens repetidos entre fases e total diferente do investimento ---
+
+ROTULAGEM = "Organização e rotulagem do histórico com o critério do especialista do cliente"
+REPETIDO = "aparece em mais de uma fase"
+TOTAL_DIFERENTE = "diferente do investimento usado no payback"
+
+
+def test_criacao_avisa_item_da_revisao_que_repete_a_fase_0(cliente_http, banco, sessao):
+    # A rotulagem, marcada "entra no MVP" na revisão, já está no escopo padrão da fase 0.
+    adicionar_item(banco, ItemEscopo, sessao.id, texto=ROTULAGEM.lower(), entra=True)
+    html = cliente_http.get(_url(sessao.id)).text
+    assert REPETIDO in html
+    assert ROTULAGEM in html
+
+
+def test_criacao_sem_repeticao_nao_avisa(cliente_http, banco, sessao):
+    adicionar_item(banco, ItemEscopo, sessao.id, texto="Triagem por foto", entra=True)
+    assert REPETIDO not in cliente_http.get(_url(sessao.id)).text
+
+
+def test_demo_sem_avisos(cliente_demo):
+    cliente, sessao_id = cliente_demo
+    html = cliente.get(_url(sessao_id)).text
+    assert 'hx-trigger="proposta-mudou from:body"' in html  # os avisos se recarregam
+    assert REPETIDO not in html
+    assert TOTAL_DIFERENTE not in html
+
+
+def test_total_diferente_do_investimento_avisa(cliente_demo, app_demo_banco):
+    cliente, sessao_id = cliente_demo
+    fase_0 = itens_da_sessao(app_demo_banco(), FaseProposta, sessao_id)[0]
+    dados = {"nome": fase_0.nome, "duracao_semanas": "4", "investimento": "7.000"}
+    cliente.post(_url(sessao_id, f"/fases/{fase_0.id}"), data=dados, headers=HX)
+    avisos = cliente.get(_url(sessao_id, "/avisos"), headers=HX).text
+    assert TOTAL_DIFERENTE in avisos
+    assert "R$ 21.000,00" in avisos  # total da proposta
+    assert "R$ 20.000,00" in avisos  # investimento da métrica
+
+
+def test_item_repetido_na_edicao_avisa(cliente_http, banco, com_proposta):
+    mvp = itens_da_sessao(banco, FaseProposta, com_proposta.id)[1]
+    dados = {"texto": ROTULAGEM, "fase_id": str(mvp.id)}
+    cliente_http.post(_url(com_proposta.id, "/escopo"), data=dados, headers=HX)
+    avisos = cliente_http.get(_url(com_proposta.id, "/avisos"), headers=HX).text
+    assert REPETIDO in avisos
+
+
+def test_sessao_sem_investimento_nao_compara(cliente_http, banco, com_proposta):
+    for fase in itens_da_sessao(banco, FaseProposta, com_proposta.id):
+        dados = {"nome": fase.nome, "investimento": "1.000"}
+        cliente_http.post(_url(com_proposta.id, f"/fases/{fase.id}"), data=dados, headers=HX)
+    assert TOTAL_DIFERENTE not in cliente_http.get(_url(com_proposta.id, "/avisos")).text
+    salvar_metricas(banco, com_proposta.id, investimento=5_000)
+    assert TOTAL_DIFERENTE in cliente_http.get(_url(com_proposta.id, "/avisos")).text
+
+
+def test_avisos_sem_proposta(cliente_http, sessao):
+    assert cliente_http.get(_url(sessao.id, "/avisos")).status_code == 404
+
+
 # --- Documento ---
 
 
@@ -217,7 +281,8 @@ def test_documento_da_proposta_do_roberto(cliente_demo):
     cliente, sessao_id = cliente_demo
     html = cliente.get(_url(sessao_id, "/documento")).text
     assert "1. Identificação das partes" in html
-    assert "R$ 26.000,00" in html
+    assert "R$ 20.000,00" in html  # total: fase 0 R$ 6.000 + MVP R$ 14.000
+    assert "Campinas/SP" in html
     assert "advogado" in html  # aviso para o consultor, fora do documento
     for formato in ("pdf", "docx", "md"):
         assert f'href="{_url(sessao_id, "." + formato)}"' in html

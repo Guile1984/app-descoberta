@@ -5,7 +5,6 @@ from typing import Any
 from sqlmodel import Session
 
 from descoberta.imagens import preparar_logotipo
-from descoberta.rotulos import UFS
 
 from ._comum import (
     aplicar_campos,
@@ -15,19 +14,11 @@ from ._comum import (
     gravar,
     texto_obrigatorio,
     texto_opcional,
+    uf_opcional,
 )
 from .modelos import PerfilConsultor, agora
 
 ID_PERFIL = 1
-
-
-def _uf(nome: str, valor: Any) -> str | None:
-    texto = texto_opcional(nome, valor)
-    if texto is None:
-        return None
-    if texto.upper() not in UFS:
-        raise ValueError(f"UF {texto!r} inválida; use a sigla, como SP ou MG")
-    return texto.upper()
 
 
 def _logotipo(nome: str, valor: Any) -> bytes | None:
@@ -41,7 +32,7 @@ _VALIDADORES = {
     "email": email_opcional,
     "telefone": texto_opcional,
     "cidade": texto_opcional,
-    "uf": _uf,
+    "uf": uf_opcional,
     "logotipo": _logotipo,
     "dados_ficticios": booleano,
 }

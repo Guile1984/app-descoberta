@@ -5,12 +5,19 @@ exclusões, premissas e responsabilidades dividem uma tabela (ItemProposta); o f
 cada lista (tipo=…) separa os itens.
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any
 
 from sqlmodel import Session
 
+from descoberta.dominio.proposta import (
+    ItemRepetido,
+    diferenca_do_investimento,
+    investimento_total,
+    itens_repetidos,
+)
 from descoberta.formatos import ler_decimal
 from descoberta.proposta import ModeloProposta
 from descoberta.proposta.clausulas import Ajuste
@@ -125,6 +132,8 @@ CAMPOS_DO_CLIENTE = (
     ("cliente_cargo", "Cargo", "texto"),
     ("cliente_cpf_cnpj", "CPF ou CNPJ do cliente", "texto"),
     ("cliente_email", "E-mail", "texto"),
+    ("cliente_cidade", "Cidade", "texto"),
+    ("cliente_uf", "UF", "uf"),
 )
 CAMPOS_DAS_CONDICOES = (
     ("condicoes_pagamento", "Condições de pagamento", "longo"),
@@ -178,3 +187,39 @@ def clausulas_na_tela(
 ) -> list[ClausulaNaTela]:
     """Todas as cláusulas do modelo (inclusive as excluídas, para incluir de volta)."""
     return [clausula_na_tela(modelo, c.id, ajustes.get(c.id, Ajuste())) for c in modelo.clausulas]
+
+
+# --- Avisos da proposta (só alertam; nada é mudado) ---
+
+
+@dataclass(frozen=True)
+class AvisosDaProposta:
+    repetidos: list[ItemRepetido]  # itens de escopo que parecem estar em mais de uma fase
+    total: Decimal | None  # soma das fases (None: alguma fase sem valor)
+    investimento: Decimal | None  # o da métrica (bloco 9), usado no payback do relatório
+
+    @property
+    def diferenca(self) -> Decimal | None:
+        return diferenca_do_investimento(self.total, self.investimento)
+
+
+def avisos(
+    fases: Sequence[tuple[str, Sequence[str], Decimal | None]], investimento: Decimal | None
+) -> AvisosDaProposta:
+    """`fases`: (nome, itens de escopo, investimento) de cada fase, na ordem."""
+    return AvisosDaProposta(
+        repetidos=itens_repetidos([(nome, escopo) for nome, escopo, _ in fases]),
+        total=investimento_total([valor for _, _, valor in fases]),
+        investimento=investimento,
+    )
+
+
+def avisos_da_proposta_gravada(
+    banco: Session, sessao_id: int, investimento: Decimal | None
+) -> AvisosDaProposta:
+    escopo = itens_da_sessao(banco, ItemProposta, sessao_id, tipo=TipoItemProposta.escopo)
+    fases = [
+        (fase.nome, [i.texto for i in escopo if i.fase_id == fase.id], fase.investimento)
+        for fase in itens_da_sessao(banco, FaseProposta, sessao_id)
+    ]
+    return avisos(fases, investimento)

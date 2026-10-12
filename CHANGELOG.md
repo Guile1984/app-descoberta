@@ -53,8 +53,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   rascunhos; cada parte mantém rodapé, versão, hash e numeração.
 - Demo: consultora fictícia (Ana Exemplo, CNPJ de teste 11.222.333/0001-81, e-mails
   `@example.com`, logotipo "EXEMPLO"), com aviso de dados fictícios nos documentos; proposta
-  do Roberto (fase 0 R$ 6.000, MVP R$ 20.000) com a cláusula de suporte ajustada para 60
+  do Roberto (fase 0 R$ 6.000, MVP R$ 14.000: total de R$ 20.000, o investimento do
+  payback e dentro do orçamento de R$ 15 a 20 mil), cliente em Campinas/SP, guia de captura
+  e rotulagem das fotos na fase 0 (e não no MVP) e a cláusula de suporte ajustada para 60
   dias.
+- Avisos na tela da proposta (só alertam; nada é mudado), na criação e na edição, onde se
+  recarregam a cada mudança:
+  - item de escopo que parece estar em mais de uma fase: comparação por palavras, sem LLM
+    (`dominio.proposta.itens_repetidos`), que pega o mesmo item escrito de outro jeito,
+    mas não sinônimos;
+  - total da proposta diferente do investimento da métrica, o do payback do relatório.
+- Cidade/UF do cliente nos dados da proposta (na identificação das partes).
+- Critério de aceite separado em duas partes, com os textos no modelo da proposta: o
+  aceite das entregas (pelo que foi entregue em cada fase; no MVP, a meta técnica no
+  teste com dados históricos e o piloto concluído, com a tabela das metas técnicas) e as
+  metas de negócio, acompanhadas, mas que não são condição de aceite nem de pagamento.
 - Testes: modelo da proposta, CPF/CNPJ, logotipo, repositório, montagem, versões
   congeladas, PDF único, telas e um teste no navegador do fluxo da proposta.
 
@@ -65,6 +78,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - As rotas de listas da revisão viraram genéricas (`web/listas.py`, templates em
   `listas/`) e atendem também a proposta.
 - O leitor de YAML do questionário passou a servir também ao modelo da proposta.
+- O validador de UF do perfil passou para `repositorio._comum` e serve também à proposta.
 - Especificação: fluxo, modelo de dados, camadas e linha do Sprint 6c.
 
 ### Pendências resolvidas do Sprint 6b

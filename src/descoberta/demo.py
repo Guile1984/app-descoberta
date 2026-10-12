@@ -33,9 +33,11 @@ from descoberta.repositorio import (
     FaseProposta,
     Indicador,
     ItemEscopo,
+    ItemProposta,
     ProximoPasso,
     Risco,
     StatusSessao,
+    TipoItemProposta,
     adicionar_anotacao,
     adicionar_item,
     ajustar_clausula,
@@ -45,6 +47,7 @@ from descoberta.repositorio import (
     criar_sessao,
     criar_tabelas,
     editar_item,
+    excluir_item,
     itens_da_sessao,
     marcar_hipotese,
     marcar_sinal,
@@ -283,10 +286,13 @@ INDICADORES = [
     },
 ]
 
+GUIA_DE_CAPTURA = "Guia de captura de fotos para os mestres de obra (distância, luz, ângulo, régua)"
+ROTULAGEM = "Organização e rotulagem das cerca de 500 fotos com o critério do Marcos"
+
 # (texto, entra no MVP)
 ESCOPO = [
-    ("Guia de captura de fotos para os mestres de obra (distância, luz, ângulo, régua)", True),
-    ("Organização e rotulagem das cerca de 500 fotos com o critério do Marcos", True),
+    (GUIA_DE_CAPTURA, True),
+    (ROTULAGEM, True),
     ("Triagem por foto (grave ou simples), com revisão do Marcos em todos os casos", True),
     ("Envio e devolução pelo WhatsApp ou por upload (integração nível 0 ou 1)", True),
     ("Medição automática da abertura da fissura", False),
@@ -353,8 +359,21 @@ PROPOSTA = {
     "cliente_representante": "Roberto",
     "cliente_cargo": "Sócio-diretor",
     "cliente_email": "roberto@example.com",
+    "cliente_cidade": "Campinas",
+    "cliente_uf": "SP",
 }
+# O total (R$ 20.000) é o investimento da métrica, o mesmo do payback do relatório, e
+# fica dentro do orçamento que o cliente informou (R$ 15 a 20 mil, bloco 9).
 INVESTIMENTO_FASE_0 = 6_000  # o preço da fase 0 é do consultor (o modelo não sugere)
+INVESTIMENTO_MVP = 14_000
+# Escopo da fase 0 no demo: o guia de captura e a rotulagem das fotos, que a revisão
+# levou para o MVP, são trabalho da fase 0 e substituem os itens genéricos do modelo.
+ESCOPO_FASE_0 = [
+    "Diagnóstico das fontes de dados e definição do padrão de coleta",
+    GUIA_DE_CAPTURA,
+    ROTULAGEM,
+    "Nova medição da prontidão dos dados ao fim da fase",
+]
 
 
 def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -> int:
@@ -432,8 +451,23 @@ def _popular_proposta(session: Session, sessao_id: int) -> None:
     inicial = conteudo_inicial(modelo.padrao, dados)
     criar_proposta(session, sessao_id, inicial, versao_modelo=VERSAO_MODELO_PROPOSTA)
     salvar_proposta(session, sessao_id, **PROPOSTA)
-    fase_0 = itens_da_sessao(session, FaseProposta, sessao_id)[0]
+    fase_0, mvp = itens_da_sessao(session, FaseProposta, sessao_id)
     editar_item(session, FaseProposta, fase_0.id, investimento=INVESTIMENTO_FASE_0)
+    editar_item(session, FaseProposta, mvp.id, investimento=INVESTIMENTO_MVP)
+    # Cada item numa fase só: o escopo da fase 0 é refeito e sai do MVP.
+    escopo = itens_da_sessao(session, ItemProposta, sessao_id, tipo=TipoItemProposta.escopo)
+    for item in escopo:
+        if item.fase_id == fase_0.id or item.texto in ESCOPO_FASE_0:
+            excluir_item(session, ItemProposta, item.id)
+    for texto in ESCOPO_FASE_0:
+        adicionar_item(
+            session,
+            ItemProposta,
+            sessao_id,
+            tipo=TipoItemProposta.escopo,
+            texto=texto,
+            fase_id=fase_0.id,
+        )
     # Uma cláusula ajustada só nesta proposta (o modelo continua com 30 dias).
     suporte = modelo.clausula("suporte_garantia").texto.replace("30 dias", "60 dias")
     ajustar_clausula(session, sessao_id, "suporte_garantia", texto=suporte)

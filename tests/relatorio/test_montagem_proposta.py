@@ -18,6 +18,7 @@ from descoberta.relatorio.dados_proposta import RelatorioReferido
 from descoberta.relatorio.documento import (
     FALTA,
     Assinatura,
+    Aviso,
     Capa,
     Lista,
     Paragrafo,
@@ -48,6 +49,21 @@ def _depois(documento, titulo: str, tipo=Tabela):
         i for i, b in enumerate(documento.blocos) if isinstance(b, Titulo) and b.texto == titulo
     )
     return next(b for b in documento.blocos[indice + 1 :] if isinstance(b, tipo))
+
+
+def _secao(documento, titulo: str) -> list:
+    """Os blocos da seção, até o próximo título de nível 1."""
+    blocos = documento.blocos
+    inicio = next(i for i, b in enumerate(blocos) if isinstance(b, Titulo) and b.texto == titulo)
+    fim = next(
+        (
+            i
+            for i, b in enumerate(blocos[inicio + 1 :], start=inicio + 1)
+            if isinstance(b, Titulo) and b.nivel == 1
+        ),
+        len(blocos),
+    )
+    return blocos[inicio + 1 : fim]
 
 
 def test_secoes_na_ordem(dados_proposta_roberto, emissao_proposta):
@@ -88,7 +104,7 @@ def test_identificacao_das_partes(dados_proposta_roberto, emissao_proposta):
     ]
     assert partes["CPF/CNPJ"] == ["12.ABC.345/01DE-35", "11.222.333/0001-81"]
     assert partes["Representante"] == ["Roberto (Sócio-diretor)", "Ana Exemplo"]
-    assert partes["Cidade/UF"][1] == "São Paulo/SP"
+    assert partes["Cidade/UF"] == ["Campinas/SP", "São Paulo/SP"]
 
 
 def test_contexto_com_a_frase_problema_e_a_recomendacao(dados_proposta_roberto, emissao_proposta):
@@ -107,8 +123,13 @@ def test_escopo_por_fase_e_exclusoes(dados_proposta_roberto, emissao_proposta):
     assert (
         "Laudo técnico gerado automaticamente" in _depois(documento, "Fora do escopo", Lista).itens
     )
+    fase_0 = _depois(documento, "Fase 0 — preparação dos dados", Lista).itens
+    assert any(item.startswith("Guia de captura de fotos") for item in fase_0)
+    assert any(item.startswith("Organização e rotulagem das cerca de 500 fotos") for item in fase_0)
     mvp = _depois(documento, "MVP", Lista).itens
     assert any("Triagem por foto" in item for item in mvp)
+    assert not set(mvp) & set(fase_0)  # cada item numa fase só
+    assert not any("rotulagem" in item or "Guia" in item for item in mvp)
 
 
 def test_cronograma_e_investimento(dados_proposta_roberto, emissao_proposta):
@@ -122,8 +143,8 @@ def test_cronograma_e_investimento(dados_proposta_roberto, emissao_proposta):
     investimento = _depois(documento, SECOES[4])
     assert investimento.linhas == [
         ["Fase 0 — preparação dos dados", "R$ 6.000,00"],
-        ["MVP", "R$ 20.000,00"],
-        ["Total", "R$ 26.000,00"],
+        ["MVP", "R$ 14.000,00"],
+        ["Total", "R$ 20.000,00"],  # o investimento da métrica, usado no payback
     ]
 
 
@@ -149,11 +170,36 @@ def test_criterio_de_aceite_com_indicadores_e_tabela_do_questionario(
     dados_proposta_roberto, emissao_proposta
 ):
     documento = montar_proposta(dados_proposta_roberto, emissao_proposta)
-    indicadores = _depois(documento, SECOES[8])
-    assert indicadores.colunas == ["Indicador", "Meta", "Prazo", "Como medir"]
-    assert indicadores.linhas[0][:2] == ["Horas do Marcos com chamados de fissura", "30 h/mês"]
-    fases = _depois(documento, "Critério de aceite em três fases")
+    secao = _secao(documento, SECOES[8])
+    paragrafos = [b for b in secao if isinstance(b, Paragrafo)]
+    tabelas = [b for b in secao if isinstance(b, Tabela)]
+    aceite, negocio = paragrafos[:2]
+    tecnicas, metas_de_negocio, fases = tabelas
+
+    # Aceite das entregas: pelo que foi entregue; no MVP, a meta técnica e o piloto.
+    assert aceite.rotulo == "Aceite das entregas:"
+    assert "pelo que foi entregue" in aceite.texto
+    assert "teste com dados históricos" in aceite.texto
+    assert "piloto assistido" in aceite.texto
+    assert tecnicas.colunas == ["Meta técnica", "Meta", "Prazo", "Como medir"]
+    assert [linha[:2] for linha in tecnicas.linhas] == [["Recall de fissuras graves", "≥ 95%"]]
+
+    # Metas de negócio: acompanhadas, nunca condição de aceite ou de pagamento.
+    assert negocio.rotulo == "Metas de negócio:"
+    assert "Não são condição de aceite nem de pagamento" in negocio.texto
+    assert [linha[:2] for linha in metas_de_negocio.linhas] == [
+        ["Horas do Marcos com chamados de fissura", "30 h/mês"],
+        ["Prazo de resposta ao cliente", "1 dia"],
+    ]
     assert fases.linhas[0][0] == "1. Teste com dados históricos"
+    assert "Cada entrega é aceita quando atinge as metas" not in documento.texto()
+
+
+def test_criterio_de_aceite_sem_indicadores(dados_proposta_roberto, emissao_proposta):
+    relatorio = dataclasses.replace(dados_proposta_roberto.relatorio, indicadores=[])
+    dados = dataclasses.replace(dados_proposta_roberto, relatorio=relatorio)
+    secao = _secao(montar_proposta(dados, emissao_proposta), SECOES[8])
+    assert sum(isinstance(b, Aviso) and b.texto == FALTA for b in secao) == 2
 
 
 def test_validade(dados_proposta_roberto, emissao_proposta):

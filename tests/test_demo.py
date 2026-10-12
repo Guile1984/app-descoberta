@@ -18,6 +18,7 @@ from descoberta.demo import (
     popular_demo,
 )
 from descoberta.dominio.payback import economia_mes, payback_meses
+from descoberta.dominio.proposta import investimento_total, itens_repetidos
 from descoberta.dominio.revisao import pendencias_da_revisao
 from descoberta.dominio.scores import (
     nota_prontidao_para_viabilidade,
@@ -27,8 +28,10 @@ from descoberta.dominio.scores import (
 from descoberta.questionario import pergunta_visivel
 from descoberta.repositorio import (
     CAMINHO_BANCO_PADRAO,
+    FaseProposta,
     Indicador,
     ItemEscopo,
+    ItemProposta,
     ProximoPasso,
     Risco,
     anotacoes_da_sessao,
@@ -39,6 +42,7 @@ from descoberta.repositorio import (
     notas_da_sessao,
     obter_metricas,
     obter_perfil,
+    obter_proposta,
     respostas_da_sessao,
     sinais_marcados,
     textos_da_sessao,
@@ -190,3 +194,23 @@ def test_consultor_ficticio_com_logotipo(banco_demo):
     assert perfil.cpf_cnpj == "11.222.333/0001-81"
     assert perfil.email.endswith("@example.com")  # domínio reservado para exemplos
     assert perfil.logotipo.startswith(b"\x89PNG")
+
+
+def test_proposta_do_demo(banco_demo):
+    _, sessao = _sessao(banco_demo)
+    proposta = obter_proposta(banco_demo, sessao.id)
+    assert (proposta.cliente_cidade, proposta.cliente_uf) == ("Campinas", "SP")
+
+    fases = itens_da_sessao(banco_demo, FaseProposta, sessao.id)
+    assert [f.investimento for f in fases] == [Decimal("6000"), Decimal("14000")]
+    # O total é o investimento da métrica, o mesmo do payback do relatório.
+    total = investimento_total([f.investimento for f in fases])
+    assert total == obter_metricas(banco_demo, sessao.id).investimento
+
+    escopo = itens_da_sessao(banco_demo, ItemProposta, sessao.id, tipo="escopo")
+    por_fase = [(f.nome, [i.texto for i in escopo if i.fase_id == f.id]) for f in fases]
+    assert itens_repetidos(por_fase) == []
+    fase_0, mvp = (textos for _, textos in por_fase)
+    assert any(t.startswith("Guia de captura de fotos") for t in fase_0)
+    assert any(t.startswith("Organização e rotulagem das cerca de 500 fotos") for t in fase_0)
+    assert all(t.startswith(("Triagem", "Envio")) for t in mvp)

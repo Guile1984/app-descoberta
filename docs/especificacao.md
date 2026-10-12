@@ -79,7 +79,7 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 
 | Entidade | Campos principais |
 | --- | --- |
-| Modelo | versão, título, aviso de que é ponto de partida a revisar com advogado, faixas do score final que pedem alerta, tabela do critério de aceite |
+| Modelo | versão, título, aviso de que é ponto de partida a revisar com advogado, faixas do score final que pedem alerta, critério de aceite (texto do aceite das entregas, texto das metas de negócio e tabela de referência) |
 | Padrão | validade, pagamento, impostos, reajuste, fases (nome, objetivo, duração, escopo, entregáveis, se recebe o escopo e o investimento da sessão, faixas do score em que entra), premissas, responsabilidades do cliente |
 | Cláusula | id, título, texto com marcadores de uma lista fechada ({cliente.empresa}, {consultor.empresa}, {consultor.nome}, {foro}), removível |
 
@@ -104,7 +104,7 @@ O questionário é um arquivo de configuração versionado (YAML), separado do c
 | Versão do relatório | sessão, número, tipo (cliente/interna), emissão, Markdown canônico, hash do conteúdo, PDF, hash do PDF |
 | Relatório | sessão, origem (template/LLM), conteúdo, modelo, versão do prompt, data |
 | Perfil do consultor | nome, empresa, CPF/CNPJ (conferido), e-mail, telefone, cidade/UF, logotipo (PNG sem metadados), dados fictícios (demo) |
-| Proposta | sessão, versão do modelo, dados do cliente (CPF/CNPJ, representante, cargo, e-mail), pagamento, impostos, reajuste, validade, criada apesar do alerta |
+| Proposta | sessão, versão do modelo, dados do cliente (CPF/CNPJ, representante, cargo, e-mail, cidade/UF), pagamento, impostos, reajuste, validade, criada apesar do alerta |
 | Fase da proposta | sessão, nome, objetivo, duração (semanas), investimento |
 | Item da proposta | sessão, tipo (escopo, entregável, exclusão, premissa, responsabilidade), fase (escopo e entregáveis), texto |
 | Cláusula da proposta | sessão, id da cláusula, texto ajustado, excluída |

@@ -91,6 +91,8 @@ def test_salvar_campos_da_proposta(session, sessao):
         cliente_representante="Roberto",
         cliente_cargo="Sócio-diretor",
         cliente_email="roberto@example.com",
+        cliente_cidade=" Campinas ",
+        cliente_uf="sp",
         validade_dias=30,
         reajuste="  Sem reajuste  ",
     )
@@ -98,6 +100,7 @@ def test_salvar_campos_da_proposta(session, sessao):
     assert proposta.cliente_cpf_cnpj == "11.222.333/0001-81"
     assert proposta.validade_dias == 30
     assert proposta.reajuste == "Sem reajuste"
+    assert (proposta.cliente_cidade, proposta.cliente_uf) == ("Campinas", "SP")
 
 
 @pytest.mark.parametrize(
@@ -105,6 +108,7 @@ def test_salvar_campos_da_proposta(session, sessao):
     [
         ({"cliente_cpf_cnpj": "123"}, "CPF"),
         ({"cliente_email": "sem-arroba"}, "e-mail"),
+        ({"cliente_uf": "XX"}, "UF"),
         ({"validade_dias": 0}, "validade_dias"),
         ({"condicoes_pagamento": "  "}, "condicoes_pagamento"),
         ({"versao_modelo": 2}, "campo desconhecido"),

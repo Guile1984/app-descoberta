@@ -42,9 +42,14 @@ class Consultor:
 
     @property
     def cidade_uf(self) -> str | None:
-        if self.cidade and self.uf:
-            return f"{self.cidade}/{self.uf}"
-        return self.cidade or self.uf
+        return cidade_uf(self.cidade, self.uf)
+
+
+def cidade_uf(cidade: str | None, uf: str | None) -> str | None:
+    """ "São Paulo/SP"; só a cidade ou só a UF quando falta a outra."""
+    if cidade and uf:
+        return f"{cidade}/{uf}"
+    return cidade or uf
 
 
 def linha_do_consultor(consultor: Consultor | None) -> str:

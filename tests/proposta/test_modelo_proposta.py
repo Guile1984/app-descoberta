@@ -62,6 +62,14 @@ def test_aviso_obrigatorio(dados_v1, escrever):
         carregar_modelo_proposta(escrever(dados))
 
 
+@pytest.mark.parametrize("campo", ["aceite", "metas_de_negocio"])
+def test_textos_do_criterio_de_aceite_obrigatorios(dados_v1, escrever, campo):
+    dados = copy.deepcopy(dados_v1)
+    del dados["criterio_de_aceite"][campo]
+    with pytest.raises(ModeloPropostaInvalido, match=campo):
+        carregar_modelo_proposta(escrever(dados))
+
+
 def test_faixas_e_tabela_conferidas_com_o_questionario(dados_v1, questionario_v1):
     dados = copy.deepcopy(dados_v1)
     dados["alerta_score_final"] = ["nao_existe"]

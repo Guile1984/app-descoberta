@@ -10,10 +10,16 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from descoberta.dominio.proposta import cronograma, investimento_total, valida_ate
+from descoberta.dominio.revisao import Camada
 from descoberta.formatos import moeda
 from descoberta.proposta.clausulas import preencher_marcadores
 
-from .consultor import AVISO_CONSULTOR_FICTICIO, assinatura_do_consultor, linha_do_consultor
+from .consultor import (
+    AVISO_CONSULTOR_FICTICIO,
+    assinatura_do_consultor,
+    cidade_uf,
+    linha_do_consultor,
+)
 from .dados_proposta import DadosProposta
 from .documento import (
     FALTA,
@@ -104,7 +110,11 @@ class _MontadorProposta:
             ["CPF/CNPJ", _ou_falta(d.cliente_cpf_cnpj), _ou_falta(c and c.cpf_cnpj)],
             ["Representante", _ou_falta(representante), c.nome if c else FALTA],
             ["Contato", d.cliente_email or "—", (c and c.contato) or "—"],
-            ["Cidade/UF", "—", _ou_falta(c and c.cidade_uf)],
+            [
+                "Cidade/UF",
+                _ou_falta(cidade_uf(d.cliente_cidade, d.cliente_uf)),
+                _ou_falta(c and c.cidade_uf),
+            ],
         ]
         return [
             Tabela(
@@ -211,24 +221,29 @@ class _MontadorProposta:
             return [Aviso(FALTA)]
         return [Lista(self.dados.responsabilidades)]
 
-    def _criterio_de_aceite(self) -> list[Bloco]:
-        blocos: list[Bloco] = [
-            Paragrafo("Cada entrega é aceita quando atinge as metas abaixo, medidas como descrito.")
+    def _indicadores(self, camada: Camada, primeira_coluna: str) -> Bloco:
+        indicadores = [i for i in self.relatorio.indicadores if i.camada == camada]
+        if not indicadores:
+            return Aviso(FALTA)
+        linhas = [
+            [i.nome, _ou_falta(i.meta), _ou_falta(i.prazo), _ou_falta(i.como_medir)]
+            for i in indicadores
         ]
-        indicadores = self.relatorio.indicadores
-        if indicadores:
-            linhas = [
-                [i.nome, _ou_falta(i.meta), _ou_falta(i.prazo), _ou_falta(i.como_medir)]
-                for i in indicadores
-            ]
-            blocos.append(
-                Tabela(
-                    ["Indicador", "Meta", "Prazo", "Como medir"], linhas, larguras=[2, 1, 1.3, 2]
-                )
-            )
-        else:
-            blocos.append(Aviso(FALTA))
+        return Tabela(
+            [primeira_coluna, "Meta", "Prazo", "Como medir"], linhas, larguras=[2, 1, 1.3, 2]
+        )
+
+    def _criterio_de_aceite(self) -> list[Bloco]:
+        """O aceite (com as metas técnicas) separado das metas de negócio, que não
+        condicionam aceite nem pagamento."""
         criterio = self.dados.modelo.criterio_de_aceite
+        blocos: list[Bloco] = []
+        if criterio is not None:
+            blocos.append(Paragrafo(criterio.aceite, rotulo="Aceite das entregas:"))
+        blocos.append(self._indicadores(Camada.tecnica, "Meta técnica"))
+        if criterio is not None:
+            blocos.append(Paragrafo(criterio.metas_de_negocio, rotulo="Metas de negócio:"))
+        blocos.append(self._indicadores(Camada.negocio, "Indicador"))
         if criterio is not None:
             questionario = self.relatorio.questionario
             for referencia in questionario.bloco(criterio.bloco).referencias:

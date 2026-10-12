@@ -19,10 +19,20 @@ aviso: >-
 
 alerta_score_final: [nao_seguir]
 
-# Tabela de referência do questionário que entra no critério de aceite da proposta.
+# Critério de aceite da proposta. O aceite das entregas (o que libera os pagamentos) fica
+# separado das metas de negócio, que são acompanhadas, mas não condicionam aceite nem
+# pagamento. Os indicadores vêm da revisão: os da camada técnica entram no aceite, os de
+# negócio nas metas. A tabela de referência vem do questionário.
 criterio_de_aceite:
   bloco: 5
   tabela: Critério de aceite em três fases
+  aceite: >-
+    Cada fase é aceita pelo que foi entregue: o escopo e os entregáveis descritos nesta
+    proposta. No MVP, o aceite também exige que a meta técnica abaixo seja atingida no
+    teste com dados históricos e que o piloto assistido seja concluído.
+  metas_de_negocio: >-
+    As metas de negócio abaixo são objetivos que as partes acompanham depois da entrega,
+    na produção. Não são condição de aceite nem de pagamento.
 
 padrao:
   validade_dias: 15

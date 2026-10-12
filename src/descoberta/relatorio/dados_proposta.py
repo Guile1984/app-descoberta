@@ -88,6 +88,8 @@ class DadosProposta:
     cliente_representante: str | None
     cliente_cargo: str | None
     cliente_email: str | None
+    cliente_cidade: str | None
+    cliente_uf: str | None
     condicoes_pagamento: str
     impostos: str
     reajuste: str
@@ -135,6 +137,8 @@ def coletar_dados_proposta(
         cliente_representante=proposta.cliente_representante,
         cliente_cargo=proposta.cliente_cargo,
         cliente_email=proposta.cliente_email,
+        cliente_cidade=proposta.cliente_cidade,
+        cliente_uf=proposta.cliente_uf,
         condicoes_pagamento=proposta.condicoes_pagamento,
         impostos=proposta.impostos,
         reajuste=proposta.reajuste,

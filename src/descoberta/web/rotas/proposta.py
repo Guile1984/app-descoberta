@@ -5,6 +5,8 @@
   o score final estiver numa faixa de alerta ("não seguir agora"), a app avisa e só cria
   com a confirmação (campo "confirmar").
 - POST /sessoes/1/proposta/campo/<campo>: salva um campo (salvamento automático).
+- GET /sessoes/1/proposta/avisos: item repetido entre fases e total diferente do
+  investimento da métrica; recarregado a cada mudança (evento "proposta-mudou").
 - POST /sessoes/1/proposta/recriar: apaga a proposta (não as versões registradas) para
   criar de novo a partir da revisão.
 - GET /sessoes/1/proposta/documento e /sessoes/1/proposta.<formato>: prévia e downloads.
@@ -56,6 +58,7 @@ from descoberta.repositorio import (
     versoes_da_sessao,
 )
 from descoberta.repositorio.modelos import agora
+from descoberta.rotulos import UFS
 
 from ..dependencias import Banco, CatalogoDep, aviso, exigir_sessao, html, redirecionar
 from ..listas import registrar_rotas_de_listas
@@ -64,6 +67,8 @@ from ..proposta import (
     CAMPOS_DO_CLIENTE,
     EVENTO,
     LISTAS,
+    avisos,
+    avisos_da_proposta_gravada,
     clausula_na_tela,
     clausulas_na_tela,
     contexto_das_listas,
@@ -115,6 +120,8 @@ def _nome_do_arquivo(empresa: str, data: date, extensao: str, numero: int | None
 def _pagina_de_criacao(request, banco, sessao, questionario, catalogo, status_code=200):
     modelo = _modelo(catalogo)
     dados = _dados_relatorio(banco, sessao, questionario)
+    inicial = conteudo_inicial(modelo.padrao, dados_para_proposta_nova(dados))
+    fases = [(f.nome, f.escopo, f.investimento) for f in inicial.fases]
     return html(
         request,
         "proposta/criar.html",
@@ -124,7 +131,8 @@ def _pagina_de_criacao(request, banco, sessao, questionario, catalogo, status_co
         modelo=modelo,
         alerta=_alerta(dados, modelo),
         score_final=dados.painel.score_final,
-        inicial=conteudo_inicial(modelo.padrao, dados_para_proposta_nova(dados)),
+        inicial=inicial,
+        avisos=avisos(fases, dados.entradas.investimento),
     )
 
 
@@ -149,9 +157,26 @@ def pagina(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int
         itens={nome: lista.itens(banco, sessao_id) for nome, lista in LISTAS.items()},
         campos_do_cliente=CAMPOS_DO_CLIENTE,
         campos_das_condicoes=CAMPOS_DAS_CONDICOES,
+        ufs=UFS,
         clausulas=clausulas_na_tela(modelo, ajustes_das_clausulas(banco, sessao_id)),
         marcadores=MARCADORES,
+        avisos=avisos_da_proposta_gravada(banco, sessao_id, dados.entradas.investimento),
         **contexto_das_listas(banco, sessao, questionario),
+    )
+
+
+@router.get("/sessoes/{sessao_id}/proposta/avisos")
+def avisos_da_proposta(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int):
+    """Os avisos de novo, depois de uma mudança na proposta (evento proposta-mudou)."""
+    sessao, questionario = exigir_sessao(banco, catalogo, sessao_id)
+    if obter_proposta(banco, sessao_id) is None:
+        raise HTTPException(404, "A sessão ainda não tem proposta.")
+    investimento = _dados_relatorio(banco, sessao, questionario).entradas.investimento
+    return html(
+        request,
+        "proposta/_avisos_conteudo.html",
+        sessao=sessao,
+        avisos=avisos_da_proposta_gravada(banco, sessao_id, investimento),
     )
 
 
