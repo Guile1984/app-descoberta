@@ -164,6 +164,16 @@ def aceitar_rascunho_da_proposta(session: Session, rascunho_id: int) -> None:
     session.commit()
 
 
+def descartar_pendente_do_campo(
+    session: Session, sessao_id: int, destino: DestinoRascunho, campo: str
+) -> None:
+    """Descarta o pendente de um campo (sem commit: quem chama grava junto)."""
+    pendente = rascunho_pendente(session, sessao_id, destino, campo)
+    if pendente is not None:
+        _decidir(pendente, SituacaoRascunho.descartado)
+        session.add(pendente)
+
+
 def descartar_pendentes(session: Session, sessao_id: int, destino: DestinoRascunho) -> None:
     """Descarta os pendentes de um destino (sem commit: quem chama grava junto)."""
     for rascunho in rascunhos_da_sessao(

@@ -129,3 +129,28 @@ def test_recriar_apaga_os_textos(session, com_proposta):
     salvar_texto_proposta(session, com_proposta.id, "contexto", "Texto.")
     excluir_proposta(session, com_proposta.id)
     assert textos_da_proposta(session, com_proposta.id) == {}
+
+
+def test_excluir_a_fase_descarta_o_rascunho_pendente_dela(session, com_proposta):
+    """Achado da revisão: o rascunho aponta para a fase só pelo texto do campo, e o SQLite
+    pode reaproveitar o id da fase excluída. Sem o descarte, uma fase nova herdaria o
+    rascunho de outra."""
+    from descoberta.repositorio import adicionar_item, excluir_item, rascunho_pendente
+
+    [fase] = itens_da_sessao(session, FaseProposta, com_proposta.id)
+    campo = f"objetivo_fase.{fase.id}"
+    rascunho = registrar_rascunho(
+        session,
+        com_proposta.id,
+        destino=DestinoRascunho.proposta,
+        campo=campo,
+        texto="Objetivo da fase antiga.",
+        **GERADO,
+    )
+    excluir_item(session, FaseProposta, fase.id)
+    session.refresh(rascunho)
+    assert rascunho.situacao is SituacaoRascunho.descartado
+
+    nova = adicionar_item(session, FaseProposta, com_proposta.id, nome="Sustentação")
+    assert nova.id == fase.id  # o SQLite reaproveitou o id: é o cenário do achado
+    assert rascunho_pendente(session, com_proposta.id, DestinoRascunho.proposta, campo) is None

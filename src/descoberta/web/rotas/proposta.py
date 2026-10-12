@@ -179,7 +179,7 @@ def pagina(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int
         marcadores=MARCADORES,
         avisos=avisos_da_proposta_gravada(banco, sessao_id, dados.entradas.investimento),
         pagina="proposta",
-        llm=sessao_para_llm(banco, sessao, questionario, catalogo),
+        llm=sessao_para_llm(banco, sessao, questionario, catalogo, dados=dados),
         provedor=situacao_do_provedor(request),
         **_contexto_do_texto(banco, sessao_id),
         **contexto_das_listas(banco, sessao, questionario),
@@ -217,9 +217,9 @@ def salvar_texto(
 
 
 def _gerar_na_proposta(request, banco, catalogo, sessao_id, campo, anotacoes, montar):
+    """Gera um rascunho de texto da proposta; `montar(prompt, proposta)` faz o pedido."""
     # O limite de tamanho é por alvo: "contexto" ou "objetivo_fase" (de qualquer fase).
     chave_limite = "contexto" if campo == "contexto" else "objetivo_fase"
-    """Gera um rascunho de texto da proposta; `montar(prompt, proposta)` faz o pedido."""
     from .rascunhos import bloco_do_rascunho
 
     sessao, questionario = exigir_sessao(banco, catalogo, sessao_id)

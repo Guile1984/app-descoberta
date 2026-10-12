@@ -107,10 +107,18 @@ class DadosProposta:
 
 
 def coletar_dados_proposta(
-    session: Session, sessao_id: int, questionario: Questionario, modelo: ModeloProposta
+    session: Session,
+    sessao_id: int,
+    questionario: Questionario,
+    modelo: ModeloProposta,
+    relatorio: DadosRelatorio | None = None,
 ) -> DadosProposta:
-    """Lê a proposta da sessão; RegistroNaoEncontrado se ela ainda não foi criada."""
-    relatorio = coletar_dados(session, sessao_id, questionario)
+    """Lê a proposta da sessão; RegistroNaoEncontrado se ela ainda não foi criada.
+
+    `relatorio`: os dados da sessão, se quem chama já os leu (evita ler tudo de novo).
+    """
+    if relatorio is None:
+        relatorio = coletar_dados(session, sessao_id, questionario)
     proposta = obter_proposta(session, sessao_id)
     if proposta is None:
         raise RegistroNaoEncontrado(f"a sessão {sessao_id} não tem proposta")

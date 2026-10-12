@@ -6,7 +6,10 @@ Duas fontes:
   Marcos"); para empresas, as partes que não são genéricas ("Alvorada", não "Construtora").
   As partes só são trocadas com maiúscula inicial: "Rosa" é nome, "rosa" é cor;
 - formatos reconhecíveis: CPF, CNPJ (inclusive o alfanumérico), e-mail, telefone, CEP e
-  endereço (Rua/Av./Rodovia… seguido do nome).
+  endereço (Rua/Av./Rodovia… seguido do nome). Pontuados, CPF e CNPJ são sempre trocados;
+  sem pontuação, o CPF e o CNPJ alfanumérico só quando os dígitos verificadores conferem
+  (um número qualquer de 11 dígitos não é CPF). CEP e telefone sem DDD sem pontuação só
+  depois de "CEP" ou de "tel.", "telefone", "fone", "celular", "WhatsApp".
 
 Cada valor tem um marcador estável ([CLIENTE], [PESSOA_1], [EMAIL_1]…), e o mesmo
 `Anonimizador` usa sempre o mesmo marcador para o mesmo valor. `desfazer` troca os
@@ -21,8 +24,10 @@ citadas da sessão; `sugerir_nomes` ajuda o consultor a montar essa lista.
 import hashlib
 import re
 import unicodedata
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
+
+from descoberta.dominio.documento_fiscal import documento_valido
 
 # Papéis com um valor só: o marcador não leva número ([CLIENTE], não [CLIENTE_1]).
 PAPEIS_UNICOS = ("CLIENTE", "EMPRESA", "CONSULTOR", "EMPRESA_CONSULTOR", "REPRESENTANTE")
@@ -127,27 +132,46 @@ class Conhecido:
         ]
 
 
-# Formatos reconhecíveis, na ordem de preferência quando dois começam no mesmo lugar.
+# Formatos reconhecíveis, na ordem de preferência quando dois começam no mesmo lugar:
+# (categoria, padrão, conferência). Com o grupo "v" no padrão, só ele é trocado (a palavra
+# "CEP" fica). A conferência (dígitos verificadores) decide se o trecho é mesmo o dado.
+_CONTATO = r"(?i:tel(?:efone)?|fone|cel(?:ular)?|whats(?:app)?|zap)\.?:?\s*"
 _LOGRADOURO = (
     r"(?i:rua|r\.|avenida|av\.|alameda|al\.|travessa|tv\.|rodovia|rod\.|estrada|estr\."
     r"|pra[cç]a|p[cç]a\.|largo|viela)"
 )
-_FORMATOS: list[tuple[str, re.Pattern]] = [
-    ("EMAIL", re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")),
+_FORMATOS: list[tuple[str, re.Pattern, Callable[[str], bool] | None]] = [
+    ("EMAIL", re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"), None),
     (
         "CNPJ",
         re.compile(
             r"(?<!\w)(?:[0-9A-Z]{2}\.[0-9A-Z]{3}\.[0-9A-Z]{3}/[0-9A-Z]{4}-\d{2}|\d{14})(?!\w)"
         ),
+        None,
     ),
-    ("CPF", re.compile(r"(?<![\w.])(?:\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})(?!\w)")),
-    ("CEP", re.compile(r"(?<![\w.])(?:\d{5}-\d{3}|\d{2}\.\d{3}-\d{3})(?!\w)")),
+    # CNPJ alfanumérico sem pontuação: 12 letras ou números e 2 dígitos, com alguma letra.
+    (
+        "CNPJ",
+        re.compile(r"(?<!\w)(?=[0-9A-Za-z]{0,11}[A-Za-z])[0-9A-Za-z]{12}\d{2}(?!\w)"),
+        documento_valido,
+    ),
+    ("CPF", re.compile(r"(?<![\w.])\d{3}\.\d{3}\.\d{3}-\d{2}(?!\w)"), None),
+    ("CPF", re.compile(r"(?<![\w.])\d{11}(?!\w)"), documento_valido),
+    ("CEP", re.compile(r"(?<![\w.])(?:\d{5}-\d{3}|\d{2}\.\d{3}-\d{3})(?!\w)"), None),
+    ("CEP", re.compile(r"(?i:\bcep)\.?:?\s*(?P<v>\d{8})(?!\w)"), None),
     (
         "TELEFONE",
         re.compile(
             r"(?<![\w+])(?:(?:\+?55[\s.-]?)?\(?0?\d{2}\)?[\s.-]?9?\d{4}[\s.-]?\d{4}"
             r"|9\d{4}[\s.-]?\d{4})(?!\w)"
         ),
+        None,
+    ),
+    # Telefone fixo sem DDD: só depois de uma palavra de contato.
+    (
+        "TELEFONE",
+        re.compile(rf"(?<!\w){_CONTATO}(?P<v>\d{{4}}[\s.-]?\d{{4}})(?!\w)"),
+        None,
     ),
     (
         "ENDERECO",
@@ -155,6 +179,7 @@ _FORMATOS: list[tuple[str, re.Pattern]] = [
             rf"(?<!\w){_LOGRADOURO}\s+(?:(?:d[aeo]s?)\s+)?[A-ZÀ-Ý0-9][^\n,;:().]{{0,60}}"
             r"(?:,\s*(?:n[º°o.]?\s*)?\d{1,6}[A-Za-z]?(?!\w))?"
         ),
+        None,
     ),
 ]
 
@@ -241,11 +266,12 @@ class Anonimizador:
             for m in padrao.finditer(texto)
         ]
         base = len(self._padroes_conhecidos)
-        candidatos += [
-            _Achado(m.start(), m.end(), None, categoria, base + i)
-            for i, (categoria, padrao) in enumerate(_FORMATOS)
-            for m in padrao.finditer(texto)
-        ]
+        for i, (categoria, padrao, conferir) in enumerate(_FORMATOS):
+            for m in padrao.finditer(texto):
+                grupo = "v" if "v" in padrao.groupindex else 0
+                if conferir is not None and not conferir(m.group(grupo)):
+                    continue
+                candidatos.append(_Achado(m.start(grupo), m.end(grupo), None, categoria, base + i))
         # Sem sobreposição: o que começa antes; empatando, o mais longo; depois a ordem.
         candidatos.sort(key=lambda a: (a.inicio, -(a.fim - a.inicio), a.prioridade))
         escolhidos: list[_Achado] = []

@@ -99,12 +99,18 @@ class SessaoParaLLM:
 
 
 def sessao_para_llm(
-    banco: Session, sessao: Sessao, questionario: Questionario, catalogo: Catalogo
+    banco: Session,
+    sessao: Sessao,
+    questionario: Questionario,
+    catalogo: Catalogo,
+    dados: DadosRelatorio | None = None,
 ) -> SessaoParaLLM:
-    try:
-        dados = coletar_dados(banco, sessao.id, questionario)
-    except ValueError as erro:  # dado gravado que o questionário da sessão não reconhece
-        raise HTTPException(422, f"Não foi possível ler a sessão: {erro}") from None
+    """`dados`: a sessão já lida pela página, para não ler tudo de novo."""
+    if dados is None:
+        try:
+            dados = coletar_dados(banco, sessao.id, questionario)
+        except ValueError as erro:  # dado gravado que o questionário não reconhece
+            raise HTTPException(422, f"Não foi possível ler a sessão: {erro}") from None
     proposta = None
     registro = obter_proposta(banco, sessao.id)
     if registro is not None:
@@ -113,7 +119,9 @@ def sessao_para_llm(
         except LookupError:
             modelo = None
         if modelo is not None:
-            proposta = coletar_dados_proposta(banco, sessao.id, questionario, modelo)
+            proposta = coletar_dados_proposta(
+                banco, sessao.id, questionario, modelo, relatorio=dados
+            )
     pessoas = pessoas_citadas(banco, sessao.id)
     conhecidos = conhecidos_da_sessao(dados, proposta, [p.nome for p in pessoas])
     impressao = impressao_dos_conhecidos(conhecidos)

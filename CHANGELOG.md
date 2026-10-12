@@ -138,6 +138,16 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   pedaços com letra contavam: o resumo executivo do Roberto gerado pela API real com o
   prompt v2 tinha 268 palavras no Word e 249 na app, dentro do limite de 150 a 250, e o
   alerta não apareceu. Esse texto real é o caso de referência dos testes.
+- Achados da revisão automática do PR:
+  - anonimização de documentos e contatos sem pontuação: CNPJ alfanumérico e CPF sem
+    pontuação são trocados quando os dígitos verificadores conferem (um número qualquer
+    de 11 dígitos deixa de virar CPF); CEP sem hífen depois de "CEP"; telefone sem DDD
+    depois de "tel.", "telefone", "fone", "celular" ou "WhatsApp". O teste do payload
+    inclui esses formatos numa resposta do caso Roberto;
+  - excluir uma fase da proposta descarta o rascunho pendente do objetivo dela (o SQLite
+    pode reaproveitar o id, e uma fase nova herdaria o rascunho);
+  - a página da proposta lê a sessão uma vez só por pedido (antes, três vezes);
+  - docstring de `_gerar_na_proposta` no lugar certo.
 
 ### Pendências resolvidas (Sprints 6a e 6c)
 - Seção 10 do relatório ("Escopo do MVP"): uma nota diz que a divisão do escopo em fases,
@@ -154,8 +164,8 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Pendências
 - Inclusão de cláusulas extras numa proposta (continua da 6c).
 - Nomes citados de passagem só são anonimizados se estiverem na lista de pessoas citadas
-  (a app sugere; a prévia obrigatória mostra o que sai). Telefone fixo de 8 dígitos sem
-  DDD não é reconhecido.
+  (a app sugere; a prévia obrigatória mostra o que sai). Telefone fixo sem DDD e CEP sem
+  hífen só são reconhecidos depois de uma palavra como "tel." ou "CEP".
 - Relatório inteiro redigido por LLM (a tabela `relatorio` já guarda origem, modelo e
   versão do prompt): fora deste sprint, que cobre os textos narrativos.
 - Testar com a API real e com o Ollama na máquina do consultor (os testes automáticos não

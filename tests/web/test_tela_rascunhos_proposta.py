@@ -162,3 +162,24 @@ def test_sem_proposta(tmp_path, falso):
         )
         url = _url(sessao.id, "/proposta/textos/contexto/rascunho")
         assert cliente.post(url, headers=HX).status_code == 404
+
+
+def test_pagina_da_proposta_le_a_sessao_uma_vez_so(demo, monkeypatch):
+    """Achado da revisão: com o painel do LLM, a página lia a sessão inteira mais de uma
+    vez por pedido (inclusive com o LLM desligado)."""
+    import descoberta.relatorio.dados_proposta as dados_proposta
+    import descoberta.web.llm as web_llm
+    import descoberta.web.rotas.proposta as rotas_proposta
+    from descoberta.relatorio import coletar_dados
+
+    chamadas = []
+
+    def contando(*args, **kwargs):
+        chamadas.append(args[1])
+        return coletar_dados(*args, **kwargs)
+
+    for modulo in (dados_proposta, web_llm, rotas_proposta):
+        monkeypatch.setattr(modulo, "coletar_dados", contando)
+    cliente, sessao_id, _ = demo
+    assert cliente.get(_url(sessao_id, "/proposta")).status_code == 200
+    assert chamadas == [sessao_id]

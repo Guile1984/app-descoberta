@@ -261,3 +261,45 @@ def test_impressao_muda_quando_os_dados_mudam():
 def test_impressao_nao_revela_os_dados():
     impressao = impressao_dos_conhecidos([Conhecido.pessoa("Roberto", "CLIENTE")])
     assert "Roberto" not in impressao
+
+
+# --- Documentos e contatos sem pontuação (achado da revisão) ---
+
+
+@pytest.mark.parametrize(
+    ("texto", "esperado"),
+    [
+        # CNPJ alfanumérico sem pontuação: só com os dígitos verificadores certos.
+        ("CNPJ 12ABC34501DE35 da obra", "CNPJ [CNPJ_1] da obra"),
+        ("cnpj 12abc34501de35", "cnpj [CNPJ_1]"),
+        ("código 12ABC34501DE36", "código 12ABC34501DE36"),  # dígito errado: não é CNPJ
+        ("série ABCDEFGHIJKL12", "série ABCDEFGHIJKL12"),
+        # CPF sem pontuação: só com os dígitos verificadores certos.
+        ("CPF 12345678909", "CPF [CPF_1]"),
+        ("protocolo 12345678900", "protocolo 12345678900"),  # dígito errado: fica
+        ("CPF 123.456.789-00", "CPF [CPF_1]"),  # pontuado: sempre (a pontuação diz que é CPF)
+        # CEP sem hífen: só depois da palavra CEP.
+        ("CEP 13010000, Campinas", "CEP [CEP_1], Campinas"),
+        ("cep: 13010000", "cep: [CEP_1]"),
+        ("pedido 13010000", "pedido 13010000"),
+        # Telefone sem DDD: só depois de tel., telefone, fone, celular ou WhatsApp.
+        ("tel. 3333-4444", "tel. [TELEFONE_1]"),
+        ("Telefone: 33334444", "Telefone: [TELEFONE_1]"),
+        ("WhatsApp 3333 4444", "WhatsApp [TELEFONE_1]"),
+        ("fone 3333.4444", "fone [TELEFONE_1]"),
+        ("período 3333-4444", "período 3333-4444"),
+    ],
+)
+def test_documentos_e_contatos_sem_pontuacao(texto, esperado):
+    assert Anonimizador([]).anonimizar(texto) == esperado
+
+
+def test_mesmo_documento_com_e_sem_pontuacao():
+    a = Anonimizador([])
+    assert a.anonimizar("12.ABC.345/01DE-35 e 12ABC34501DE35") == "[CNPJ_1] e [CNPJ_1]"
+    assert a.anonimizar("123.456.789-09 e 12345678909") == "[CPF_1] e [CPF_1]"
+    assert a.restantes("CPF 12345678909, CEP 13010000, tel. 3333-4444") == [
+        "12345678909",
+        "13010000",
+        "3333-4444",
+    ]

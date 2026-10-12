@@ -51,6 +51,15 @@ def _cnpj(caracteres: str) -> str:
     return f"{c[:2]}.{c[2:5]}.{c[5:8]}/{c[8:12]}-{c[12:]}"
 
 
+def documento_valido(texto: str) -> bool:
+    """Se o texto é um CPF ou CNPJ com os dígitos verificadores certos."""
+    try:
+        formatar_cpf_cnpj(texto)
+    except ValueError:
+        return False
+    return True
+
+
 def formatar_cpf_cnpj(texto: str) -> str:
     """CPF (11 dígitos) ou CNPJ (14 caracteres) conferido e no formato padrão.
 

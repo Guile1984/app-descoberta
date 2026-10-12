@@ -6,6 +6,7 @@ falso. O teste lê o corpo exato de cada pedido HTTP e procura cada dado pessoal
 sem ligar para maiúsculas e acentos.
 """
 
+import dataclasses
 import json
 import unicodedata
 
@@ -176,3 +177,35 @@ def test_sem_a_lista_de_pessoas_o_nome_citado_escaparia(dados_roberto):
     detectado sozinho. A prévia obrigatória (tela da revisão) cobre esse caso."""
     a = Anonimizador(conhecidos_da_sessao(dados_roberto, None, []))
     assert "Marcos" in a.anonimizar(contexto_da_sessao(dados_roberto))
+
+
+# Documentos e contatos sem pontuação, escritos numa resposta (que vai no pedido):
+# CNPJ alfanumérico e CPF com os dígitos verificadores certos, CEP e telefone sem DDD.
+SEM_PONTUACAO = {
+    "12ABC34501DE35": "[CNPJ_",
+    "12345678909": "[CPF_",
+    "13010000": "[CEP_",
+    "3333-4444": "[TELEFONE_",
+}
+
+
+def test_documentos_e_contatos_sem_pontuacao_nao_saem(
+    api, provedor, prompts, dados_roberto, proposta_roberto
+):
+    respostas = dict(dados_roberto.respostas)
+    respostas["b1.o3"] += (
+        " Dados do Marcos: CNPJ da empresa dele 12ABC34501DE35, CPF 12345678909,"
+        " CEP 13010000, tel. 3333-4444."
+    )
+    dados = dataclasses.replace(dados_roberto, respostas=respostas)
+    proposta = dataclasses.replace(proposta_roberto, relatorio=dados)
+    conhecidos = conhecidos_da_sessao(dados, proposta, PESSOAS_CITADAS)
+    for pedido in _pedidos(prompts, dados, proposta):
+        gerar_rascunho(provedor, "rascunho_vX", pedido, Anonimizador(conhecidos))
+    for corpo in api.corpos:
+        mensagem = json.loads(corpo)["messages"][0]["content"]
+        assert "Dados do [PESSOA_1]: CNPJ da empresa dele" in mensagem  # a resposta foi
+        for dado, marcador in SEM_PONTUACAO.items():
+            assert dado not in mensagem, dado
+            assert dado not in corpo, dado
+            assert marcador in mensagem
