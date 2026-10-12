@@ -35,6 +35,21 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   - `sugerir_nomes`: palavras com maiúscula no meio da frase, para o consultor montar a
     lista de pessoas citadas (sem siglas, ferramentas e o que já é conhecido).
 
+- Prompts versionados em arquivo (`prompts/rascunho_revisao_v1.md` e
+  `prompts/rascunho_proposta_v1.md`, lidos por `llm.prompts`): cabeçalho com id, versão e
+  campos; seções "# Sistema" e "# Pedido"; o arquivo é conferido (nome × versão, campos
+  declarados × usados) e cada rascunho guardará o rótulo (`rascunho_revisao_v1`). As
+  orientações dos textos da proposta ficam no próprio prompt. As regras pedem para usar só
+  os fatos da sessão, copiar os números sem fazer contas, manter as hipóteses como
+  hipóteses e preservar os marcadores da anonimização.
+- Contexto do pedido (`llm.contexto`): empresa, números já calculados pelo Painel (com
+  "(hipótese)" e "(depende de hipótese)"), respostas visíveis por bloco e do encerramento,
+  sinais de alerta, anotações, riscos, indicadores, escopo, próximos passos e os outros
+  textos já escritos; para a proposta, fases (duração, valor, objetivo, escopo,
+  entregáveis), total, exclusões, premissas e responsabilidades. `conhecidos_da_sessao`
+  lista os dados pessoais da sessão, do perfil do consultor e da proposta (com a lista de
+  pessoas citadas) para a anonimização.
+
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.
