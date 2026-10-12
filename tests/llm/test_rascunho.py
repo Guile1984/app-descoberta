@@ -92,9 +92,10 @@ def test_alerta_quando_o_tamanho_sai_do_limite(texto, alerta):
         assert "150 a 250" in aviso
 
 
-def test_contagem_ignora_marcas_de_lista():
+def test_no_limite_exato_nao_ha_alerta():
+    # A regra da contagem (como no Word) está em test_contagem_de_palavras.py.
     texto = "1. Primeiro passo aqui.\n2. Segundo passo aqui.\n- Terceiro passo aqui."
     rascunho = gerar_rascunho(
-        ProvedorFalso(texto), "p_v2", PEDIDO, _anonimizador(), limite_palavras=(9, 9)
+        ProvedorFalso(texto), "p_v2", PEDIDO, _anonimizador(), limite_palavras=(12, 12)
     )
     assert rascunho.alertas == ()

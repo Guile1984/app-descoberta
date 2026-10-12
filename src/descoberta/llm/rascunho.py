@@ -8,7 +8,6 @@
 `previa_do_pedido` mostra ao consultor exatamente o que sairia, sem enviar nada.
 """
 
-import re
 from dataclasses import dataclass
 
 from .anonimizacao import Anonimizador
@@ -52,11 +51,10 @@ def previa_do_pedido(pedido: Pedido, anonimizador: Anonimizador) -> Previa:
     return Previa(enviado, usados)
 
 
-_PALAVRA = re.compile(r"[^\W\d_]")  # conta só o que tem letra ("1." e "-" de lista, não)
-
-
 def contar_palavras(texto: str) -> int:
-    return sum(1 for pedaco in texto.split() if _PALAVRA.search(pedaco))
+    """Palavras como o Word conta: tudo o que fica entre espaços. Números e valores
+    ("60", "R$", "6.000,00"), siglas e um "1." digitado contam, como no documento final."""
+    return len(texto.split())
 
 
 def gerar_rascunho(

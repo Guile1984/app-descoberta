@@ -133,6 +133,11 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - Revisão: o quadro "Falta preencher" ficava fixo na rolagem e sem fundo, cobrindo o
   painel do LLM (tabela de substituições e aviso da prévia). Agora rola com a página; um
   teste no navegador rola a revisão e confere que ele não cobre nenhum outro elemento.
+- Contagem de palavras dos rascunhos alinhada com a do Word: tudo o que fica entre espaços
+  conta (números, valores como "6.000,00", "R$", siglas, um "1." digitado). Antes, só os
+  pedaços com letra contavam: o resumo executivo do Roberto gerado pela API real com o
+  prompt v2 tinha 268 palavras no Word e 249 na app, dentro do limite de 150 a 250, e o
+  alerta não apareceu. Esse texto real é o caso de referência dos testes.
 
 ### Pendências resolvidas (Sprints 6a e 6c)
 - Seção 10 do relatório ("Escopo do MVP"): uma nota diz que a divisão do escopo em fases,
