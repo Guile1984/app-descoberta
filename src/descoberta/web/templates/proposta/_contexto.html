@@ -1,0 +1,15 @@
+{#
+  "Contexto da proposta": texto que abre a seção 2 do documento, com o rascunho do LLM.
+  Variáveis: sessao, textos_proposta, alvo_contexto, rascunho_contexto, erro_rascunho.
+#}
+{% from "_salvamento.html" import atributos, estado %}
+<section id="bloco-contexto-proposta" class="secao-revisao texto-revisao" aria-labelledby="titulo-contexto-proposta">
+  <h2 id="titulo-contexto-proposta">Contexto da proposta</h2>
+  <p class="discreto">Abre a seção 2 do documento. Em branco, a proposta usa o texto padrão e a frase-problema do relatório.</p>
+  <label for="proposta-texto-contexto" class="visualmente-oculto">Contexto da proposta</label>
+  <textarea id="proposta-texto-contexto" name="texto" rows="5" {{ atributos("/sessoes/%d/proposta/textos/contexto" % sessao.id, "proposta-texto-contexto") }}>{{ textos_proposta.get("contexto", "") }}</textarea>
+  {{ estado("proposta-texto-contexto") }}
+  {% with sessao_id = sessao.id, alvo = alvo_contexto, rascunho = rascunho_contexto, erro = erro_rascunho %}
+  {% include "llm/_rascunho.html" %}
+  {% endwith %}
+</section>

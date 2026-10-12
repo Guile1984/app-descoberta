@@ -5,6 +5,10 @@
   o score final estiver numa faixa de alerta ("não seguir agora"), a app avisa e só cria
   com a confirmação (campo "confirmar").
 - POST /sessoes/1/proposta/campo/<campo>: salva um campo (salvamento automático).
+- POST /sessoes/1/proposta/textos/contexto: salva o "Contexto da proposta".
+- POST /sessoes/1/proposta/textos/contexto/rascunho e
+  POST /sessoes/1/proposta/fases/<id>/objetivo/rascunho: rascunhos por LLM (as regras e o
+  aceitar/descartar ficam em web/rotas/rascunhos.py e web/llm.py).
 - GET /sessoes/1/proposta/avisos: item repetido entre fases e total diferente do
   investimento da métrica; recarregado a cada mudança (evento "proposta-mudou").
 - POST /sessoes/1/proposta/recriar: apaga a proposta (não as versões registradas) para
@@ -20,6 +24,8 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from sqlmodel import Session
 
 from descoberta.formatos import slug
+from descoberta.llm.contexto import pedido_da_proposta
+from descoberta.llm.provedor import LLMIndisponivel
 from descoberta.proposta import MARCADORES, ModeloProposta
 from descoberta.proposta.clausulas import Ajuste, conferir_ajuste
 from descoberta.proposta.inicial import conteudo_inicial
@@ -41,8 +47,14 @@ from descoberta.relatorio.documento import FALTA
 from descoberta.relatorio.exportar.juntar import Parte, juntar_pdfs
 from descoberta.relatorio.proposta import condicoes_gerais
 from descoberta.repositorio import (
+    CAMPOS_TEXTO_PROPOSTA,
+    DestinoRascunho,
+    FaseProposta,
+    Rascunho,
+    RegistroNaoEncontrado,
     Sessao,
     TipoVersao,
+    aceitar_rascunho_da_proposta,
     ajustar_clausula,
     ajustes_das_clausulas,
     criar_proposta,
@@ -54,6 +66,8 @@ from descoberta.repositorio import (
     registrar_versao_proposta,
     restaurar_clausula,
     salvar_proposta,
+    salvar_texto_proposta,
+    textos_da_proposta,
     versoes_da_proposta,
     versoes_da_sessao,
 )
@@ -62,17 +76,20 @@ from descoberta.rotulos import UFS
 
 from ..dependencias import Banco, CatalogoDep, aviso, exigir_sessao, html, redirecionar
 from ..listas import registrar_rotas_de_listas
+from ..llm import TEXTO_CONTINUA, gerar_e_registrar, sessao_para_llm, situacao_do_provedor
 from ..proposta import (
     CAMPOS_DAS_CONDICOES,
     CAMPOS_DO_CLIENTE,
     EVENTO,
     LISTAS,
+    alvo_da_proposta,
     avisos,
     avisos_da_proposta_gravada,
     clausula_na_tela,
     clausulas_na_tela,
     contexto_das_listas,
     converter_campo,
+    rascunhos_pendentes_da_proposta,
 )
 from .relatorio import FORMATOS, arquivo
 
@@ -161,8 +178,167 @@ def pagina(request: Request, banco: Banco, catalogo: CatalogoDep, sessao_id: int
         clausulas=clausulas_na_tela(modelo, ajustes_das_clausulas(banco, sessao_id)),
         marcadores=MARCADORES,
         avisos=avisos_da_proposta_gravada(banco, sessao_id, dados.entradas.investimento),
+        pagina="proposta",
+        llm=sessao_para_llm(banco, sessao, questionario, catalogo),
+        provedor=situacao_do_provedor(request),
+        **_contexto_do_texto(banco, sessao_id),
         **contexto_das_listas(banco, sessao, questionario),
     )
+
+
+def _contexto_do_texto(banco: Session, sessao_id: int) -> dict:
+    """O que proposta/_contexto.html usa: o texto, o rascunho pendente e o alvo."""
+    return {
+        "textos_proposta": textos_da_proposta(banco, sessao_id),
+        "rascunho_contexto": rascunhos_pendentes_da_proposta(banco, sessao_id).get("contexto"),
+        "alvo_contexto": alvo_da_proposta(sessao_id, "contexto"),
+    }
+
+
+# --- Textos narrativos e rascunhos por LLM ---
+
+
+@router.post("/sessoes/{sessao_id}/proposta/textos/{campo}")
+def salvar_texto(
+    request: Request,
+    banco: Banco,
+    catalogo: CatalogoDep,
+    sessao_id: int,
+    campo: str,
+    texto: Annotated[str, Form()] = "",
+):
+    exigir_sessao(banco, catalogo, sessao_id)
+    if campo not in CAMPOS_TEXTO_PROPOSTA:
+        raise HTTPException(404, f"A proposta não tem o texto '{campo}'.")
+    if obter_proposta(banco, sessao_id) is None:
+        raise HTTPException(404, "A sessão ainda não tem proposta.")
+    salvar_texto_proposta(banco, sessao_id, campo, texto)
+    return aviso(request, evento=EVENTO)
+
+
+def _gerar_na_proposta(request, banco, catalogo, sessao_id, campo, anotacoes, montar):
+    """Gera um rascunho de texto da proposta; `montar(prompt, proposta)` faz o pedido."""
+    from .rascunhos import bloco_do_rascunho
+
+    sessao, questionario = exigir_sessao(banco, catalogo, sessao_id)
+    llm = sessao_para_llm(banco, sessao, questionario, catalogo)
+    if llm.proposta is None:
+        raise HTTPException(404, "A sessão ainda não tem proposta.")
+    alvo = alvo_da_proposta(sessao_id, campo)
+    com_anotacoes = bool(anotacoes)
+    try:
+        rascunho = gerar_e_registrar(
+            request,
+            banco,
+            sessao,
+            llm,
+            prompt_id="rascunho_proposta",
+            montar_pedido=lambda prompt: montar(prompt, llm.proposta, com_anotacoes),
+            destino=DestinoRascunho.proposta,
+            campo=campo,
+            anotacoes=com_anotacoes,
+        )
+    except LLMIndisponivel as erro:
+        pendente = rascunhos_pendentes_da_proposta(banco, sessao_id).get(campo)
+        return bloco_do_rascunho(
+            request, sessao_id, alvo, pendente, f"{erro.motivo} {TEXTO_CONTINUA}"
+        )
+    return bloco_do_rascunho(request, sessao_id, alvo, rascunho)
+
+
+@router.post("/sessoes/{sessao_id}/proposta/textos/contexto/rascunho")
+def gerar_contexto(
+    request: Request,
+    banco: Banco,
+    catalogo: CatalogoDep,
+    sessao_id: int,
+    anotacoes: Annotated[str, Form()] = "",
+):
+    def montar(prompt, proposta, com_anotacoes):
+        return pedido_da_proposta(
+            prompt,
+            proposta,
+            "contexto",
+            texto_atual=proposta.contexto or "",
+            anotacoes_internas=com_anotacoes,
+        )
+
+    return _gerar_na_proposta(request, banco, catalogo, sessao_id, "contexto", anotacoes, montar)
+
+
+@router.post("/sessoes/{sessao_id}/proposta/fases/{fase_id}/objetivo/rascunho")
+def gerar_objetivo_da_fase(
+    request: Request,
+    banco: Banco,
+    catalogo: CatalogoDep,
+    sessao_id: int,
+    fase_id: int,
+    anotacoes: Annotated[str, Form()] = "",
+):
+    exigir_sessao(banco, catalogo, sessao_id)
+    fase = banco.get(FaseProposta, fase_id)
+    if fase is None or fase.sessao_id != sessao_id:
+        raise HTTPException(404, "Fase não encontrada nesta proposta.")
+
+    def montar(prompt, proposta, com_anotacoes):
+        posicao = next(i for i, f in enumerate(proposta.fases) if f.id == fase_id)
+        return pedido_da_proposta(
+            prompt,
+            proposta,
+            "objetivo_fase",
+            fase=posicao,
+            texto_atual=fase.objetivo or "",
+            anotacoes_internas=com_anotacoes,
+        )
+
+    campo = f"objetivo_fase.{fase_id}"
+    return _gerar_na_proposta(request, banco, catalogo, sessao_id, campo, anotacoes, montar)
+
+
+def aceitar_rascunho_na_proposta(
+    request: Request, banco: Session, catalogo, sessao: Sessao, rascunho: Rascunho
+):
+    """Aceitar um rascunho da proposta: devolve o campo inteiro com o texto novo."""
+    _, questionario = exigir_sessao(banco, catalogo, sessao.id)
+    erro = None
+    try:
+        aceitar_rascunho_da_proposta(banco, rascunho.id)
+    except (ValueError, RegistroNaoEncontrado) as falha:
+        banco.rollback()
+        erro = str(falha)
+    if rascunho.campo == "contexto":
+        resposta = html(
+            request,
+            "proposta/_contexto.html",
+            status_code=422 if erro else 200,
+            sessao=sessao,
+            erro_rascunho=erro,
+            **_contexto_do_texto(banco, sessao.id),
+        )
+        if not erro:
+            resposta.headers["HX-Trigger"] = EVENTO
+        return resposta
+    fase_id = int(rascunho.campo.removeprefix("objetivo_fase."))
+    lista = LISTAS["fases"]
+    itens = lista.itens(banco, sessao.id)
+    fase = next((f for f in itens if f.id == fase_id), None)
+    if fase is None:
+        raise HTTPException(404, "Fase não encontrada nesta proposta.")
+    resposta = html(
+        request,
+        "listas/_item.html",
+        status_code=422 if erro else 200,
+        sessao=sessao,
+        lista=lista,
+        item=fase,
+        numero=[f.id for f in itens].index(fase_id) + 1,
+        editando=False,
+        erro_rascunho=erro,
+        **contexto_das_listas(banco, sessao, questionario),
+    )
+    if not erro:
+        resposta.headers["HX-Trigger"] = f"{EVENTO}, fases-mudaram"
+    return resposta
 
 
 @router.get("/sessoes/{sessao_id}/proposta/avisos")

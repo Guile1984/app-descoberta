@@ -112,6 +112,15 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 - `criar_app(provedor_llm=...)`: provedor falso nos testes; os prompts são lidos da pasta
   `prompts/` quando a app liga.
 
+- Proposta Comercial com textos narrativos e rascunhos por LLM:
+  - "Contexto da proposta" (tabela nova `texto_proposta`, sem migração: a tabela
+    `proposta` já existe em bancos em uso): campo na tela com salvamento automático; no
+    documento, abre a seção 2 no lugar do texto padrão e da frase-problema (a recomendação
+    do relatório continua); recriar a proposta apaga o texto;
+  - rascunhos por LLM para o contexto e para o objetivo de cada fase, com o mesmo painel
+    da revisão (pessoas citadas, prévia, anotações internas desligadas por padrão);
+    aceitar copia o texto para o contexto ou para o objetivo da fase numa transação só.
+
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.

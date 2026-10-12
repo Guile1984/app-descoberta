@@ -398,6 +398,24 @@ class VersaoProposta(SQLModel, table=True):
     clausulas: list[dict[str, str]] = Field(sa_type=JSON)  # [{id, titulo, texto}]
 
 
+# --- Textos narrativos da proposta (Sprint 7) ---
+# Tabela nova, e não coluna na tabela proposta (que já existe em bancos em uso): o
+# create_all cria a tabela sem migração.
+
+
+class TextoProposta(SQLModel, table=True):
+    """Texto narrativo da proposta escrito pelo consultor (hoje, só o "contexto")."""
+
+    __tablename__ = "texto_proposta"
+    __table_args__ = (UniqueConstraint("sessao_id", "campo"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    campo: str
+    texto: str
+    atualizado_em: datetime = Field(default_factory=agora)
+
+
 # --- Rascunhos do LLM (Sprint 7) ---
 # Tabelas próprias: o rascunho nunca sobrescreve o texto do consultor sozinho.
 

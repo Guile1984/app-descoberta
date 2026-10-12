@@ -11,6 +11,7 @@ from collections.abc import Sequence
 from sqlmodel import Session, col, select
 
 from ._comum import (
+    RegistroNaoEncontrado,
     booleano,
     exigir,
     exigir_sessao,
@@ -21,6 +22,7 @@ from ._comum import (
 )
 from .modelos import (
     DestinoRascunho,
+    FaseProposta,
     PessoaCitada,
     PreviaLLM,
     Rascunho,
@@ -134,6 +136,32 @@ def aceitar_rascunho_da_revisao(session: Session, rascunho_id: int) -> TextoSeca
     _decidir(rascunho, SituacaoRascunho.aceito)
     session.add(rascunho)
     return gravar(session, registro)
+
+
+def aceitar_rascunho_da_proposta(session: Session, rascunho_id: int) -> None:
+    """Copia o rascunho para o contexto da proposta ou para o objetivo de uma fase
+    ("objetivo_fase.<id>") e marca o rascunho como aceito, numa transação só."""
+    from .proposta import salvar_texto_proposta  # evita import circular
+
+    rascunho = _pendente(session, rascunho_id)
+    if rascunho.destino is not DestinoRascunho.proposta:
+        raise ValueError(f"o rascunho {rascunho_id} não é de um texto da proposta")
+    if rascunho.campo.startswith("objetivo_fase."):
+        fase_id = rascunho.campo.removeprefix("objetivo_fase.")
+        if not fase_id.isdigit():
+            raise ValueError(f"campo {rascunho.campo!r} inválido")
+        fase = session.get(FaseProposta, int(fase_id))
+        if fase is None or fase.sessao_id != rascunho.sessao_id:
+            raise RegistroNaoEncontrado(f"fase {fase_id} não encontrada nesta proposta")
+        fase.objetivo = rascunho.texto
+        session.add(fase)
+    else:
+        salvar_texto_proposta(
+            session, rascunho.sessao_id, rascunho.campo, rascunho.texto, gravar_agora=False
+        )
+    _decidir(rascunho, SituacaoRascunho.aceito)
+    session.add(rascunho)
+    session.commit()
 
 
 def descartar_pendentes(session: Session, sessao_id: int, destino: DestinoRascunho) -> None:

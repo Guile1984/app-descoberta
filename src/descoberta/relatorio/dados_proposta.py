@@ -25,6 +25,7 @@ from descoberta.repositorio import (
     ajustes_das_clausulas,
     itens_da_sessao,
     obter_proposta,
+    textos_da_proposta,
     versoes_da_sessao,
 )
 
@@ -69,6 +70,7 @@ class FaseDaProposta:
     investimento: Decimal | None
     escopo: list[str]
     entregaveis: list[str]
+    id: int | None = None  # a fase no banco (os rascunhos do objetivo apontam para ela)
 
 
 @dataclass(frozen=True)
@@ -101,6 +103,7 @@ class DadosProposta:
     responsabilidades: list[str]
     relatorio_registrado: RelatorioReferido | None
     clausulas: list[ClausulaEfetiva]  # Condições Gerais: o modelo com os ajustes
+    contexto: str | None = None  # texto do consultor que abre a seção "Contexto"
 
 
 def coletar_dados_proposta(
@@ -124,6 +127,7 @@ def coletar_dados_proposta(
             investimento=fase.investimento,
             escopo=textos(TipoItemProposta.escopo, fase.id),
             entregaveis=textos(TipoItemProposta.entregavel, fase.id),
+            id=fase.id,
         )
         for fase in itens_da_sessao(session, FaseProposta, sessao_id)
     ]
@@ -154,4 +158,5 @@ def coletar_dados_proposta(
             else None
         ),
         clausulas=clausulas_efetivas(modelo, ajustes_das_clausulas(session, sessao_id)),
+        contexto=textos_da_proposta(session, sessao_id).get("contexto"),
     )

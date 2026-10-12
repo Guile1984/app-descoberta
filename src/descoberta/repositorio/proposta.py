@@ -32,6 +32,7 @@ from .modelos import (
     FaseProposta,
     ItemProposta,
     Proposta,
+    TextoProposta,
     TipoItemProposta,
     agora,
 )
@@ -129,6 +130,7 @@ def excluir_proposta(session: Session, sessao_id: int) -> None:
     registradas ficam). Os rascunhos pendentes da proposta são descartados: os campos a que
     eles se referem deixam de existir."""
     descartar_pendentes(session, sessao_id, DestinoRascunho.proposta)
+    session.exec(delete(TextoProposta).where(TextoProposta.sessao_id == sessao_id))
     session.exec(delete(ClausulaProposta).where(ClausulaProposta.sessao_id == sessao_id))
     session.exec(delete(ItemProposta).where(ItemProposta.sessao_id == sessao_id))
     session.exec(delete(FaseProposta).where(FaseProposta.sessao_id == sessao_id))
@@ -136,6 +138,51 @@ def excluir_proposta(session: Session, sessao_id: int) -> None:
     if proposta is not None:
         session.delete(proposta)
     session.commit()
+
+
+# --- Textos narrativos (Contexto da proposta) ---
+
+CAMPOS_TEXTO_PROPOSTA = ("contexto",)
+
+
+def _texto_proposta(session: Session, sessao_id: int, campo: str) -> TextoProposta | None:
+    return session.exec(
+        select(TextoProposta).where(
+            TextoProposta.sessao_id == sessao_id, TextoProposta.campo == campo
+        )
+    ).first()
+
+
+def salvar_texto_proposta(
+    session: Session, sessao_id: int, campo: str, texto: str, *, gravar_agora: bool = True
+) -> TextoProposta | None:
+    """Cria ou atualiza o texto; em branco apaga. `gravar_agora=False`: sem commit (quem
+    chama grava junto, como ao aceitar um rascunho)."""
+    if campo not in CAMPOS_TEXTO_PROPOSTA:
+        raise ValueError(f"campo {campo!r} desconhecido; use {', '.join(CAMPOS_TEXTO_PROPOSTA)}")
+    if not isinstance(texto, str):
+        raise TypeError(f"texto precisa ser texto (recebido {texto!r})")
+    if obter_proposta(session, sessao_id) is None:
+        raise RegistroNaoEncontrado(f"a sessão {sessao_id} não tem proposta")
+    registro = _texto_proposta(session, sessao_id, campo)
+    if not texto.strip():
+        if registro is not None:
+            session.delete(registro)
+            if gravar_agora:
+                session.commit()
+        return None
+    registro = registro or TextoProposta(sessao_id=sessao_id, campo=campo, texto="")
+    registro.texto = texto.strip()
+    registro.atualizado_em = agora()
+    if not gravar_agora:
+        session.add(registro)
+        return registro
+    return gravar(session, registro)
+
+
+def textos_da_proposta(session: Session, sessao_id: int) -> dict[str, str]:
+    consulta = select(TextoProposta).where(TextoProposta.sessao_id == sessao_id)
+    return {r.campo: r.texto for r in session.exec(consulta)}
 
 
 # --- Ajustes das cláusulas (Condições Gerais) ---

@@ -234,7 +234,14 @@ def pedido_da_revisao(
 # --- Proposta ---
 
 
-def contexto_da_proposta(dados: DadosProposta) -> str:
+def contexto_da_proposta(dados: DadosProposta, sem_o_contexto: bool = False) -> str:
+    """Os dados da proposta; `sem_o_contexto` deixa de fora o texto de contexto (quando é
+    ele que está sendo rascunhado)."""
+    abertura = []
+    if dados.contexto and not sem_o_contexto:
+        abertura = [
+            _secao("Texto de contexto da proposta (escrito pelo consultor)", [dados.contexto])
+        ]
     fases = []
     for fase in dados.fases:
         duracao = (
@@ -255,6 +262,7 @@ def contexto_da_proposta(dados: DadosProposta) -> str:
     fases.append(f"Total: {moeda(total) if total is not None else 'a definir'}")
     return "\n\n".join(
         [
+            *abertura,
             _secao("Fases (uma depois da outra, a partir do aceite)", fases),
             _secao("Fora do escopo", [f"- Fora do escopo: {e}" for e in dados.exclusoes]),
             _secao("Premissas", [f"- {p}" for p in dados.premissas]),
@@ -290,7 +298,7 @@ def pedido_da_proposta(
         alvo=descricao,
         orientacao=prompt.alvos[alvo],
         texto_atual=texto_atual.strip() or VAZIO,
-        proposta=contexto_da_proposta(dados),
+        proposta=contexto_da_proposta(dados, sem_o_contexto=alvo == "contexto"),
         contexto=contexto_da_sessao(dados.relatorio, anotacoes_internas=anotacoes_internas),
     )
 

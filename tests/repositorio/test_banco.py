@@ -41,6 +41,7 @@ TABELAS = {
     "rascunho",
     "pessoa_citada",
     "previa_llm",
+    "texto_proposta",
 }
 
 

@@ -125,14 +125,20 @@ class _MontadorProposta:
         ]
 
     def _contexto(self) -> list[Bloco]:
-        blocos: list[Bloco] = [
-            Paragrafo(
-                "Esta proposta parte do Relatório de Descoberta, que registra o problema, os "
-                "dados disponíveis, os riscos e a recomendação."
-            )
-        ]
-        frase = self.relatorio.textos.get("frase_problema")
-        blocos.append(Paragrafo(frase.strip() if frase else FALTA, rotulo="O problema:"))
+        """O texto do consultor ("Contexto da proposta"), se houver; senão, o texto padrão
+        com a frase-problema do relatório. A recomendação do relatório vem sempre."""
+        if self.dados.contexto and self.dados.contexto.strip():
+            linhas = self.dados.contexto.splitlines()
+            blocos: list[Bloco] = [Paragrafo(linha.strip()) for linha in linhas if linha.strip()]
+        else:
+            blocos = [
+                Paragrafo(
+                    "Esta proposta parte do Relatório de Descoberta, que registra o problema, "
+                    "os dados disponíveis, os riscos e a recomendação."
+                )
+            ]
+            frase = self.relatorio.textos.get("frase_problema")
+            blocos.append(Paragrafo(frase.strip() if frase else FALTA, rotulo="O problema:"))
         final = self.relatorio.painel.score_final
         if final.resultado is not None:
             recomendacao = (

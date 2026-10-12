@@ -174,3 +174,10 @@ def test_contexto_anonimizado_do_roberto_nao_tem_nomes(dados_roberto, proposta_r
     for nome in ("Roberto", "Alvorada", "Marcos", "Cida", "Campinas"):
         assert nome not in texto
     assert a.restantes(texto) == []
+
+
+def test_contexto_da_proposta_leva_o_texto_de_contexto(proposta_roberto):
+    assert all(f.id is not None for f in proposta_roberto.fases)
+    com_texto = dataclasses.replace(proposta_roberto, contexto="Texto de abertura da proposta.")
+    assert "Texto de abertura da proposta." in contexto_da_proposta(com_texto)
+    assert "Texto de abertura" not in contexto_da_proposta(com_texto, sem_o_contexto=True)
