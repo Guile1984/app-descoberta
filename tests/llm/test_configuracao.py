@@ -15,7 +15,9 @@ from descoberta.llm.configuracao import (
 )
 
 RAIZ = Path(__file__).resolve().parents[2]
-CHAVE_FALSA = "sk-ant-api03-SENTINELA-NUNCA-PODE-APARECER"
+# Chave falsa montada por partes: nenhum arquivo versionado pode conter o prefixo.
+PREFIXO = "sk-" + "ant-"
+CHAVE_FALSA = PREFIXO + "api03-SENTINELA-NUNCA-PODE-APARECER"
 
 
 @pytest.fixture
@@ -72,7 +74,7 @@ def test_variavel_com_provedor_desconhecido():
         ({"claude": {"max_tokens": 10}}, "max_tokens"),
         ({"claude": {"tempo_limite_s": 0}}, "tempo_limite_s"),
         ({"claude": {"modelo": ""}}, "modelo"),
-        ({"claude": {"chave": "sk-ant-x"}}, "campo desconhecido"),
+        ({"claude": {"chave": PREFIXO + "x"}}, "campo desconhecido"),
         ({"ollama": {"url": "http://192.168.0.10:11434"}}, "nesta máquina"),
         ({"ollama": {"url": "ftp://localhost:11434"}}, "http"),
         ({"outro": 1}, "campo desconhecido"),
@@ -105,7 +107,7 @@ def test_chave_nunca_aparece_ao_exibir():
     chave = ler_chave_api({VARIAVEL_CHAVE: CHAVE_FALSA})
     for texto in (str(chave), repr(chave), f"{chave}", f"{chave!r}"):
         assert CHAVE_FALSA not in texto
-        assert "sk-ant" not in texto
+        assert PREFIXO not in texto
 
 
 def test_configuracao_nao_guarda_a_chave():

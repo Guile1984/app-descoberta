@@ -4,7 +4,12 @@ import random
 
 import pytest
 
-from descoberta.llm.anonimizacao import Anonimizador, Conhecido, sugerir_nomes
+from descoberta.llm.anonimizacao import (
+    Anonimizador,
+    Conhecido,
+    impressao_dos_conhecidos,
+    sugerir_nomes,
+)
 
 
 def _roberto() -> Anonimizador:
@@ -238,3 +243,21 @@ def test_sugestao_ignora_siglas_e_ferramentas():
         "O consultor entrega o Relatório de Descoberta e a Proposta.",
     ]
     assert sugerir_nomes(textos) == []
+
+
+# --- Impressão dos dados conhecidos (a prévia vale enquanto ela não muda) ---
+
+
+def test_impressao_muda_quando_os_dados_mudam():
+    base = [Conhecido.pessoa("Roberto", "CLIENTE"), Conhecido.pessoa("Marcos")]
+    assert impressao_dos_conhecidos(base) == impressao_dos_conhecidos(list(base))
+    assert len(impressao_dos_conhecidos(base)) == 64  # sha256 em hexadecimal
+    com_cida = [*base, Conhecido.pessoa("Cida")]
+    assert impressao_dos_conhecidos(com_cida) != impressao_dos_conhecidos(base)
+    outro_nome = [Conhecido.pessoa("Roberta", "CLIENTE"), Conhecido.pessoa("Marcos")]
+    assert impressao_dos_conhecidos(outro_nome) != impressao_dos_conhecidos(base)
+
+
+def test_impressao_nao_revela_os_dados():
+    impressao = impressao_dos_conhecidos([Conhecido.pessoa("Roberto", "CLIENTE")])
+    assert "Roberto" not in impressao

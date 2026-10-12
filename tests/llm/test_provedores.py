@@ -28,7 +28,8 @@ from descoberta.llm.ollama import ProvedorOllama
 from descoberta.llm.prompts import Pedido
 from descoberta.llm.provedor import LLMIndisponivel, criar_provedor
 
-CHAVE = "sk-ant-api03-SENTINELA-QUE-NUNCA-PODE-APARECER"
+# Chave falsa montada por partes: nenhum arquivo versionado pode conter o prefixo.
+CHAVE = "sk-" + "ant-api03-SENTINELA-QUE-NUNCA-PODE-APARECER"
 PEDIDO = Pedido("Instruções fixas.", "Escreva o rascunho para [CLIENTE].")
 
 

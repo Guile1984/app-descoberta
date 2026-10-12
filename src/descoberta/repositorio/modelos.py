@@ -396,3 +396,62 @@ class VersaoProposta(SQLModel, table=True):
     hash_pdf: str
     versao_modelo: int
     clausulas: list[dict[str, str]] = Field(sa_type=JSON)  # [{id, titulo, texto}]
+
+
+# --- Rascunhos do LLM (Sprint 7) ---
+# Tabelas próprias: o rascunho nunca sobrescreve o texto do consultor sozinho.
+
+
+class DestinoRascunho(StrEnum):
+    revisao = auto()  # textos narrativos da revisão (campo = id do texto no YAML)
+    proposta = auto()  # campo = "contexto" ou "objetivo_fase.<id da fase>"
+
+
+class SituacaoRascunho(StrEnum):
+    pendente = auto()
+    aceito = auto()
+    descartado = auto()
+    substituido = auto()  # um rascunho mais novo do mesmo campo chegou antes da decisão
+
+
+class Rascunho(SQLModel, table=True):
+    """Texto sugerido pelo LLM, com o provedor, o modelo e a versão do prompt usados."""
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    destino: DestinoRascunho
+    campo: str
+    texto: str  # já com os dados reais (a anonimização foi desfeita localmente)
+    provedor: str  # "claude", "ollama"…
+    modelo: str  # o modelo que de fato respondeu
+    versao_prompt: str  # ex.: "rascunho_revisao_v1"
+    alertas: str | None = None  # um por linha (marcador inventado, resposta cortada…)
+    situacao: SituacaoRascunho = SituacaoRascunho.pendente
+    criado_em: datetime = Field(default_factory=agora)
+    decidido_em: datetime | None = None
+
+    @property
+    def lista_de_alertas(self) -> list[str]:
+        return self.alertas.splitlines() if self.alertas else []
+
+
+class PessoaCitada(SQLModel, table=True):
+    """Nome citado na sessão (fora os já conhecidos) que a anonimização deve trocar."""
+
+    __tablename__ = "pessoa_citada"
+
+    id: int | None = Field(default=None, primary_key=True)
+    sessao_id: int = _id_da_sessao()
+    nome: str
+    criado_em: datetime = Field(default_factory=agora)
+
+
+class PreviaLLM(SQLModel, table=True):
+    """O consultor viu a prévia do que sai para o LLM. Vale enquanto a impressão dos dados
+    conhecidos (cliente, consultor, pessoas citadas…) não mudar."""
+
+    __tablename__ = "previa_llm"
+
+    sessao_id: int = Field(primary_key=True, foreign_key="sessao.id", ondelete="CASCADE")
+    impressao: str
+    confirmada_em: datetime = Field(default_factory=agora)

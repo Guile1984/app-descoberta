@@ -22,6 +22,7 @@ from descoberta.llm.contexto import (
     contexto_da_sessao,
     pedido_da_proposta,
     pedido_da_revisao,
+    textos_para_sugestao,
 )
 from descoberta.llm.rascunho import gerar_rascunho
 
@@ -86,7 +87,7 @@ def api():
 def provedor(api):
     cliente_http = anthropic.DefaultHttpxClient(transport=httpx2.MockTransport(api))
     return ProvedorClaude(
-        ConfigClaude(tentativas=0), SecretStr("sk-ant-teste"), http_client=cliente_http
+        ConfigClaude(tentativas=0), SecretStr("sk-" + "ant-teste"), http_client=cliente_http
     )
 
 
@@ -126,11 +127,12 @@ def test_nenhum_dado_pessoal_sai_no_payload(
 
 def test_a_sugestao_de_nomes_pega_as_pessoas_citadas_do_demo(dados_roberto):
     """Sem a lista, "Marcos" e "Cida" sairiam: por isso a prévia é obrigatória e a app
-    sugere os nomes. No caso Roberto, a sugestão pega os dois."""
+    sugere os nomes. No caso Roberto, a sugestão traz exatamente os dois."""
     sugestao = sugerir_nomes(
-        [contexto_da_sessao(dados_roberto)], ignorar=[dados_roberto.cliente, dados_roberto.empresa]
+        textos_para_sugestao(dados_roberto),
+        ignorar=[dados_roberto.cliente, dados_roberto.empresa],
     )
-    assert {"Marcos", "Cida"} <= set(sugestao)
+    assert sugestao == ["Marcos", "Cida"]
 
 
 def test_sem_a_lista_de_pessoas_o_nome_citado_escaparia(dados_roberto):

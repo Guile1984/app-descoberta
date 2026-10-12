@@ -18,6 +18,7 @@ reconhecível (uma pessoa citada de passagem) só são pegos se estiverem na lis
 citadas da sessão; `sugerir_nomes` ajuda o consultor a montar essa lista.
 """
 
+import hashlib
 import re
 import unicodedata
 from collections.abc import Iterable, Sequence
@@ -290,6 +291,14 @@ class Anonimizador:
         return Desfeito(_MARCADOR.sub(trocar, texto), tuple(desconhecidos))
 
 
+def impressao_dos_conhecidos(conhecidos: Sequence[Conhecido]) -> str:
+    """Resumo (sha256) dos dados conhecidos, na ordem: muda quando um nome, um dado do
+    cliente ou a lista de pessoas muda. A prévia confirmada vale para uma impressão; o
+    resumo não revela os dados."""
+    texto = "\n".join(f"{c.papel}\t{c.tipo}\t{c.valor}" for c in conhecidos)
+    return hashlib.sha256(texto.encode("utf-8")).hexdigest()
+
+
 # --- Sugestão de nomes para a lista de pessoas citadas ---
 
 # Palavras que aparecem com maiúscula no meio da frase e não são pessoas.
@@ -307,6 +316,7 @@ _NAO_SAO_PESSOAS = {
     "instagram",
     "linkedin",
     "meet",
+    "microsoft",
     "outlook",
     "pix",
     "planilha",
@@ -333,7 +343,9 @@ _NAO_SAO_PESSOAS = {
     *["dezembro", "segunda", "terca", "quarta", "quinta", "sexta", "sabado", "domingo"],
 }
 _PALAVRA_COM_MAIUSCULA = re.compile(r"(?<!\w)[A-ZÀ-Ý][a-zà-ÿ]{2,}(?!\w)")
-_INICIO_DE_FRASE = re.compile(r"(?:^|[.!?:\n]\s*|^\s*[-•*\d.)]+\s*)$")
+# Começo de frase: depois de ponto, dois-pontos etc., ou no começo da linha (mesmo depois
+# de marcadores de lista e de título: "- ", "1. ", "## ").
+_INICIO_DE_FRASE = re.compile(r"(?:(?:^|\n)[\s#*\-•\d.)]*|[.!?:—–]\s+)$")
 
 
 def sugerir_nomes(textos: Iterable[str], ignorar: Iterable[str] = ()) -> list[str]:

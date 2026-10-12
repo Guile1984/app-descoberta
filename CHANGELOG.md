@@ -70,6 +70,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   pessoais do demo (sem ligar para maiúsculas e acentos).
 - Dependência `anthropic` (SDK oficial, MIT), que usa o `httpx2` já presente no projeto.
 
+- `repositorio`: tabelas novas, sem migração (pendência do Sprint 6a resolvida):
+  - `rascunho`: texto sugerido pelo LLM, com destino (revisão ou proposta), campo,
+    provedor, modelo que respondeu, versão do prompt, alertas e situação (pendente,
+    aceito, descartado ou substituído). Registrar não mexe no texto do consultor; um
+    rascunho novo do mesmo campo substitui o pendente; aceitar copia o texto e marca o
+    rascunho numa transação só; descartar só marca;
+  - `pessoa_citada`: lista de pessoas citadas por sessão (sem duplicar o mesmo nome com
+    outro acento ou maiúscula);
+  - `previa_llm`: a prévia vista pelo consultor, válida para a "impressão" (sha256) dos
+    dados conhecidos; muda a lista de pessoas ou um dado do cliente, a prévia precisa ser
+    vista de novo;
+  - recriar a proposta descarta os rascunhos pendentes dela; excluir a sessão apaga tudo.
+- `sugerir_nomes` trata como começo de frase também as linhas de lista e de título;
+  `textos_para_sugestao` junta os textos livres da sessão. No caso Roberto, a sugestão
+  traz exatamente "Marcos" e "Cida".
+
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.

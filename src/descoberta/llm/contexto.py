@@ -279,6 +279,26 @@ def pedido_da_proposta(
 # --- Dados pessoais conhecidos ---
 
 
+def textos_para_sugestao(dados: DadosRelatorio) -> list[str]:
+    """Os textos livres da sessão, crus (sem os títulos do contexto), para sugerir nomes
+    de pessoas citadas: respostas visíveis, anotações, textos e saídas da revisão."""
+    q = dados.questionario
+    visiveis = {
+        p.id for b in q.blocos for p in perguntas_visiveis(q, b.numero, dados.tipo_solucao)
+    } | {item.id for item in q.encerramento.itens}
+    textos = [r for pid, r in dados.respostas.items() if pid in visiveis]
+    textos += [a.texto for a in dados.anotacoes]
+    textos += list(dados.textos.values())
+    textos += [s.observacao for s in dados.sinais if s.observacao]
+    for r in dados.riscos:
+        textos += [r.descricao, r.mitigacao or ""]
+    for i in dados.indicadores:
+        textos += [i.nome, i.valor_atual or "", i.meta or "", i.prazo or "", i.como_medir or ""]
+    textos += [item.texto for item in dados.escopo]
+    textos += [p.acao for p in dados.proximos_passos]
+    return [t for t in textos if t and t.strip()]
+
+
 def _documento(valor: str | None) -> Conhecido:
     so_letras_e_numeros = re.sub(r"[^0-9A-Z]", "", (valor or "").upper())
     return Conhecido.literal(valor, "CPF" if len(so_letras_e_numeros) == 11 else "CNPJ")

@@ -28,12 +28,14 @@ from ._comum import (
 )
 from .modelos import (
     ClausulaProposta,
+    DestinoRascunho,
     FaseProposta,
     ItemProposta,
     Proposta,
     TipoItemProposta,
     agora,
 )
+from .rascunhos import descartar_pendentes
 
 
 def _dias(nome: str, valor: Any) -> int:
@@ -124,7 +126,9 @@ def salvar_proposta(session: Session, sessao_id: int, **campos: Any) -> Proposta
 
 def excluir_proposta(session: Session, sessao_id: int) -> None:
     """Apaga a proposta com as fases, os itens e os ajustes das cláusulas (as versões
-    registradas ficam)."""
+    registradas ficam). Os rascunhos pendentes da proposta são descartados: os campos a que
+    eles se referem deixam de existir."""
+    descartar_pendentes(session, sessao_id, DestinoRascunho.proposta)
     session.exec(delete(ClausulaProposta).where(ClausulaProposta.sessao_id == sessao_id))
     session.exec(delete(ItemProposta).where(ItemProposta.sessao_id == sessao_id))
     session.exec(delete(FaseProposta).where(FaseProposta.sessao_id == sessao_id))
