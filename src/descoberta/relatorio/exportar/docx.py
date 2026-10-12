@@ -108,7 +108,8 @@ def _bloco(doc, bloco) -> None:
             if bloco.nota:
                 doc.add_paragraph().add_run(bloco.nota).italic = True
         case Titulo():
-            doc.add_heading(bloco.texto, level=bloco.nivel)
+            titulo = doc.add_heading(bloco.texto, level=bloco.nivel)
+            titulo.paragraph_format.keep_with_next = True  # nunca sozinho no pé da página
         case Paragrafo():
             paragrafo = doc.add_paragraph()
             if bloco.rotulo:

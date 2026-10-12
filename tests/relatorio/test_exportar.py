@@ -12,6 +12,7 @@ from pypdf import PdfReader
 from descoberta.relatorio import (
     Emissao,
     emitir,
+    emitir_proposta,
     exportar_docx,
     exportar_markdown,
     exportar_pdf,
@@ -227,3 +228,41 @@ def test_assinatura_do_consultor_preenchida_nos_tres_formatos(dados_roberto, emi
     ):
         assert "Ana Exemplo" in texto
         assert "11.222.333/0001-81" in texto
+
+
+# --- Títulos não ficam sozinhos no pé da página ---
+
+
+def _ultima_linha_de_cada_pagina(pdf: bytes) -> list[str]:
+    """A última linha de texto de cada página, sem o rodapé (versão, hash e número)."""
+    ultimas = []
+    for pagina in PdfReader(io.BytesIO(pdf)).pages:
+        linhas = [
+            linha.strip()
+            for linha in pagina.extract_text().splitlines()
+            if linha.strip() and " · hash " not in linha and not linha.startswith("Página ")
+        ]
+        ultimas.append(linhas[-1] if linhas else "")
+    return ultimas
+
+
+@pytest.mark.parametrize("tipo", list(TipoVersao))
+def test_nenhuma_pagina_do_relatorio_termina_num_titulo(dados_roberto, tipo):
+    emitido = emitir(dados_roberto, Emissao(tipo, None, EMITIDO_EM))
+    titulos = set(emitido.documento.titulos(1)) | set(emitido.documento.titulos(2))
+    orfaos = [t for t in _ultima_linha_de_cada_pagina(exportar_pdf(emitido)) if t in titulos]
+    assert orfaos == []
+
+
+def test_nenhuma_pagina_da_proposta_termina_num_titulo(dados_proposta_roberto, emissao_proposta):
+    emitida = emitir_proposta(dados_proposta_roberto, emissao_proposta)
+    titulos = set(emitida.documento.titulos(1)) | set(emitida.documento.titulos(2))
+    orfaos = [t for t in _ultima_linha_de_cada_pagina(exportar_pdf(emitida)) if t in titulos]
+    assert orfaos == []
+
+
+def test_titulos_do_word_ficam_com_o_paragrafo_seguinte(dados_roberto, emissao_cliente):
+    documento = AbrirDocx(io.BytesIO(exportar_docx(emitir(dados_roberto, emissao_cliente))))
+    titulos = [p for p in documento.paragraphs if p.style.name.startswith("Heading")]
+    assert titulos
+    assert all(p.paragraph_format.keep_with_next for p in titulos)

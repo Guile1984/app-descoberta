@@ -74,6 +74,7 @@ def _estilos() -> dict[str, ParagraphStyle]:
             leading=19,
             spaceBefore=14,
             spaceAfter=8,
+            keepWithNext=1,  # o título nunca fica sozinho no pé da página
         ),
         "titulo2": ParagraphStyle(
             "titulo2",
@@ -83,6 +84,7 @@ def _estilos() -> dict[str, ParagraphStyle]:
             leading=15,
             spaceBefore=10,
             spaceAfter=4,
+            keepWithNext=1,
         ),
         "capa": ParagraphStyle(
             "capa",
