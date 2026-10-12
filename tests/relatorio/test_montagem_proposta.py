@@ -293,3 +293,22 @@ def test_sem_perfil_o_foro_fica_a_preencher(dados_proposta_roberto, emissao_prop
     dados = dataclasses.replace(dados_proposta_roberto, relatorio=relatorio)
     texto = montar_proposta(dados, emissao_proposta).texto()
     assert f"foro da comarca de {FALTA}" in texto
+
+
+def test_contexto_escrito_pelo_consultor_abre_a_secao(dados_proposta_roberto, emissao_proposta):
+    texto = "A Construtora Alvorada perde 60 h por mês.\nEsta proposta organiza a solução em fases."
+    dados = dataclasses.replace(dados_proposta_roberto, contexto=texto)
+    secao = _secao(montar_proposta(dados, emissao_proposta), SECOES[1])
+    paragrafos = [b.texto for b in secao if isinstance(b, Paragrafo)]
+    assert paragrafos[:2] == [
+        "A Construtora Alvorada perde 60 h por mês.",
+        "Esta proposta organiza a solução em fases.",
+    ]
+    assert not any(p.startswith("Esta proposta parte do Relatório") for p in paragrafos)
+    assert any(b.rotulo == "Recomendação do relatório:" for b in secao if isinstance(b, Paragrafo))
+
+
+def test_sem_contexto_vale_o_texto_padrao(dados_proposta_roberto, emissao_proposta):
+    assert dados_proposta_roberto.contexto is None
+    secao = _secao(montar_proposta(dados_proposta_roberto, emissao_proposta), SECOES[1])
+    assert secao[0].texto.startswith("Esta proposta parte do Relatório de Descoberta")

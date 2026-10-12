@@ -1,0 +1,30 @@
+{#
+  Prévia: exatamente o que sairia para o LLM, e a tabela das trocas (que fica na máquina).
+  Confirmar guarda a "impressão" dos dados conhecidos: se a lista de pessoas ou um dado do
+  cliente mudar, a prévia precisa ser vista de novo.
+#}
+<div class="previa-llm">
+  <h3>O que sai para o LLM</h3>
+  {% if previa.substituicoes %}
+  <table class="tabela">
+    <thead><tr><th>Marcador</th><th>Valor real (fica na máquina)</th></tr></thead>
+    <tbody>
+      {% for marcador, valor in previa.substituicoes.items() %}
+      <tr><td><code>{{ marcador }}</code></td><td>{{ valor }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  <p class="doc-aviso">Procure no texto abaixo algum nome, telefone, e-mail ou endereço que ainda apareça. Se houver um nome, inclua-o em "Pessoas citadas" e veja a prévia de novo.</p>
+  <details open>
+    <summary>Pedido completo, {{ "com" if anotacoes else "sem" }} as anotações internas</summary>
+    <pre class="previa-pedido">{{ previa.pedido.sistema }}
+
+{{ previa.pedido.mensagem }}</pre>
+  </details>
+  <form hx-post="/sessoes/{{ sessao.id }}/llm/previa" hx-target="#painel-llm">
+    <input type="hidden" name="impressao" value="{{ impressao }}">
+    <input type="hidden" name="pagina" value="{{ pagina }}">
+    <button type="submit" class="botao">Confirmar: está anonimizado</button>
+  </form>
+</div>

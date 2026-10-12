@@ -23,15 +23,19 @@ from descoberta.proposta import ModeloProposta
 from descoberta.proposta.clausulas import Ajuste
 from descoberta.questionario import Questionario
 from descoberta.repositorio import (
+    DestinoRascunho,
     FaseProposta,
     ItemProposta,
     Sessao,
+    SituacaoRascunho,
     TipoItemProposta,
     itens_da_sessao,
+    rascunhos_da_sessao,
 )
 
 from .formularios import inteiro_ou_nada
 from .listas import Formulario, Lista
+from .llm import Alvo
 
 EVENTO = "proposta-mudou"
 FASES_MUDARAM = "fases-mudaram"
@@ -150,12 +154,46 @@ def converter_campo(campo: str, texto: str) -> Any:
     return texto
 
 
+def alvo_da_proposta(sessao_id: int, campo: str) -> Alvo:
+    """Onde o rascunho de um texto da proposta aparece: o contexto ou o objetivo de uma fase
+    ("objetivo_fase.<id>", dentro do item da fase na lista)."""
+    if campo == "contexto":
+        return Alvo(
+            id_html="rascunho-proposta-contexto",
+            url_gerar=f"/sessoes/{sessao_id}/proposta/textos/contexto/rascunho",
+            aceitar="#bloco-contexto-proposta",
+        )
+    fase_id = campo.removeprefix("objetivo_fase.")
+    return Alvo(
+        id_html=f"rascunho-fase-{fase_id}",
+        url_gerar=f"/sessoes/{sessao_id}/proposta/fases/{fase_id}/objetivo/rascunho",
+        aceitar=f"#fases-{fase_id}",
+    )
+
+
+def rascunhos_pendentes_da_proposta(banco: Session, sessao_id: int) -> dict:
+    """Rascunhos da proposta esperando decisão, por campo."""
+    return {
+        r.campo: r
+        for r in rascunhos_da_sessao(
+            banco, sessao_id, destino=DestinoRascunho.proposta, situacao=SituacaoRascunho.pendente
+        )
+    }
+
+
 def contexto_das_listas(
     banco: Session, sessao: Sessao, _questionario: Questionario
 ) -> dict[str, Any]:
-    """O que os templates das listas da proposta usam: as fases, para escolher e mostrar."""
+    """O que os templates das listas da proposta usam: as fases, para escolher e mostrar, e
+    o rascunho do objetivo de cada fase."""
     fases = itens_da_sessao(banco, FaseProposta, sessao.id)
-    return {"fases": fases, "nome_da_fase": {f.id: f.nome for f in fases}}
+    pendentes = rascunhos_pendentes_da_proposta(banco, sessao.id)
+    return {
+        "fases": fases,
+        "nome_da_fase": {f.id: f.nome for f in fases},
+        "rascunhos_fases": {f.id: pendentes.get(f"objetivo_fase.{f.id}") for f in fases},
+        "alvos_fases": {f.id: alvo_da_proposta(sessao.id, f"objetivo_fase.{f.id}") for f in fases},
+    }
 
 
 @dataclass(frozen=True)

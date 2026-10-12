@@ -77,6 +77,18 @@ padrao:
     - >-
       O escopo é o descrito nesta proposta; mudanças seguem a cláusula de alterações de
       escopo das Condições Gerais.
+  # Os próximos passos do cliente (da revisão) entram nas responsabilidades. Os que começam
+  # com um destes substantivos ganham o verbo ("Reunião com o Marcos…" vira "Participar da
+  # reunião com o Marcos…"); os que já começam com verbo ("Enviar…") ficam como estão.
+  passos_como_responsabilidade:
+    reunião: Participar da
+    reuniões: Participar das
+    apresentação: Participar da
+    visita: Receber a
+    validação: Fazer a
+    aprovação: Dar a
+    envio: Fazer o
+    entrega: Fazer a
   responsabilidades:
     - Indicar um responsável com autonomia para decisões e validações
     - Fornecer os dados e os acessos necessários nos prazos combinados

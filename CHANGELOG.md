@@ -2,6 +2,176 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [0.10.0] — 2026-10-12 — Sprint 7: LLM
+
+### Adicionado
+- Configuração do LLM em `config/llm.yaml` (pacote `llm.configuracao`, validada com
+  Pydantic quando a app liga): provedor `desligado` (padrão), `claude` ou `ollama`;
+  modelo padrão da API `claude-opus-5-5` com esforço `medium`; Ollama aceito só nesta
+  máquina (localhost). A variável `DESCOBERTA_LLM_PROVEDOR` vale mais que o arquivo; um
+  valor inválido impede a app de ligar, com mensagem clara.
+- Chave da API só na variável de ambiente `ANTHROPIC_API_KEY`, lida na hora de usar e
+  guardada como `SecretStr` (aparece como `**********` em log, erro ou repr).
+- `.env.example` com `DESCOBERTA_LLM_PROVEDOR` e `ANTHROPIC_API_KEY` em branco; a app lê o
+  `.env` com `uv run --env-file .env uvicorn ...`, sem dependência nova.
+- `.claude/settings.json`: o Claude Code não lê nem edita `.env` e variações (exceto o
+  `.env.example`) e não exibe a `ANTHROPIC_API_KEY` no terminal.
+- Testes que nunca saem da máquina: uma fixture automática tira a chave e o provedor do
+  ambiente e bloqueia conexões para fora (as locais, como as dos testes no navegador,
+  continuam); testes de que nenhum arquivo versionado contém chave de API, de que o `.env`
+  e variações ficam fora do Git e de que a chave nunca aparece ao ser exibida.
+- Anonimização (`llm.anonimizacao`), sem LLM e sem internet:
+  - dados conhecidos da sessão (cliente, empresa, consultor, pessoas citadas, cidade…)
+    viram marcadores estáveis (`[CLIENTE]`, `[EMPRESA]`, `[PESSOA_1]`…), sem ligar para
+    acentos e maiúsculas; partes do nome também ("o Marcos" de "Marcos Pereira"), só com
+    maiúscula inicial ("Rosa" é nome, "rosa" é cor); nas empresas, só as partes que não
+    são genéricas ("Alvorada", não "Construtora");
+  - formatos reconhecidos: CPF, CNPJ (inclusive o alfanumérico), e-mail, telefone (com DDD
+    ou celular), CEP e endereço (Rua/Av./Rodovia… com o nome); o mesmo documento escrito
+    de dois jeitos ganha o mesmo marcador; valores, datas e percentuais ficam;
+  - `desfazer` devolve os valores na resposta e avisa marcadores inventados; colchetes do
+    próprio texto ("[IA]" no fluxo to-be) não são confundidos com marcadores;
+  - `restantes`: conferência final do que ainda parece dado pessoal;
+  - `sugerir_nomes`: palavras com maiúscula no meio da frase, para o consultor montar a
+    lista de pessoas citadas (sem siglas, ferramentas e o que já é conhecido).
+- Prompts versionados em arquivo (`prompts/rascunho_revisao_v1.md` e
+  `prompts/rascunho_proposta_v1.md`, lidos por `llm.prompts`): cabeçalho com id, versão e
+  campos; seções "# Sistema" e "# Pedido"; o arquivo é conferido (nome × versão, campos
+  declarados × usados) e cada rascunho guardará o rótulo (`rascunho_revisao_v1`). As
+  orientações dos textos da proposta ficam no próprio prompt. As regras pedem para usar só
+  os fatos da sessão, copiar os números sem fazer contas, manter as hipóteses como
+  hipóteses e preservar os marcadores da anonimização.
+- Contexto do pedido (`llm.contexto`): empresa, números já calculados pelo Painel (com
+  "(hipótese)" e "(depende de hipótese)"), respostas visíveis por bloco e do encerramento,
+  sinais de alerta, anotações, riscos, indicadores, escopo, próximos passos e os outros
+  textos já escritos; para a proposta, fases (duração, valor, objetivo, escopo,
+  entregáveis), total, exclusões, premissas e responsabilidades. `conhecidos_da_sessao`
+  lista os dados pessoais da sessão, do perfil do consultor e da proposta (com a lista de
+  pessoas citadas) para a anonimização.
+- Provedores de LLM (`llm.provedor`, interface única, escolhida por `criar_provedor`):
+  - API da Anthropic (`llm.claude`), com o SDK oficial: Messages API com o modelo e o
+    esforço da configuração; a chave só vai no cabeçalho; recusa do modelo vira aviso,
+    sem reenvio para outro modelo; resposta cortada vira alerta; guarda o modelo que de
+    fato respondeu;
+  - Ollama local (`llm.ollama`), pela biblioteca padrão, ignorando proxies do sistema;
+  - falso (`llm.falso`), para os testes e a demonstração;
+  - falha segura: sem internet, tempo esgotado, chave recusada, sem permissão, modelo não
+    encontrado, limite de uso, pedido recusado, serviço fora do ar, Ollama parado ou sem o
+    modelo viram `LLMIndisponivel` com mensagem fixa em português (o erro original não
+    passa adiante, nem no log).
+- Geração do rascunho (`llm.rascunho`): anonimiza o pedido, faz a conferência final
+  (com dado pessoal restante, o pedido não sai), envia, desfaz os marcadores na resposta e
+  avisa marcadores inventados; `previa_do_pedido` mostra o que sairia e as substituições.
+- Teste do critério de aceite (`tests/llm/test_payload.py`): os 6 textos da revisão, o
+  contexto da proposta e o objetivo de cada fase do caso Roberto passam pelo SDK de verdade
+  com um transporte falso, e o corpo de cada pedido HTTP é conferido contra todos os dados
+  pessoais do demo (sem ligar para maiúsculas e acentos).
+- Dependência `anthropic` (SDK oficial, MIT), que usa o `httpx2` já presente no projeto.
+- `repositorio`: tabelas novas, sem migração (pendência do Sprint 6a resolvida):
+  - `rascunho`: texto sugerido pelo LLM, com destino (revisão ou proposta), campo,
+    provedor, modelo que respondeu, versão do prompt, alertas e situação (pendente,
+    aceito, descartado ou substituído). Registrar não mexe no texto do consultor; um
+    rascunho novo do mesmo campo substitui o pendente; aceitar copia o texto e marca o
+    rascunho numa transação só; descartar só marca;
+  - `pessoa_citada`: lista de pessoas citadas por sessão (sem duplicar o mesmo nome com
+    outro acento ou maiúscula);
+  - `previa_llm`: a prévia vista pelo consultor, válida para a "impressão" (sha256) dos
+    dados conhecidos; muda a lista de pessoas ou um dado do cliente, a prévia precisa ser
+    vista de novo;
+  - recriar a proposta descarta os rascunhos pendentes dela; excluir a sessão apaga tudo.
+- `sugerir_nomes` trata como começo de frase também as linhas de lista e de título;
+  `textos_para_sugestao` junta os textos livres da sessão. No caso Roberto, a sugestão
+  traz exatamente "Marcos" e "Cida".
+- Os rascunhos são para textos que o cliente lê: como na versão cliente do relatório, o
+  contexto enviado ao LLM não inclui as anotações do consultor nem os sinais de alerta
+  (com as observações), a não ser com a opção `anotacoes_internas`; o rascunho registra se
+  ela foi usada (`com_anotacoes_internas`). O teste do payload confere que, por padrão,
+  nenhuma anotação nem sinal sai no pedido.
+- Rascunhos por LLM na tela da revisão (`web/llm.py`, `web/rotas/rascunhos.py`):
+  - painel ao lado dos textos: situação do provedor (desligado, sem chave ou ativo, com o
+    modelo), aviso enquanto o cronômetro roda, lista de pessoas citadas (incluir, remover
+    e sugestões com um clique) e a prévia do que sai;
+  - opção "Usar anotações internas como contexto", desligada por padrão, com o aviso de
+    que o conteúdo delas pode aparecer no texto gerado;
+  - prévia obrigatória: mostra o pedido exatamente como sai e a tabela das trocas
+    (marcador → valor real, que fica na máquina); confirmada, vale até a lista de pessoas
+    ou os dados do cliente mudarem;
+  - em cada texto, "Sugerir rascunho": o rascunho aparece ao lado do texto do consultor,
+    com provedor, modelo, versão do prompt e alertas; "Aceitar" (com confirmação)
+    substitui o texto, "Descartar" só marca;
+  - recusas claras: sessão ao vivo (cronômetro rodando), prévia não confirmada, LLM
+    desligado ou indisponível; o aviso lembra que o texto atual e o relatório por
+    template continuam.
+- Demo: "Marcos" na lista de pessoas citadas; "Cida" fica como sugestão, para mostrar a
+  sugestão e a prévia.
+- `criar_app(provedor_llm=...)`: provedor falso nos testes; os prompts são lidos da pasta
+  `prompts/` quando a app liga.
+- Proposta Comercial com textos narrativos e rascunhos por LLM:
+  - "Contexto da proposta" (tabela nova `texto_proposta`, sem migração: a tabela
+    `proposta` já existe em bancos em uso): campo na tela com salvamento automático; no
+    documento, abre a seção 2 no lugar do texto padrão e da frase-problema (a recomendação
+    do relatório continua); recriar a proposta apaga o texto;
+  - rascunhos por LLM para o contexto e para o objetivo de cada fase, com o mesmo painel
+    da revisão (pessoas citadas, prévia, anotações internas desligadas por padrão);
+    aceitar copia o texto para o contexto ou para o objetivo da fase numa transação só.
+- README (como ativar o LLM e a proteção dos dados) e especificação (fluxo, modelo de
+  dados, uso de LLM e seção do Sprint 7).
+- Teste no navegador do rascunho por LLM no caso Roberto (sugestão de nome, prévia,
+  gerar com LLM falso e aceitar).
+
+### Alterado
+- `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
+- Regra de arquitetura: `llm` não importa `web` nem `repositorio`.
+- Prompts v2 (`rascunho_revisao_v2` e `rascunho_proposta_v2`), depois do teste com a API
+  real (resumo executivo de cerca de 330 palavras para "meia página"): a orientação de
+  cada texto vale como limite, com a faixa em palavras no cabeçalho do prompt
+  (`limites_palavras`; resumo executivo de 150 a 250, contexto da proposta de 80 a 150,
+  objetivo de fase de 15 a 50…). Fora da faixa, o rascunho chega com um alerta. Os v1
+  continuam na pasta, para os rascunhos já gravados com eles.
+
+### Corrigido
+- Revisão: o quadro "Falta preencher" ficava fixo na rolagem e sem fundo, cobrindo o
+  painel do LLM (tabela de substituições e aviso da prévia). Agora rola com a página; um
+  teste no navegador rola a revisão e confere que ele não cobre nenhum outro elemento.
+- Contagem de palavras dos rascunhos alinhada com a do Word: tudo o que fica entre espaços
+  conta (números, valores como "6.000,00", "R$", siglas, um "1." digitado). Antes, só os
+  pedaços com letra contavam: o resumo executivo do Roberto gerado pela API real com o
+  prompt v2 tinha 268 palavras no Word e 249 na app, dentro do limite de 150 a 250, e o
+  alerta não apareceu. Esse texto real é o caso de referência dos testes.
+- Achados da revisão automática do PR:
+  - anonimização de documentos e contatos sem pontuação: CNPJ alfanumérico e CPF sem
+    pontuação são trocados quando os dígitos verificadores conferem (um número qualquer
+    de 11 dígitos deixa de virar CPF); CEP sem hífen depois de "CEP"; telefone sem DDD
+    depois de "tel.", "telefone", "fone", "celular" ou "WhatsApp". O teste do payload
+    inclui esses formatos numa resposta do caso Roberto;
+  - excluir uma fase da proposta descarta o rascunho pendente do objetivo dela (o SQLite
+    pode reaproveitar o id, e uma fase nova herdaria o rascunho);
+  - a página da proposta lê a sessão uma vez só por pedido (antes, três vezes);
+  - docstring de `_gerar_na_proposta` no lugar certo.
+
+### Pendências resolvidas (Sprints 6a e 6c)
+- Seção 10 do relatório ("Escopo do MVP"): uma nota diz que a divisão do escopo em fases,
+  com prazos e investimento, fica na Proposta Comercial.
+- Responsabilidades da proposta nova: os próximos passos do cliente que começam com um
+  substantivo ganham o verbo ("Reunião com o Marcos…" vira "Participar da reunião com o
+  Marcos…"), por uma regra fixa no modelo (`passos_como_responsabilidade` em
+  `config/proposta_v1.yaml`, campo opcional); os que já começam com verbo ficam como estão.
+  Propostas já criadas não mudam (a proposta é uma cópia).
+- Anonimização antes do LLM com os dados do perfil do consultor e do cliente da proposta.
+- Rascunhos do LLM numa tabela própria, com modelo e versão do prompt, sem sobrescrever o
+  texto do consultor (pendência do Sprint 6a).
+
+### Pendências
+- Inclusão de cláusulas extras numa proposta (continua da 6c).
+- Nomes citados de passagem só são anonimizados se estiverem na lista de pessoas citadas
+  (a app sugere; a prévia obrigatória mostra o que sai). Telefone fixo sem DDD e CEP sem
+  hífen só são reconhecidos depois de uma palavra como "tel." ou "CEP".
+- Relatório inteiro redigido por LLM (a tabela `relatorio` já guarda origem, modelo e
+  versão do prompt): fora deste sprint, que cobre os textos narrativos.
+- Testar com a API real e com o Ollama na máquina do consultor (os testes automáticos não
+  fazem chamadas reais, de propósito).
+- Continuam valendo as pendências "antes do primeiro uso com cliente real" do Sprint 3.
+
 ## [0.9.0] — 2026-10-11 — Sprint 6c: Proposta comercial
 
 ### Adicionado

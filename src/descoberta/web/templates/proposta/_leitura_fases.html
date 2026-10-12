@@ -3,4 +3,7 @@
   {% if item.duracao_semanas %}{{ item.duracao_semanas }} semana{{ "s" if item.duracao_semanas > 1 }}{% else %}<span class="falta">sem duração</span>{% endif %} ·
   {% if item.investimento is not none %}{{ item.investimento | moeda }}{% else %}<span class="falta">sem valor</span>{% endif %}
 </p>
-{% if item.objetivo %}<p>{{ item.objetivo }}</p>{% endif %}
+{% if item.objetivo %}<p>{{ item.objetivo }}</p>{% else %}<p class="falta">Sem objetivo.</p>{% endif %}
+{% with sessao_id = sessao.id, alvo = alvos_fases[item.id], rascunho = rascunhos_fases.get(item.id), erro = erro_rascunho %}
+{% include "llm/_rascunho.html" %}
+{% endwith %}

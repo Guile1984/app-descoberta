@@ -1,0 +1,26 @@
+{#
+  Um texto do relatório: a caixa salva sozinha (macro de _salvamento.html), o rascunho do
+  LLM, se houver, e o que foi dito na sessão sobre o assunto (perguntas de "apoio").
+  Variáveis: t (texto do YAML), textos, apoio, rascunhos, alvos, sessao, erro_rascunho.
+#}
+{% from "_salvamento.html" import atributos, estado %}
+<div class="texto-revisao" id="bloco-texto-{{ t.id }}">
+  <label for="texto-{{ t.id }}" class="rotulo-texto">{{ t.titulo }}</label>
+  <p class="discreto">{{ t.orientacao }}</p>
+  <textarea id="texto-{{ t.id }}" name="texto" rows="5" {{ atributos("/sessoes/%d/textos/%s" % (sessao.id, t.id), "texto-" ~ t.id) }}>{{ textos.get(t.id, "") }}</textarea>
+  {{ estado("texto-" ~ t.id) }}
+  {% with sessao_id = sessao.id, alvo = alvos[t.id], rascunho = rascunhos.get(t.id), erro = erro_rascunho %}
+  {% include "llm/_rascunho.html" %}
+  {% endwith %}
+  {% if apoio[t.id] %}
+  <details class="apoio-texto">
+    <summary>O que foi dito na sessão</summary>
+    <dl>
+      {% for rotulo, resposta in apoio[t.id] %}
+      <dt>{{ rotulo }}</dt>
+      <dd>{% if resposta %}{{ resposta }}{% else %}<span class="falta">sem resposta</span>{% endif %}</dd>
+      {% endfor %}
+    </dl>
+  </details>
+  {% endif %}
+</div>

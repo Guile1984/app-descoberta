@@ -33,6 +33,7 @@ from ._comum import (
     validar_campos,
 )
 from .modelos import (
+    DestinoRascunho,
     FaseProposta,
     Indicador,
     ItemEscopo,
@@ -157,7 +158,16 @@ def editar_item[M: SQLModel](session: Session, modelo: type[M], item_id: int, **
 
 
 def excluir_item(session: Session, modelo: type[SQLModel], item_id: int) -> None:
-    session.delete(exigir(session, modelo, item_id, _LISTAS[modelo].nome))
+    registro = exigir(session, modelo, item_id, _LISTAS[modelo].nome)
+    if isinstance(registro, FaseProposta):
+        # O rascunho do objetivo aponta para a fase só pelo texto do campo, e o SQLite pode
+        # reaproveitar o id: sem isto, uma fase nova herdaria o rascunho desta.
+        from .rascunhos import descartar_pendente_do_campo
+
+        descartar_pendente_do_campo(
+            session, registro.sessao_id, DestinoRascunho.proposta, f"objetivo_fase.{item_id}"
+        )
+    session.delete(registro)
     session.commit()
 
 

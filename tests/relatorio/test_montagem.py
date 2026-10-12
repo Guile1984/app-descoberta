@@ -12,6 +12,7 @@ from descoberta.relatorio.documento import (
     Assinatura,
     Aviso,
     Capa,
+    Paragrafo,
     QuebraDePagina,
     Tabela,
     Titulo,
@@ -355,3 +356,20 @@ def test_secao_do_yaml_sem_montagem_e_erro_claro(dados_roberto, emissao_cliente)
     com_secao_nova = dataclasses.replace(dados_roberto, questionario=questionario)
     with pytest.raises(ValueError, match="rel.nova"):
         montar_relatorio(com_secao_nova, emissao_cliente)
+
+
+def test_secao_do_escopo_aponta_para_a_proposta(dados_roberto, emissao_cliente):
+    """Pendência da 6c: a divisão do escopo em fases fica na Proposta Comercial."""
+    documento = montar_relatorio(dados_roberto, emissao_cliente)
+    titulos = [b.texto for b in documento.blocos if isinstance(b, Titulo) and b.nivel == 1]
+    escopo = next(t for t in titulos if "Escopo do MVP" in t)
+    inicio = documento.blocos.index(
+        next(b for b in documento.blocos if getattr(b, "texto", None) == escopo)
+    )
+    fim = next(
+        i
+        for i, b in enumerate(documento.blocos[inicio + 1 :], start=inicio + 1)
+        if isinstance(b, Titulo) and b.nivel == 1
+    )
+    textos = [b.texto for b in documento.blocos[inicio:fim] if isinstance(b, Paragrafo)]
+    assert any("divisão do escopo em fases" in t and "Proposta Comercial" in t for t in textos)

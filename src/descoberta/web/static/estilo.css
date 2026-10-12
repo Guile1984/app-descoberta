@@ -221,7 +221,9 @@ textarea { width: 100%; box-sizing: border-box; resize: vertical; }
 .matriz .nivel-medio { background: var(--nivel-medio); }
 .matriz .nivel-alto { background: var(--nivel-alto); }
 
-.pendencias-revisao { position: sticky; top: 1rem; }
+/* Sem position: sticky: fixo na rolagem, o quadro cobria o painel do LLM que vem depois
+   dele na coluna (teste e2e test_layout_sem_sobreposicao). */
+.pendencias-revisao { margin-bottom: 1.25rem; }
 .pendencias-revisao h3 { font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }
 .lista-pendencias { margin: 0; padding-left: 1.2rem; font-size: 0.9rem; color: var(--atencao-texto); }
 .completo { color: var(--ok); }
@@ -252,3 +254,17 @@ kbd { font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; white-
 /* Foco sempre visível: a sessão inteira pode ser conduzida pelo teclado. */
 :focus-visible { outline: 3px solid var(--destaque); outline-offset: 2px; }
 .clausula.excluida .rotulo-texto { color: var(--discreto); text-decoration: line-through; }
+
+/* Rascunhos por LLM (painel, prévia e rascunho de cada campo). */
+.painel-llm h3 { font-size: 1rem; margin: 1rem 0 0.3rem; }
+.em-linha { display: inline-flex; gap: 0.4rem; align-items: center; margin: 0.2rem 0; }
+.lista-pessoas { padding-left: 1.2rem; margin: 0.3rem 0; font-size: 0.9rem; }
+.sugestoes { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.atencao { color: var(--atencao-texto); font-size: 0.9rem; }
+.visualmente-oculto { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.previa-llm { margin-top: 0.75rem; border-top: 1px solid var(--borda); padding-top: 0.5rem; }
+.previa-pedido { white-space: pre-wrap; font-size: 0.8rem; max-height: 24rem; overflow: auto; background: var(--fundo-suave); padding: 0.5rem; }
+.rascunho-llm { margin-top: 0.4rem; }
+.rascunho-pendente { margin: 0.5rem 0; padding: 0.5rem 0.75rem; border-left: 4px solid var(--destaque); background: var(--fundo-suave); }
+.rotulo-rascunho { margin: 0; font-weight: 600; font-size: 0.9rem; }
+.texto-rascunho { white-space: pre-wrap; margin: 0.4rem 0; }

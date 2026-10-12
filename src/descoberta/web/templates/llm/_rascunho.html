@@ -1,0 +1,23 @@
+{#
+  O rascunho de um campo: o pendente (com Aceitar e Descartar) e o botão de gerar.
+  Variáveis: sessao_id, alvo (web/llm.py: Alvo), rascunho (pendente ou none), erro.
+  Gerar e Descartar trocam só este bloco; Aceitar troca o campo inteiro (alvo.aceitar),
+  para a caixa de texto mostrar o texto novo.
+#}
+<div class="rascunho-llm" id="{{ alvo.id_html }}">
+  {% if erro %}<p class="aviso-erro" role="alert">⚠ {{ erro }}</p>{% endif %}
+  {% if rascunho %}
+  <div class="rascunho-pendente">
+    <p class="rotulo-rascunho">Rascunho sugerido pelo LLM: revise antes de aceitar</p>
+    <div class="texto-rascunho">{{ rascunho.texto }}</div>
+    <p class="discreto">{{ rascunho.provedor }} · {{ rascunho.modelo }} · prompt {{ rascunho.versao_prompt }} · {{ rascunho.criado_em | data_hora_local }}{% if rascunho.com_anotacoes_internas %} · usou as anotações internas{% endif %}</p>
+    {% for alerta in rascunho.lista_de_alertas %}<p class="aviso-erro">⚠ {{ alerta }}</p>{% endfor %}
+    <div class="acoes-item">
+      <button type="button" class="botao" hx-post="/sessoes/{{ sessao_id }}/rascunhos/{{ rascunho.id }}/aceitar" hx-target="{{ alvo.aceitar }}" hx-swap="outerHTML" hx-confirm="Substituir o texto atual por este rascunho?">Aceitar</button>
+      <button type="button" class="botao secundario" hx-post="/sessoes/{{ sessao_id }}/rascunhos/{{ rascunho.id }}/descartar" hx-target="#{{ alvo.id_html }}" hx-swap="outerHTML">Descartar</button>
+    </div>
+  </div>
+  {% endif %}
+  <button type="button" class="botao secundario" hx-post="{{ alvo.url_gerar }}" hx-include="#anotacoes-internas" hx-target="#{{ alvo.id_html }}" hx-swap="outerHTML" hx-disabled-elt="this" hx-indicator="#{{ alvo.id_html }}-gerando">{{ "Gerar outro rascunho" if rascunho else "Sugerir rascunho" }}</button>
+  <span class="htmx-indicator discreto" id="{{ alvo.id_html }}-gerando">Gerando… (pode levar alguns segundos)</span>
+</div>

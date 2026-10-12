@@ -10,6 +10,7 @@ Na primeira vez, é preciso baixar o navegador: uv run playwright install chromi
 import socket
 import threading
 import time
+from contextlib import contextmanager
 from datetime import date
 from pathlib import Path
 
@@ -17,6 +18,8 @@ import pytest
 import uvicorn
 from sqlmodel import Session
 
+from descoberta.demo import popular_demo
+from descoberta.llm.falso import ProvedorFalso
 from descoberta.repositorio import criar_cliente, criar_sessao
 from descoberta.web.app import criar_app
 
@@ -36,10 +39,9 @@ def _porta_livre() -> int:
         return s.getsockname()[1]
 
 
-@pytest.fixture
-def servidor(tmp_path):
-    """Liga a app numa porta livre, numa thread, com um banco temporário."""
-    app = criar_app(caminho_banco=tmp_path / "e2e.db", pasta_config=RAIZ_PROJETO / "config")
+@contextmanager
+def _rodando(app):
+    """Liga a app numa porta livre, numa thread, e desliga no fim."""
     porta = _porta_livre()
     servidor = uvicorn.Server(
         uvicorn.Config(app, host="127.0.0.1", port=porta, log_level="warning")
@@ -51,9 +53,34 @@ def servidor(tmp_path):
         if time.monotonic() > limite:
             raise RuntimeError("o servidor de teste não subiu em 10 s")
         time.sleep(0.05)
-    yield app, f"http://127.0.0.1:{porta}"
+    yield f"http://127.0.0.1:{porta}"
     servidor.should_exit = True
     thread.join(timeout=10)
+
+
+@pytest.fixture
+def servidor(tmp_path):
+    """A app com um banco temporário vazio."""
+    app = criar_app(caminho_banco=tmp_path / "e2e.db", pasta_config=RAIZ_PROJETO / "config")
+    with _rodando(app) as base:
+        yield app, base
+
+
+# Resposta do LLM falso, com os marcadores da anonimização (voltam como nomes na tela).
+RESPOSTA_DO_LLM_FALSO = (
+    "Seguir com fase 0 para a [EMPRESA]: o [PESSOA_1] valida o critério de gravidade."
+)
+
+
+@pytest.fixture
+def servidor_demo(tmp_path):
+    """A app com o caso Roberto do demo e um LLM falso (nada sai da máquina)."""
+    caminho = tmp_path / "demo.db"
+    sessao_id = popular_demo(caminho, hoje=date(2026, 10, 11))
+    falso = ProvedorFalso(RESPOSTA_DO_LLM_FALSO)
+    app = criar_app(caminho_banco=caminho, pasta_config=RAIZ_PROJETO / "config", provedor_llm=falso)
+    with _rodando(app) as base:
+        yield app, f"{base}/sessoes/{sessao_id}", sessao_id, falso
 
 
 @pytest.fixture

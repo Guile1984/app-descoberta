@@ -16,6 +16,8 @@ CAMADAS_PROIBIDAS = {
     "relatorio": {"web", "llm"},
     # O modelo da proposta (YAML) é configuração, como o questionário: não lê banco nem tela.
     "proposta": {"web", "repositorio", "relatorio", "llm"},
+    # O LLM recebe os dados já lidos (sem banco) e não conhece a tela.
+    "llm": {"web", "repositorio"},
 }
 
 # O relatório não faz conta: os números vêm do Painel. Estes módulos de cálculo do domínio

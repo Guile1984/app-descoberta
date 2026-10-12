@@ -4,6 +4,7 @@ Tudo é copiado: depois de criada, a proposta é editada à parte, e mudar a rev
 altera (renegociar a proposta também nunca mexe no relatório).
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from decimal import Decimal
 
@@ -46,6 +47,22 @@ class PropostaInicial:
     responsabilidades: list[str]
 
 
+def como_responsabilidade(passo: str, verbos: Mapping[str, str]) -> str:
+    """O próximo passo do cliente escrito como responsabilidade.
+
+    Começando por um substantivo da regra do modelo, ganha o verbo ("Reunião com o Marcos…"
+    → "Participar da reunião com o Marcos…"); o resto (em geral, já começando por um verbo,
+    como "Enviar a amostra…") fica como está. Regra fixa, sem LLM.
+    """
+    texto = " ".join(passo.split())
+    primeira, _, resto = texto.partition(" ")
+    chave = primeira.strip(".,;:").lower()
+    for substantivo, verbo in verbos.items():
+        if chave == substantivo.lower():
+            return " ".join(p for p in (verbo, primeira[0].lower() + primeira[1:], resto) if p)
+    return texto
+
+
 def conteudo_inicial(padrao: Padrao, sessao: DadosDaSessao) -> PropostaInicial:
     fases = [
         FaseInicial(
@@ -70,5 +87,11 @@ def conteudo_inicial(padrao: Padrao, sessao: DadosDaSessao) -> PropostaInicial:
         fases=fases,
         exclusoes=list(sessao.escopo_fora),
         premissas=[*padrao.premissas, *(h + SUFIXO_HIPOTESE for h in sessao.hipoteses)],
-        responsabilidades=[*padrao.responsabilidades, *sessao.passos_do_cliente],
+        responsabilidades=[
+            *padrao.responsabilidades,
+            *(
+                como_responsabilidade(p, padrao.passos_como_responsabilidade)
+                for p in sessao.passos_do_cliente
+            ),
+        ],
     )

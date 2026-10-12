@@ -38,6 +38,10 @@ TABELAS = {
     "item_proposta",
     "clausula_proposta",
     "versao_proposta",
+    "rascunho",
+    "pessoa_citada",
+    "previa_llm",
+    "texto_proposta",
 }
 
 
