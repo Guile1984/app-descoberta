@@ -217,6 +217,8 @@ def salvar_texto(
 
 
 def _gerar_na_proposta(request, banco, catalogo, sessao_id, campo, anotacoes, montar):
+    # O limite de tamanho é por alvo: "contexto" ou "objetivo_fase" (de qualquer fase).
+    chave_limite = "contexto" if campo == "contexto" else "objetivo_fase"
     """Gera um rascunho de texto da proposta; `montar(prompt, proposta)` faz o pedido."""
     from .rascunhos import bloco_do_rascunho
 
@@ -237,6 +239,7 @@ def _gerar_na_proposta(request, banco, catalogo, sessao_id, campo, anotacoes, mo
             destino=DestinoRascunho.proposta,
             campo=campo,
             anotacoes=com_anotacoes,
+            chave_limite=chave_limite,
         )
     except LLMIndisponivel as erro:
         pendente = rascunhos_pendentes_da_proposta(banco, sessao_id).get(campo)

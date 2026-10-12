@@ -173,6 +173,7 @@ def gerar_e_registrar(
     destino: DestinoRascunho,
     campo: str,
     anotacoes: bool,
+    chave_limite: str,
 ) -> Rascunho:
     """Confere as regras, gera e guarda o rascunho pendente (LLMIndisponivel se não der)."""
     if llm.ao_vivo:
@@ -181,7 +182,13 @@ def gerar_e_registrar(
     if not llm.previa_ok:
         raise LLMIndisponivel(PREVIA_PENDENTE)
     prompt = request.app.state.prompts[prompt_id]
-    gerado = gerar_rascunho(provedor, prompt.rotulo, montar_pedido(prompt), llm.anonimizador())
+    gerado = gerar_rascunho(
+        provedor,
+        prompt.rotulo,
+        montar_pedido(prompt),
+        llm.anonimizador(),
+        limite_palavras=prompt.limites_palavras.get(chave_limite),
+    )
     return registrar_rascunho(
         banco,
         sessao.id,

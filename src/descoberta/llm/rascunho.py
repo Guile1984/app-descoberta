@@ -8,6 +8,7 @@
 `previa_do_pedido` mostra ao consultor exatamente o que sairia, sem enviar nada.
 """
 
+import re
 from dataclasses import dataclass
 
 from .anonimizacao import Anonimizador
@@ -51,9 +52,21 @@ def previa_do_pedido(pedido: Pedido, anonimizador: Anonimizador) -> Previa:
     return Previa(enviado, usados)
 
 
+_PALAVRA = re.compile(r"[^\W\d_]")  # conta só o que tem letra ("1." e "-" de lista, não)
+
+
+def contar_palavras(texto: str) -> int:
+    return sum(1 for pedaco in texto.split() if _PALAVRA.search(pedaco))
+
+
 def gerar_rascunho(
-    provedor: ProvedorLLM, versao_prompt: str, pedido: Pedido, anonimizador: Anonimizador
+    provedor: ProvedorLLM,
+    versao_prompt: str,
+    pedido: Pedido,
+    anonimizador: Anonimizador,
+    limite_palavras: tuple[int, int] | None = None,
 ) -> RascunhoGerado:
+    """`limite_palavras`: fora da faixa, o rascunho vem com um alerta (não é cortado)."""
     enviado = _anonimizar(pedido, anonimizador)
     resposta = provedor.redigir(enviado)
     desfeito = anonimizador.desfazer(resposta.texto)
@@ -66,6 +79,14 @@ def gerar_rascunho(
         )
     if resposta.alerta:
         alertas.append(resposta.alerta)
+    if limite_palavras is not None:
+        minimo, maximo = limite_palavras
+        palavras = contar_palavras(desfeito.texto)
+        if not minimo <= palavras <= maximo:
+            alertas.append(
+                f"O rascunho tem cerca de {palavras} palavras, fora do tamanho pedido "
+                f"({minimo} a {maximo}): ajuste antes de aceitar."
+            )
     return RascunhoGerado(
         texto=desfeito.texto,
         provedor=provedor.nome,

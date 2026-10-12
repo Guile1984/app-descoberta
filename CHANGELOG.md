@@ -122,6 +122,17 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 ### Alterado
 - `.gitignore`: além do `.env`, ignora `.env.*` (menos o `.env.example`).
 - Regra de arquitetura: `llm` não importa `web` nem `repositorio`.
+- Prompts v2 (`rascunho_revisao_v2` e `rascunho_proposta_v2`), depois do teste com a API
+  real (resumo executivo de cerca de 330 palavras para "meia página"): a orientação de
+  cada texto vale como limite, com a faixa em palavras no cabeçalho do prompt
+  (`limites_palavras`; resumo executivo de 150 a 250, contexto da proposta de 80 a 150,
+  objetivo de fase de 15 a 50…). Fora da faixa, o rascunho chega com um alerta. Os v1
+  continuam na pasta, para os rascunhos já gravados com eles.
+
+### Corrigido
+- Revisão: o quadro "Falta preencher" ficava fixo na rolagem e sem fundo, cobrindo o
+  painel do LLM (tabela de substituições e aviso da prévia). Agora rola com a página; um
+  teste no navegador rola a revisão e confere que ele não cobre nenhum outro elemento.
 
 ### Pendências resolvidas (Sprints 6a e 6c)
 - Seção 10 do relatório ("Escopo do MVP"): uma nota diz que a divisão do escopo em fases,

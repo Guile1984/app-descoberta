@@ -213,7 +213,7 @@ def test_gerar_envia_anonimizado_e_mostra_com_os_nomes(ativo, falso):
     assert resposta.status_code == 200
     assert "Hoje o Marcos gasta 60 h por mês; o Roberto quer responder em 1 dia." in resposta.text
     assert "falso-1" in resposta.text
-    assert "rascunho_revisao_v1" in resposta.text
+    assert "rascunho_revisao_v2" in resposta.text
     [pedido] = falso.pedidos
     assert "Roberto" not in pedido.mensagem
     assert "Marcos" not in pedido.mensagem

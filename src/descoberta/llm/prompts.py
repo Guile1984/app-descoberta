@@ -8,6 +8,7 @@ Formato do arquivo:
     descricao: ...
     campos: [titulo, contexto]     # os {{campos}} que o pedido usa
     alvos: {...}                   # opcional: orientações por alvo (proposta)
+    limites_palavras: {id: [mín, máx]}  # opcional: tamanho de cada texto (v2 em diante)
     ---
     # Sistema
     (instruções fixas)
@@ -53,10 +54,19 @@ class Prompt:
     pedido: str
     campos: tuple[str, ...]
     alvos: dict[str, str] = field(default_factory=dict)
+    # Tamanho de cada texto em palavras (id do texto ou do alvo → mínimo, máximo).
+    limites_palavras: dict[str, tuple[int, int]] = field(default_factory=dict)
 
     @property
     def rotulo(self) -> str:
         return f"{self.id}_v{self.versao}"
+
+    def limite(self, chave: str) -> str | None:
+        """O limite de tamanho em texto ("entre 150 e 250 palavras"); None se não houver."""
+        if chave not in self.limites_palavras:
+            return None
+        minimo, maximo = self.limites_palavras[chave]
+        return f"entre {minimo} e {maximo} palavras"
 
     def preencher(self, **valores: str) -> Pedido:
         """Troca os {{campos}} pelos valores (todos os declarados, nenhum a mais)."""
@@ -98,6 +108,8 @@ def _validar(caminho: Path, nome: re.Match, cabecalho: dict, corpo: str) -> Prom
         erros.append(f"o id {cabecalho.get('id')!r} não bate com o nome do arquivo")
     campos = cabecalho.get("campos") or []
     alvos = cabecalho.get("alvos") or {}
+    limites, erros_limites = _limites(cabecalho.get("limites_palavras") or {})
+    erros += erros_limites
 
     secoes = _SECAO.split(corpo)
     # split devolve: [antes, "Sistema", texto, "Pedido", texto]
@@ -124,7 +136,30 @@ def _validar(caminho: Path, nome: re.Match, cabecalho: dict, corpo: str) -> Prom
         pedido=pedido,
         campos=tuple(campos),
         alvos={str(k): " ".join(str(v).split()) for k, v in alvos.items()},
+        limites_palavras=limites,
     )
+
+
+def _limites(dados) -> tuple[dict[str, tuple[int, int]], list[str]]:
+    """limites_palavras: {id: [mínimo, máximo]}, com 0 < mínimo < máximo."""
+    if not isinstance(dados, dict):
+        return {}, ["limites_palavras deve ser um mapeamento {id: [mínimo, máximo]}"]
+    limites, erros = {}, []
+    for chave, valor in dados.items():
+        ok = (
+            isinstance(valor, list)
+            and len(valor) == 2
+            and all(isinstance(n, int) and not isinstance(n, bool) for n in valor)
+            and 0 < valor[0] < valor[1]
+        )
+        if not ok:
+            erros.append(
+                f"limites_palavras.{chave}: use [mínimo, máximo], com 0 < mínimo < máximo "
+                f"(recebido {valor!r})"
+            )
+            continue
+        limites[str(chave)] = (valor[0], valor[1])
+    return limites, erros
 
 
 def carregar_prompts(pasta: Path | str) -> dict[str, Prompt]:

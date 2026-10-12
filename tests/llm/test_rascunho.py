@@ -70,3 +70,31 @@ def test_previa_mostra_exatamente_o_que_sai():
         "[EMPRESA]": "Construtora Alvorada",
         "[PESSOA_1]": "Marcos",
     }
+
+
+@pytest.mark.parametrize(
+    ("texto", "alerta"),
+    [
+        (" ".join(["palavra"] * 330), "cerca de 330 palavras"),
+        ("Curto demais.", "cerca de 2 palavras"),
+        (" ".join(["palavra"] * 200), None),
+    ],
+)
+def test_alerta_quando_o_tamanho_sai_do_limite(texto, alerta):
+    rascunho = gerar_rascunho(
+        ProvedorFalso(texto), "p_v2", PEDIDO, _anonimizador(), limite_palavras=(150, 250)
+    )
+    if alerta is None:
+        assert rascunho.alertas == ()
+    else:
+        [aviso] = rascunho.alertas
+        assert alerta in aviso
+        assert "150 a 250" in aviso
+
+
+def test_contagem_ignora_marcas_de_lista():
+    texto = "1. Primeiro passo aqui.\n2. Segundo passo aqui.\n- Terceiro passo aqui."
+    rascunho = gerar_rascunho(
+        ProvedorFalso(texto), "p_v2", PEDIDO, _anonimizador(), limite_palavras=(9, 9)
+    )
+    assert rascunho.alertas == ()

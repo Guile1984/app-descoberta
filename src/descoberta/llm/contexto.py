@@ -228,7 +228,15 @@ def pedido_da_revisao(
         contexto=contexto_da_sessao(
             dados, sem_o_texto=texto_id, anotacoes_internas=anotacoes_internas
         ),
+        **_limite(prompt, texto_id),
     )
+
+
+def _limite(prompt: Prompt, chave: str) -> dict[str, str]:
+    """O campo {{limite}}, só nos prompts que o usam (v2 em diante)."""
+    if "limite" not in prompt.campos:
+        return {}
+    return {"limite": prompt.limite(chave) or "o que a orientação pedir"}
 
 
 # --- Proposta ---
@@ -300,6 +308,7 @@ def pedido_da_proposta(
         texto_atual=texto_atual.strip() or VAZIO,
         proposta=contexto_da_proposta(dados, sem_o_contexto=alvo == "contexto"),
         contexto=contexto_da_sessao(dados.relatorio, anotacoes_internas=anotacoes_internas),
+        **_limite(prompt, alvo),
     )
 
 

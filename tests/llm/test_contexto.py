@@ -1,6 +1,7 @@
 """O que vai no pedido ao LLM: os fatos da sessão, já com os números calculados pela app."""
 
 import dataclasses
+from pathlib import Path
 
 import pytest
 
@@ -181,3 +182,27 @@ def test_contexto_da_proposta_leva_o_texto_de_contexto(proposta_roberto):
     com_texto = dataclasses.replace(proposta_roberto, contexto="Texto de abertura da proposta.")
     assert "Texto de abertura da proposta." in contexto_da_proposta(com_texto)
     assert "Texto de abertura" not in contexto_da_proposta(com_texto, sem_o_contexto=True)
+
+
+def test_pedido_v2_traz_o_limite_da_secao(prompts, dados_roberto):
+    pedido = pedido_da_revisao(prompts["rascunho_revisao"], dados_roberto, "resumo_executivo")
+    assert "entre 150 e 250 palavras" in pedido.mensagem
+    assert "Meia página, lida em 2 minutos" in pedido.mensagem  # a orientação do YAML
+
+
+def test_pedido_v1_continua_funcionando(dados_roberto, proposta_roberto):
+    from descoberta.llm.prompts import carregar_prompt
+
+    raiz = Path(__file__).resolve().parents[2] / "prompts"
+    v1 = carregar_prompt(raiz / "rascunho_revisao_v1.md")
+    pedido = pedido_da_revisao(v1, dados_roberto, "resumo_executivo")
+    assert "palavras" not in pedido.mensagem.split("Dados da sessão:")[0]
+    v1_proposta = carregar_prompt(raiz / "rascunho_proposta_v1.md")
+    assert "{{" not in pedido_da_proposta(v1_proposta, proposta_roberto, "contexto").mensagem
+
+
+def test_pedido_v2_da_proposta_traz_o_limite(prompts, proposta_roberto):
+    pedido = pedido_da_proposta(
+        prompts["rascunho_proposta"], proposta_roberto, "objetivo_fase", fase=0
+    )
+    assert "entre 15 e 50 palavras" in pedido.mensagem

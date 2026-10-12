@@ -29,13 +29,47 @@ def _escrever(pasta: Path, nome: str, texto: str) -> Path:
     return caminho
 
 
-def test_prompts_do_projeto(prompts):
+RAIZ = Path(__file__).resolve().parents[2]
+
+
+def test_prompts_do_projeto_na_versao_2(prompts):
     assert set(prompts) == {"rascunho_revisao", "rascunho_proposta"}
     revisao = prompts["rascunho_revisao"]
-    assert revisao.versao == 1
-    assert revisao.rotulo == "rascunho_revisao_v1"
-    assert revisao.campos == ("titulo", "orientacao", "texto_atual", "contexto")
-    assert set(prompts["rascunho_proposta"].alvos) == {"contexto", "objetivo_fase"}
+    assert revisao.versao == 2
+    assert revisao.rotulo == "rascunho_revisao_v2"
+    assert revisao.campos == ("titulo", "orientacao", "limite", "texto_atual", "contexto")
+    assert revisao.limites_palavras["resumo_executivo"] == (150, 250)
+    proposta = prompts["rascunho_proposta"]
+    assert proposta.versao == 2
+    assert set(proposta.alvos) == {"contexto", "objetivo_fase"}
+
+
+def test_versao_1_continua_la_para_os_rascunhos_ja_gravados():
+    for prompt_id in ("rascunho_revisao", "rascunho_proposta"):
+        v1 = carregar_prompt(RAIZ / "prompts" / f"{prompt_id}_v1.md")
+        assert v1.versao == 1
+        assert v1.limites_palavras == {}
+        assert "limite" not in v1.campos
+
+
+def test_limites_cobrem_todos_os_textos(prompts, questionario_v1):
+    revisao = prompts["rascunho_revisao"].limites_palavras
+    assert {t.id for t in questionario_v1.revisao.textos} <= set(revisao)
+    proposta = prompts["rascunho_proposta"]
+    assert set(proposta.alvos) <= set(proposta.limites_palavras)
+    for minimo, maximo in [*revisao.values(), *proposta.limites_palavras.values()]:
+        assert 0 < minimo < maximo
+
+
+def test_v2_trata_o_tamanho_como_limite(prompts):
+    for prompt in prompts.values():
+        assert "limite" in prompt.pedido
+        assert "Respeite o tamanho pedido" in prompt.sistema
+
+
+def test_descrever_limite(prompts):
+    assert prompts["rascunho_revisao"].limite("resumo_executivo") == "entre 150 e 250 palavras"
+    assert prompts["rascunho_revisao"].limite("nao_existe") is None
 
 
 @pytest.mark.parametrize("prompt_id", ["rascunho_revisao", "rascunho_proposta"])
@@ -87,6 +121,21 @@ def test_preencher_exige_os_campos_declarados(tmp_path, valores, erro):
 def test_arquivo_invalido(tmp_path, nome, texto, erro):
     with pytest.raises(PromptInvalido, match=erro):
         carregar_prompt(_escrever(tmp_path, nome, texto))
+
+
+@pytest.mark.parametrize(
+    "limites",
+    [
+        "limites_palavras: {nome: [250, 150]}",
+        "limites_palavras: {nome: [0, 10]}",
+        "limites_palavras: {nome: [10]}",
+        "limites_palavras: {nome: muitas}",
+    ],
+)
+def test_limites_invalidos(tmp_path, limites):
+    texto = VALIDO.replace("campos: [nome]", f"campos: [nome]\n{limites}")
+    with pytest.raises(PromptInvalido, match="limites_palavras"):
+        carregar_prompt(_escrever(tmp_path, "teste_v2.md", texto))
 
 
 def test_carregar_prompts_fica_com_a_versao_mais_recente(tmp_path):

@@ -206,6 +206,7 @@ def gerar_texto_da_revisao(
             destino=DestinoRascunho.revisao,
             campo=texto_id,
             anotacoes=com_anotacoes,
+            chave_limite=texto_id,
         )
     except LLMIndisponivel as erro:
         pendente = rascunho_pendente(banco, sessao_id, DestinoRascunho.revisao, texto_id)
