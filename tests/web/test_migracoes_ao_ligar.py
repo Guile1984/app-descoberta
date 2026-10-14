@@ -15,7 +15,7 @@ RAIZ_PROJETO = Path(__file__).resolve().parents[2]
 
 def _ligar(caminho):
     app = criar_app(caminho_banco=caminho, pasta_config=RAIZ_PROJETO / "config")
-    with TestClient(app) as cliente:
+    with TestClient(app, base_url="http://127.0.0.1") as cliente:
         return cliente.get("/")
 
 

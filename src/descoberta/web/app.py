@@ -17,6 +17,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from descoberta.llm.configuracao import carregar_configuracao_llm
 from descoberta.llm.prompts import carregar_prompts
@@ -24,6 +25,7 @@ from descoberta.repositorio import CAMINHO_BANCO_PADRAO, criar_engine, migrar
 
 from .catalogo import Catalogo
 from .dependencias import html
+from .protecao import HOSTS_LOCAIS, SoDaPropriaApp
 from .rotas import (
     anotacoes,
     clientes,
@@ -77,6 +79,10 @@ def criar_app(
         redoc_url=None,
         openapi_url=None,
     )
+    # Só o próprio computador (veja protecao.py). O último adicionado roda primeiro: o Host
+    # é conferido antes da origem.
+    app.add_middleware(SoDaPropriaApp)
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=HOSTS_LOCAIS)
     app.mount("/static", StaticFiles(directory=PASTA_STATIC), name="static")
     app.include_router(clientes.router)
     app.include_router(perfil.router)

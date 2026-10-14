@@ -19,12 +19,15 @@ def test_app_liga_com_o_llm_desligado(cliente_http, app):
 def test_variavel_de_ambiente_liga_o_provedor(monkeypatch, tmp_path):
     monkeypatch.setenv("DESCOBERTA_LLM_PROVEDOR", "ollama")
     app = criar_app(caminho_banco=tmp_path / "t.db", pasta_config=RAIZ_CONFIG)
-    with TestClient(app):
+    with TestClient(app, base_url="http://127.0.0.1"):
         assert app.state.config_llm.provedor is Provedor.ollama
 
 
 def test_provedor_invalido_impede_a_app_de_ligar(monkeypatch, tmp_path):
     monkeypatch.setenv("DESCOBERTA_LLM_PROVEDOR", "gpt")
     app = criar_app(caminho_banco=tmp_path / "t.db", pasta_config=RAIZ_CONFIG)
-    with pytest.raises(ConfiguracaoLLMInvalida, match="DESCOBERTA_LLM_PROVEDOR"), TestClient(app):
+    with (
+        pytest.raises(ConfiguracaoLLMInvalida, match="DESCOBERTA_LLM_PROVEDOR"),
+        TestClient(app, base_url="http://127.0.0.1"),
+    ):
         pass

@@ -6,3 +6,6 @@
 
 # htmx copiado como está: o Git não converte fim de linha (o hash SRI precisa bater).
 src/descoberta/web/static/htmx.min.js -text
+
+# Scripts do Windows: o cmd.exe precisa de CRLF.
+*.bat text eol=crlf

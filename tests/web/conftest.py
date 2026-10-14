@@ -23,7 +23,7 @@ def app(tmp_path):
 def cliente_http(app):
     # O "with" liga a app (abre o banco, carrega o questionário) e a desliga no fim.
     # follow_redirects=False: os testes conferem o redirecionamento em si.
-    with TestClient(app, follow_redirects=False) as cliente:
+    with TestClient(app, base_url="http://127.0.0.1", follow_redirects=False) as cliente:
         yield cliente
 
 
@@ -61,7 +61,7 @@ def app_demo(tmp_path):
 @pytest.fixture
 def cliente_demo(app_demo):
     app, sessao_id = app_demo
-    with TestClient(app, follow_redirects=False) as cliente:
+    with TestClient(app, base_url="http://127.0.0.1", follow_redirects=False) as cliente:
         yield cliente, sessao_id
 
 
