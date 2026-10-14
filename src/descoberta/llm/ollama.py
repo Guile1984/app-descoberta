@@ -45,7 +45,9 @@ class ProvedorOllama:
                 {"role": "user", "content": pedido.mensagem},
             ],
         }
-        requisicao = urllib.request.Request(
+        # S310: a URL vem de config/llm.yaml, já validada como http:// neste computador
+        # (llm.configuracao); file: ou outro esquema não chegam aqui.
+        requisicao = urllib.request.Request(  # noqa: S310
             f"{self._config.url}/api/chat",
             data=json.dumps(corpo).encode("utf-8"),
             headers={"Content-Type": "application/json"},
