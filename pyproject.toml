@@ -3,6 +3,8 @@ name = "descoberta"
 version = "0.1.0"
 description = "App local para conduzir sessões de descoberta de soluções de IA com PMEs."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "LICENSE-METODOLOGIA.md", "THIRD_PARTY_NOTICES.md", "src/descoberta/relatorio/fontes/LICENSE-DejaVu.txt"]
 authors = [{ name = "Guilherme Ferraz Stauffer" }]
 requires-python = ">=3.12"
 dependencies = [
