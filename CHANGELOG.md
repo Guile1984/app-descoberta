@@ -2,6 +2,68 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [1.0.0] — 2026-10-14 — Sprint 8: Validação e lançamento
+
+### Adicionado
+- Migrações do banco com Alembic (dependência nova, MIT): a revisão `0001` é o esquema
+  do fim do Sprint 7. A app migra ao ligar (`repositorio.migrar`):
+  - banco vazio: cria tudo pelas migrações; banco em dia: não faz nada;
+  - banco de antes do Alembic (como o `data/demo.db`): reconhecido se o esquema bater
+    com a `0001` (montada em memória, sem depender dos modelos atuais); as tabelas de
+    sprints posteriores que faltarem são criadas; se o esquema não bater, nada é
+    alterado e a app avisa;
+  - cópia de segurança antes de mexer num banco com dados
+    (`descoberta.antes-<revisão>-<data>.db`, fora do Git pelo `*.db`);
+  - tudo numa transação só (inclusive CREATE/ALTER), com as chaves estrangeiras
+    desligadas durante a migração e conferidas no fim (`foreign_key_check`);
+  - teste de "deriva": migrações e modelos precisam dar o mesmo esquema.
+- Proteções para o uso local (sem dependência nova):
+  - só os hosts `127.0.0.1` e `localhost` (`TrustedHostMiddleware`), contra DNS
+    rebinding;
+  - pedidos que gravam (POST, PUT, PATCH, DELETE) vindos de outro site recebem 403
+    (`Sec-Fetch-Site` ou `Origin`), contra CSRF a partir de outra aba do navegador.
+- Início com dois cliques: `iniciar.bat` → `python -m descoberta`
+  (`descoberta.iniciar`): sobe só em `127.0.0.1` (sem opção de host), avisa porta
+  ocupada, abre o navegador quando o servidor está pronto e instala só o que a app usa
+  (`uv run --no-dev --frozen`).
+- Caso Roberto de ponta a ponta no navegador, num banco vazio
+  (`tests/e2e/test_caso_roberto_ponta_a_ponta.py`): perfil, cliente, sessão, revisão sem
+  pendências, relatório e versão registrada, com os números de referência na tela e no
+  PDF e o hash do rodapé em todas as páginas.
+- Licenças: `LICENSE` (MIT) no código; `LICENSE-METODOLOGIA.md` (CC BY 4.0) para o
+  Modelo de Descoberta e o conteúdo do questionário; `THIRD_PARTY_NOTICES.md` (htmx
+  2.0.4 em 0BSD, idêntico ao oficial; fontes DejaVu; dependências Python);
+  `tests/test_licencas.py` barra dependência com licença fora da lista permitida.
+- `SECURITY.md`: escopo local, versões suportadas e relato privado pelo GitHub.
+- Segurança no CI (`.github/workflows/seguranca.yml`, também toda segunda): pip-audit
+  sobre o `uv.lock` e gitleaks 8.30.1 (binário conferido por SHA-256) em todo o histórico;
+  `.gitleaks.toml` com um falso positivo conferido; Dependabot (uv e actions); regras S
+  do ruff, com exceções justificadas.
+- CI: job `testes-windows` (testes sem navegador; ~20 min no runner Windows, contra ~3
+  min no Linux); actions fixadas por hash, permissões só de leitura e `timeout-minutes`
+  em todos os jobs, com testes que conferem isso.
+- `scripts/revisar_historico.py` (dados pessoais em todas as versões de todos os
+  arquivos) e `scripts/medir_desempenho.py` (tempos de resposta, documentos, memória e
+  volume).
+- `docs/qualidade/`: revisão do histórico, validação numa instalação do zero, medições
+  e evidências de qualidade com base na ISO/IEC 25010 (texto final no Sprint 9).
+- `docs/roteiro-gif.md` e `docs/publicar-repositorio.md` (lista manual para tornar o
+  repositório público e proteger a `main`).
+
+### Alterado
+- README reescrito para quem não programa: o que a app faz, aviso de uso local,
+  instalação no Windows, demonstração do Roberto, backup e criptografia do disco,
+  atualização, limitações, transparência sobre o desenvolvimento com o Claude Code e
+  licenças; a parte técnica foi para "Para desenvolvedores" (migrações, medições,
+  e-mail *noreply* nos commits).
+- Versão 1.0.0 no `pyproject.toml` e no pacote (estava em 0.1.0), com teste de que batem.
+- O comando de demonstração mostra o mesmo comando do README.
+- Especificação: Alembic, proteções locais, licenças e evidências no Sprint 8.
+
+### Pendências
+- Gui: repetir a instalação num Windows novo (Windows Sandbox), revisar o relatório e a
+  proposta do Roberto, gravar o GIF e seguir `docs/publicar-repositorio.md`.
+
 ## [0.10.0] — 2026-10-12 — Sprint 7: LLM
 
 ### Adicionado

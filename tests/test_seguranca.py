@@ -104,3 +104,11 @@ def test_workflows_so_com_permissao_de_leitura():
     for workflow in (RAIZ / ".github" / "workflows").glob("*.yml"):
         texto = workflow.read_text(encoding="utf-8")
         assert "permissions:\n  contents: read" in texto, workflow.name
+
+
+def test_jobs_do_ci_tem_limite_de_tempo():
+    # Sem limite, um teste travado prende o runner por 6 horas (o padrão do GitHub).
+    for workflow in (RAIZ / ".github" / "workflows").glob("*.yml"):
+        texto = workflow.read_text(encoding="utf-8")
+        jobs = len(re.findall(r"^    runs-on:", texto, re.M))
+        assert texto.count("timeout-minutes:") == jobs, workflow.name

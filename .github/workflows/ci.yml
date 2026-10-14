@@ -39,7 +39,8 @@ jobs:
   # no Ubuntu e, no dia a dia, no Windows de quem desenvolve).
   testes-windows:
     runs-on: windows-latest
-    timeout-minutes: 30
+    # A suíte leva ~20 min no runner Windows (disco mais lento), contra ~3 min no Linux.
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -51,8 +52,8 @@ jobs:
         run: uv sync --locked
 
       - name: Testes sem navegador
-        # -v e saída sem buffer: o log mostra cada teste na hora. faulthandler_timeout:
-        # se um teste passar de 2 min, o pytest mostra onde cada thread está parada.
+        # faulthandler_timeout: se um teste passar de 2 min, o pytest mostra onde cada
+        # thread está parada (útil para distinguir um teste travado de um runner lento).
         env:
           PYTHONUNBUFFERED: "1"
-        run: uv run pytest -m "not e2e" -v -o faulthandler_timeout=120
+        run: uv run pytest -m "not e2e" -o faulthandler_timeout=120
