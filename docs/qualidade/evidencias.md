@@ -117,9 +117,10 @@ nada físico.
   testes no navegador (Playwright) com servidor real; datas injetáveis.
 - **Medido agora:** **1.325** testes; suíte completa em cerca de **3 min** nesta máquina
   (4 min com cobertura); no runner Windows do CI, sem o navegador, cerca de 20 min.
-  Uma falha intermitente apareceu em 1 de 4 execuções completas e não se repetiu; o
-  teste não foi identificado (a acompanhar no CI).
-- **Falta:** cobertura de ramos; identificar a falha intermitente; acelerar a suíte no
+  Uma falha intermitente apareceu uma vez, sem registro do teste; em 5 execuções
+  completas seguidas (com `-rf` e `--junitxml`), 1.325 passaram em todas, sem nenhuma
+  falha (a acompanhar no CI).
+- **Falta:** cobertura de ramos; acompanhar a falha intermitente no CI; acelerar a suíte no
   Windows (por exemplo, testes em paralelo).
 
 ### Portabilidade
