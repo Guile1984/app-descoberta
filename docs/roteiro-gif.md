@@ -14,9 +14,9 @@ pronto.
 - **Dados:** só o banco de demonstração, que é fictício. Antes de gravar:
 
   ```powershell
-  uv run python -m descoberta.demo
+  uv run --no-dev python -m descoberta.demo
   $env:DESCOBERTA_BANCO = "data/demo.db"
-  uv run python -m descoberta
+  uv run --no-dev python -m descoberta
   ```
 
 - Para a parte "ao vivo" ter o que preencher, abra a sessão do Roberto e **apague** antes

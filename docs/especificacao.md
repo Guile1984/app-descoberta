@@ -194,6 +194,10 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
 - Verificações de segurança no CI: `pip-audit` (dependências com vulnerabilidades conhecidas), regras "S" do ruff (flake8-bandit), gitleaks (segredos no repositório e no histórico) e Dependabot (atualizações de dependências).
 - Revisão de dados pessoais e segredos em todo o histórico do Git antes de tornar o repositório público.
 - Repositório público.
+- Migrações do banco com Alembic (antecipadas do guia de produção): o esquema do fim do Sprint 7 é a revisão inicial; bancos anteriores (como o `data/demo.db`) são reconhecidos sem perda de dados; a app migra ao ligar, com cópia de segurança antes e tudo numa transação.
+- Proteções para o uso local: só os hosts `127.0.0.1` e `localhost` (contra DNS rebinding) e pedidos que gravam dados só vindos da própria app (contra CSRF a partir de outra aba do navegador). Início com dois cliques (`iniciar.bat`), sempre em `127.0.0.1`.
+- Licenças: código em MIT; metodologia (`docs/modelo-descoberta.md` e conteúdo do questionário) em CC BY 4.0; avisos de terceiros em `THIRD_PARTY_NOTICES.md`, conferidos por teste.
+- Evidências de qualidade com base na ISO/IEC 25010 (`docs/qualidade/`), com medições de tempo de resposta e de geração de documentos; o texto final fica para o Sprint 9.
 
 ### Sprint 9 — Documentação
 
@@ -203,7 +207,7 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
   - referência: questionário YAML, cálculos, estrutura do relatório, comandos;
   - explicação: a metodologia do Modelo de Descoberta, as decisões de arquitetura e o uso de LLM.
 - Site com MkDocs e tema Material, publicado no GitHub Pages.
-- Guia de uso em produção, com modelo de ameaças e a lista de medidas necessárias antes de expor a app: autenticação, HTTPS, proteção contra CSRF, limite de requisições, criptografia do banco e dos backups, migrações com Alembic, logs de auditoria e teste de intrusão profissional.
+- Guia de uso em produção, com modelo de ameaças e a lista de medidas necessárias antes de expor a app: autenticação, HTTPS, proteção contra CSRF, limite de requisições, criptografia do banco e dos backups, logs de auditoria e teste de intrusão profissional (as migrações com Alembic já existem desde o Sprint 8).
 - `CONTRIBUTING.md`.
 - CI da documentação: compilação do site (modo estrito) e verificação de links quebrados.
 

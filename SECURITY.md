@@ -29,7 +29,7 @@ profissional.
 3. Descreva o problema, como reproduzir, a versão (ou o commit) e o impacto que você vê.
 
 O relato fica visível só para o mantenedor. Por favor, não inclua dados pessoais reais
-de clientes: use os dados fictícios do banco de demonstração (`uv run python -m
+de clientes: use os dados fictícios do banco de demonstração (`uv run --no-dev python -m
 descoberta.demo`).
 
 ## O que esperar

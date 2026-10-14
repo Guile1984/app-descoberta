@@ -1,4 +1,4 @@
-"""Liga a app e abre o navegador: `uv run python -m descoberta` (é o que o iniciar.bat faz).
+"""Liga a app e abre o navegador: `uv run --no-dev python -m descoberta` (o iniciar.bat faz isso).
 
 O servidor escuta só em 127.0.0.1, o próprio computador, e não há opção para mudar isso:
 a app é feita para um único usuário, no notebook dele (veja SECURITY.md).
@@ -47,7 +47,7 @@ def porta_livre(porta: int) -> bool:
 def aviso_porta_ocupada(porta: int) -> str:
     return (
         f"A porta {porta} já está em uso: a app talvez já esteja aberta em {endereco(porta)}.\n"
-        f"Para usar outra porta: uv run python -m descoberta --porta {porta + 1}"
+        f"Para usar outra porta: uv run --no-dev python -m descoberta --porta {porta + 1}"
     )
 
 

@@ -82,10 +82,13 @@ Na pasta da app, clique com o botão direito num espaço vazio → **Abrir no Te
 rode:
 
 ```powershell
-uv run python -m descoberta.demo                 # cria (ou recria) data\demo.db
+uv run --no-dev python -m descoberta.demo        # cria (ou recria) data\demo.db
 $env:DESCOBERTA_BANCO = "data/demo.db"           # usa o banco de demonstração
-uv run python -m descoberta                      # abre a app no navegador
+uv run --no-dev python -m descoberta             # abre a app no navegador
 ```
+
+(`--no-dev` instala só o que a app usa, sem as ferramentas de teste, como o
+`iniciar.bat`.)
 
 O que ver, nesta ordem:
 

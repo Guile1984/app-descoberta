@@ -13,6 +13,7 @@ permissions:
 jobs:
   qualidade:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -38,6 +39,7 @@ jobs:
   # no Ubuntu e, no dia a dia, no Windows de quem desenvolve).
   testes-windows:
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
 
@@ -49,4 +51,8 @@ jobs:
         run: uv sync --locked
 
       - name: Testes sem navegador
-        run: uv run pytest -m "not e2e"
+        # -v e saída sem buffer: o log mostra cada teste na hora. faulthandler_timeout:
+        # se um teste passar de 2 min, o pytest mostra onde cada thread está parada.
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: uv run pytest -m "not e2e" -v -o faulthandler_timeout=120

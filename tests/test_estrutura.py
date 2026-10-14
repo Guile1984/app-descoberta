@@ -105,3 +105,11 @@ def test_relatorio_nao_refaz_calculos():
             if any(m == c or m.startswith(c + ".") for c in CALCULOS_DO_DOMINIO)
         ]
     assert not encontradas, f"use dominio.painel em vez de: {encontradas}"
+
+
+def test_versao_do_pacote_e_a_do_pyproject():
+    import tomllib
+
+    pyproject = RAIZ_PACOTE.parents[1] / "pyproject.toml"
+    versao = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["version"]
+    assert descoberta.__version__ == versao

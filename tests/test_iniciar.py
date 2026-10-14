@@ -55,3 +55,16 @@ def test_iniciar_bat_tem_finais_de_linha_do_windows():
     conteudo = (RAIZ / "iniciar.bat").read_bytes()
     assert b"\r\n" in conteudo
     assert b"\n" not in conteudo.replace(b"\r\n", b"")
+
+
+def test_iniciar_bat_so_usa_sintaxe_do_cmd():
+    # Redirecionamentos do Bash (/dev/null) viram erro no cmd.exe: "O sistema não pode
+    # encontrar o caminho especificado".
+    texto = (RAIZ / "iniciar.bat").read_text(encoding="utf-8")
+    assert "/dev/null" not in texto
+    assert "where uv >nul 2>nul" in texto
+
+
+def test_iniciar_bat_instala_so_o_que_a_app_usa():
+    texto = (RAIZ / "iniciar.bat").read_text(encoding="utf-8")
+    assert texto.count("uv run --no-dev --frozen") == 2

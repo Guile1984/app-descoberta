@@ -486,9 +486,9 @@ def main(argumentos: list[str] | None = None) -> None:
     try:
         popular_demo(caminho)
     except PermissionError:
-        sys.exit(f"Não foi possível recriar {caminho}: feche a app (uvicorn) e tente de novo.")
+        sys.exit(f"Não foi possível recriar {caminho}: feche a app e tente de novo.")
     banco = caminho.as_posix()
-    rodar = "uv run uvicorn descoberta.web.app:app --reload"
+    rodar = "uv run --no-dev python -m descoberta"
     print(f"Banco de demonstração criado em {banco}. Para abrir a app com ele:")
     print(f'  PowerShell: $env:DESCOBERTA_BANCO = "{banco}"; {rodar}')
     print(f"  Bash:       DESCOBERTA_BANCO={banco} {rodar}")

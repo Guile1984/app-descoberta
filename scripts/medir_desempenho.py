@@ -235,7 +235,7 @@ def main(argumentos: list[str] | None = None) -> int:
     texto = json.dumps(resultado, ensure_ascii=False, indent=2)
     print(texto)
     if opcoes.saida:
-        opcoes.saida.write_text(texto + "\n", encoding="utf-8")
+        opcoes.saida.write_text(texto + "\n", encoding="utf-8", newline="\n")
     return 0
 
 
