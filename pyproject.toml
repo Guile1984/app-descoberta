@@ -6,6 +6,7 @@ readme = "README.md"
 authors = [{ name = "Guilherme Ferraz Stauffer" }]
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.16",
     "anthropic>=1",
     "fastapi>=0.142.4",
     "jinja2>=3.1.6",

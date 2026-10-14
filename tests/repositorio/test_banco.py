@@ -50,8 +50,8 @@ def test_cria_todas_as_tabelas(engine):
 
 
 def test_banco_antigo_ganha_a_tabela_do_cronometro(tmp_path):
-    # Bancos criados antes do Sprint 5 (como o data/demo.db) não têm a tabela cronometro.
-    # O create_all cria a tabela que falta sem mexer nas outras: não precisa de migração.
+    # O create_all (usado nas fixtures dos testes) cria a tabela que falta sem mexer nas
+    # outras. Na app, quem cuida disso é `migrar` (veja test_migracoes.py).
     engine = criar_engine(tmp_path / "antigo.db")
     tabelas_antigas = [t for t in SQLModel.metadata.sorted_tables if t.name != "cronometro"]
     SQLModel.metadata.create_all(engine, tables=tabelas_antigas)

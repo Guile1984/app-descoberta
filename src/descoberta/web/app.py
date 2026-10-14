@@ -20,7 +20,7 @@ from starlette.exceptions import HTTPException
 
 from descoberta.llm.configuracao import carregar_configuracao_llm
 from descoberta.llm.prompts import carregar_prompts
-from descoberta.repositorio import CAMINHO_BANCO_PADRAO, criar_engine, criar_tabelas
+from descoberta.repositorio import CAMINHO_BANCO_PADRAO, criar_engine, migrar
 
 from .catalogo import Catalogo
 from .dependencias import html
@@ -63,7 +63,9 @@ def criar_app(
         app.state.prompts = carregar_prompts(Path(pasta_config).parent / "prompts")
         app.state.provedor_llm = provedor_llm
         app.state.engine = criar_engine(caminho_banco)
-        criar_tabelas(app.state.engine)
+        # Leva o banco à versão mais recente (com cópia de segurança antes, se houver o que
+        # migrar). Um banco que não dá para migrar com segurança impede a app de ligar.
+        migrar(app.state.engine)
         yield
         app.state.engine.dispose()
 
