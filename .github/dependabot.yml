@@ -1,0 +1,23 @@
+# Dependabot: propõe atualizações das dependências (uv.lock) e das actions do CI.
+# Atualizações de segurança chegam a qualquer momento; as demais, uma vez por semana,
+# agrupadas num PR só para não encher a fila.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      dependencias:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      actions:
+        patterns: ["*"]

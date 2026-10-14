@@ -1,6 +1,7 @@
 """Segredos e rede: a chave nunca vai para o Git e os testes nunca saem da máquina."""
 
 import json
+import re
 import socket
 import subprocess
 from pathlib import Path
@@ -87,3 +88,19 @@ def test_chave_e_provedor_fora_do_ambiente_dos_testes():
 
     assert "ANTHROPIC_API_KEY" not in os.environ
     assert "DESCOBERTA_LLM_PROVEDOR" not in os.environ
+
+
+def test_actions_do_ci_fixadas_pelo_hash():
+    # Uma tag (v4) pode ser movida para outro código; o hash do commit, não.
+    soltas = []
+    for workflow in (RAIZ / ".github" / "workflows").glob("*.yml"):
+        for linha in workflow.read_text(encoding="utf-8").splitlines():
+            if "uses:" in linha and not re.search(r"@[0-9a-f]{40}\b", linha):
+                soltas.append(f"{workflow.name}: {linha.strip()}")
+    assert soltas == []
+
+
+def test_workflows_so_com_permissao_de_leitura():
+    for workflow in (RAIZ / ".github" / "workflows").glob("*.yml"):
+        texto = workflow.read_text(encoding="utf-8")
+        assert "permissions:\n  contents: read" in texto, workflow.name
