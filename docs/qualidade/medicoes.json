@@ -1,0 +1,132 @@
+{
+  "medido_em": "2026-10-14T12:16:38",
+  "versao_da_app": "0.1.0",
+  "maquina": {
+    "sistema": "Windows 11 (10.0.26200)",
+    "processador": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel",
+    "nucleos": "16",
+    "python": "3.13.16"
+  },
+  "inicio_da_app": {
+    "banco_novo_ms": 83.9,
+    "banco_em_dia_ms": 75.1,
+    "banco_legado_reconhecido_ms": 99.5
+  },
+  "tela_ao_vivo": {
+    "abrir_sessao": {
+      "n": 30,
+      "p50_ms": 4.6,
+      "p95_ms": 5.3,
+      "max_ms": 6.0
+    },
+    "trocar_de_aba": {
+      "n": 30,
+      "p50_ms": 3.7,
+      "p95_ms": 3.9,
+      "max_ms": 4.5
+    },
+    "salvar_resposta": {
+      "n": 30,
+      "p50_ms": 3.7,
+      "p95_ms": 4.3,
+      "max_ms": 4.9
+    },
+    "salvar_numero_e_recalcular": {
+      "n": 30,
+      "p50_ms": 5.1,
+      "p95_ms": 5.7,
+      "max_ms": 5.8
+    },
+    "abrir_revisao": {
+      "n": 30,
+      "p50_ms": 11.8,
+      "p95_ms": 12.9,
+      "max_ms": 14.0
+    },
+    "previa_do_relatorio": {
+      "n": 30,
+      "p50_ms": 7.0,
+      "p95_ms": 7.8,
+      "max_ms": 16.3
+    }
+  },
+  "documentos": {
+    "relatorio_markdown": {
+      "n": 10,
+      "p50_ms": 5.6,
+      "p95_ms": 5.7,
+      "max_ms": 5.7,
+      "tamanho_kb": 21.2
+    },
+    "relatorio_docx": {
+      "n": 10,
+      "p50_ms": 140.4,
+      "p95_ms": 147.8,
+      "max_ms": 147.8,
+      "tamanho_kb": 50.2
+    },
+    "relatorio_pdf": {
+      "n": 10,
+      "p50_ms": 85.8,
+      "p95_ms": 140.9,
+      "max_ms": 140.9,
+      "tamanho_kb": 77.1
+    },
+    "relatorio_pdf_interno": {
+      "n": 10,
+      "p50_ms": 93.3,
+      "p95_ms": 95.6,
+      "max_ms": 95.6,
+      "tamanho_kb": 79.6
+    },
+    "proposta_docx": {
+      "n": 10,
+      "p50_ms": 76.4,
+      "p95_ms": 81.8,
+      "max_ms": 81.8,
+      "tamanho_kb": 45.5
+    },
+    "proposta_pdf": {
+      "n": 10,
+      "p50_ms": 46.5,
+      "p95_ms": 49.7,
+      "max_ms": 49.7,
+      "tamanho_kb": 60.7
+    },
+    "relatorio_e_proposta_pdf": {
+      "n": 10,
+      "p50_ms": 136.3,
+      "p95_ms": 137.9,
+      "max_ms": 137.9,
+      "tamanho_kb": 137.0
+    },
+    "registrar_versao_do_relatorio": {
+      "n": 3,
+      "p50_ms": 93.2,
+      "p95_ms": 97.3,
+      "max_ms": 97.3
+    }
+  },
+  "memoria": {
+    "pico_python_ao_gerar_pdf_mb": 1.5
+  },
+  "banco_do_caso_roberto_kb": 260.0,
+  "volume": {
+    "clientes": 500,
+    "sessoes": 1000,
+    "carga_s": 3.2,
+    "lista_de_clientes": {
+      "n": 10,
+      "p50_ms": 5.5,
+      "p95_ms": 64.3,
+      "max_ms": 64.3
+    },
+    "detalhe_de_um_cliente": {
+      "n": 10,
+      "p50_ms": 1.5,
+      "p95_ms": 1.7,
+      "max_ms": 1.7
+    },
+    "tamanho_do_banco_kb": 364.0
+  }
+}

@@ -4,10 +4,10 @@ Dois jeitos de chegar aqui:
 - pela app (`repositorio.banco.migrar`), que passa a conexão já aberta em
   `config.attributes["conexao"]`;
 - pela linha de comando de quem desenvolve (`uv run alembic revision --autogenerate`),
-  que usa o banco de `alembic.ini` (ou da variável DESCOBERTA_BANCO).
+  que usa só o banco descartável de `alembic.ini` (data/alembic-dev.db). A variável
+  DESCOBERTA_BANCO é ignorada de propósito: a linha de comando nunca mexe no banco real,
+  que só é migrado pela app, com cópia de segurança antes.
 """
-
-import os
 
 from alembic import context
 from sqlmodel import SQLModel
@@ -34,7 +34,7 @@ conexao = config.attributes.get("conexao")
 if conexao is not None:
     _rodar(conexao)
 else:
-    engine = criar_engine(os.environ.get("DESCOBERTA_BANCO") or config.get_main_option("banco"))
+    engine = criar_engine(config.get_main_option("banco"))
     with engine.connect() as nova:
         _rodar(nova)
     engine.dispose()
