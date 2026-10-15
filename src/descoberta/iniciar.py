@@ -5,9 +5,15 @@ a app é feita para um único usuário, no notebook dele (veja SECURITY.md).
 
 Se a porta já está em uso pela própria app (o consultor deu dois cliques de novo), não é
 erro: só abre o navegador nela. Para saber se é a própria app, pergunta em `/_identidade`.
+
+Ctrl+C no Windows: normalmente o console avisa o Python *e* o cmd.exe que roda o
+iniciar.bat; o Python mostra um traceback e o cmd pergunta "Deseja finalizar o arquivo em
+lotes (S/N)?". Enquanto a app roda, o Ctrl+C vira uma tecla comum no console
+(`_ctrl_c_como_tecla`): ninguém recebe o sinal, e a própria app lê a tecla e encerra.
 """
 
 import argparse
+import contextlib
 import socket
 import sys
 import threading
@@ -21,6 +27,10 @@ HOST = "127.0.0.1"
 PORTA_PADRAO = 8000
 # O que a rota /_identidade responde: outro programa na mesma porta não responde isto.
 IDENTIDADE = "app-descoberta"
+# Segundos que a janela do segundo clique duplo fica aberta antes de fechar sozinha.
+ESPERA_JANELA_REPETIDA = 5
+APP_ENCERRADA = "App encerrada. Pode fechar esta janela."
+CTRL_C = "\x03"
 
 
 def endereco(porta: int) -> str:
@@ -76,6 +86,37 @@ def como_encerrar(url: str) -> str:
     )
 
 
+def _ctrl_c_como_tecla():
+    """No console do Windows, faz o Ctrl+C virar uma tecla comum, e não um sinal.
+
+    Devolve uma função que desfaz a mudança, ou None fora de um console do Windows (nos
+    testes, por exemplo), onde nada muda e o Ctrl+C continua sendo um KeyboardInterrupt.
+    """
+    if sys.platform != "win32":
+        return None
+    import ctypes
+
+    kernel32 = ctypes.windll.kernel32
+    entrada = kernel32.GetStdHandle(-10)  # STD_INPUT_HANDLE
+    modo = ctypes.c_uint32()
+    if not kernel32.GetConsoleMode(entrada, ctypes.byref(modo)):
+        return None
+    ENABLE_PROCESSED_INPUT = 0x0001  # com ele ligado, o Ctrl+C vira sinal
+    if not kernel32.SetConsoleMode(entrada, modo.value & ~ENABLE_PROCESSED_INPUT):
+        return None
+    return lambda: kernel32.SetConsoleMode(entrada, modo.value)
+
+
+def _vigiar_ctrl_c(servidor: uvicorn.Server, tecla_disponivel, ler_tecla) -> None:
+    """Lê as teclas da janela enquanto a app roda; com Ctrl+C, pede para o servidor parar."""
+    while not servidor.should_exit:
+        if tecla_disponivel():
+            if ler_tecla() == CTRL_C:
+                servidor.should_exit = True
+        else:
+            time.sleep(0.1)
+
+
 def _abrir_navegador_quando_pronto(servidor: uvicorn.Server, url: str) -> None:
     limite = time.monotonic() + 60
     while not servidor.started and time.monotonic() < limite:
@@ -90,9 +131,11 @@ def main(argumentos: list[str] | None = None) -> int:
     if not porta_livre(opcoes.porta):
         if app_ja_aberta(opcoes.porta):
             print(f"A app já está aberta em {url}. Abrindo o navegador.")
-            print("Para encerrar a app, feche a outra janela preta (a que foi aberta antes).")
+            print("Para encerrar a app, use a outra janela preta (a que foi aberta antes).")
+            print(f"Esta janela fecha sozinha em {ESPERA_JANELA_REPETIDA} segundos.", flush=True)
             if not opcoes.sem_navegador:
                 webbrowser.open(url)
+            time.sleep(ESPERA_JANELA_REPETIDA)
             return 0
         print(aviso_porta_ocupada(opcoes.porta))
         return 1
@@ -102,5 +145,23 @@ def main(argumentos: list[str] | None = None) -> int:
             target=_abrir_navegador_quando_pronto, args=(servidor, url), daemon=True
         ).start()
     print(como_encerrar(url), flush=True)
-    servidor.run()
+    desfazer = _ctrl_c_como_tecla()
+    try:
+        if desfazer:
+            import msvcrt
+
+            threading.Thread(
+                target=_vigiar_ctrl_c, args=(servidor, msvcrt.kbhit, msvcrt.getwch), daemon=True
+            ).start()
+        # Fora do console do Windows (ou se o modo não mudou), o Ctrl+C ainda é sinal.
+        with contextlib.suppress(KeyboardInterrupt):
+            servidor.run()
+        print(f"\n{APP_ENCERRADA}", flush=True)
+        if desfazer:
+            import msvcrt
+
+            msvcrt.getwch()  # a janela fica com a mensagem até teclar algo ou fechá-la
+    finally:
+        if desfazer:
+            desfazer()
     return 0

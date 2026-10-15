@@ -26,4 +26,5 @@ if exist .env (
 ) else (
     uv run --no-dev --frozen python -m descoberta %*
 )
-pause
+rem Encerrada normalmente ou ja aberta: a janela fecha. Com erro, fica para ler a mensagem.
+if errorlevel 1 pause

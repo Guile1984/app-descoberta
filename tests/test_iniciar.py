@@ -168,3 +168,55 @@ def test_iniciar_bat_avisa_env_salvo_como_txt():
     # O Bloco de Notas salva ".env" como ".env.txt" quando a extensão está oculta.
     texto = (RAIZ / "iniciar.bat").read_text(encoding="utf-8")
     assert "if exist .env.txt" in texto
+
+
+# --- Encerramento sem traceback e sem a pergunta do arquivo em lotes ------------------
+
+
+def test_ctrl_c_encerra_sem_traceback(monkeypatch, capsys):
+    def interromper(self):
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(iniciar, "porta_livre", lambda porta: True)
+    monkeypatch.setattr(iniciar.uvicorn.Server, "run", interromper)
+    assert iniciar.main(["--sem-navegador"]) == 0
+    assert "App encerrada. Pode fechar esta janela." in capsys.readouterr().out
+
+
+def test_ctrl_c_como_tecla_pede_para_o_servidor_parar():
+    servidor = iniciar.uvicorn.Server(iniciar.configuracao(8000))
+    teclas = iter(["a", "\x03"])
+    iniciar._vigiar_ctrl_c(servidor, tecla_disponivel=lambda: True, ler_tecla=lambda: next(teclas))
+    assert servidor.should_exit
+
+
+def test_vigia_para_quando_o_servidor_ja_parou():
+    servidor = iniciar.uvicorn.Server(iniciar.configuracao(8000))
+    servidor.should_exit = True
+    iniciar._vigiar_ctrl_c(
+        servidor, tecla_disponivel=lambda: True, ler_tecla=lambda: pytest.fail("leu tecla")
+    )
+
+
+def test_fora_do_console_do_windows_nao_mexe_no_ctrl_c():
+    # Nos testes a entrada não é um console: o Ctrl+C continua como sinal (KeyboardInterrupt).
+    assert iniciar._ctrl_c_como_tecla() is None
+
+
+def test_segunda_janela_fecha_sozinha(monkeypatch, capsys):
+    esperas = []
+    monkeypatch.setattr(iniciar, "porta_livre", lambda porta: False)
+    monkeypatch.setattr(iniciar, "app_ja_aberta", lambda porta: True)
+    monkeypatch.setattr(iniciar.webbrowser, "open", lambda url: None)
+    monkeypatch.setattr(iniciar.time, "sleep", esperas.append)
+    assert iniciar.main([]) == 0
+    assert esperas == [iniciar.ESPERA_JANELA_REPETIDA]
+    assert "fecha sozinha" in capsys.readouterr().out
+
+
+def test_iniciar_bat_so_pausa_quando_ha_erro():
+    # Sucesso (app encerrada ou já aberta) fecha a janela; erro (porta de outro programa,
+    # falha do uv) deixa a mensagem na tela até teclar algo.
+    linhas = (RAIZ / "iniciar.bat").read_text(encoding="utf-8").splitlines()
+    assert linhas[-1] == "if errorlevel 1 pause"
+    assert "pause" not in linhas  # o único "pause" solto é o do uv ausente, indentado

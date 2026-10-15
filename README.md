@@ -69,7 +69,8 @@ ZIP numa pasta sua, por exemplo `Documentos\app-descoberta`. (Quem usa Git pode 
   bibliotecas (alguns minutos). Das próximas vezes, abre em segundos e sem internet.
 - O navegador abre sozinho em **http://127.0.0.1:8000**. Se não abrir, digite esse
   endereço no navegador.
-- Se a app já estiver aberta, dois cliques no `iniciar.bat` só abrem o navegador nela.
+- Se a app já estiver aberta, dois cliques no `iniciar.bat` só abrem o navegador nela (a
+  janela nova fecha sozinha em alguns segundos).
 
 **4. Preencha o seu perfil de consultor** (nome, empresa, CPF ou CNPJ, contato, cidade e
 logotipo opcional). Ele vai no relatório e na proposta e fica só no seu computador.

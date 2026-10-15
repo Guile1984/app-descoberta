@@ -2,31 +2,6 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
-## [Não lançado]
-
-Ajustes da validação no Windows Sandbox (Sprint 8, antes do merge).
-
-### Adicionado
-- Faixa discreta "Banco de demonstração" no alto de todas as telas quando o banco aberto
-  é o `demo.db` (`app.state.banco_demo`, lido pelo `base.html`).
-- Rota `/_identidade`, usada pelo inicializador para saber se a porta é da própria app.
-
-### Mudado
-- `iniciar.bat`/`python -m descoberta`: a janela explica como encerrar a app (fechar a
-  janela ou `Ctrl+C`; fechar o navegador não encerra). Com a porta já em uso pela
-  própria app, avisa "A app já está aberta" e só abre o navegador; o erro de porta
-  ocupada ficou só para outro programa.
-- `iniciar.bat`: mostra quando leu o `.env` e avisa se encontrar `.env.txt` (Bloco de
-  Notas com extensões ocultas). A leitura do `.env` já existia; conferida com
-  `uv run --env-file`.
-- README: as duas formas de instalar o uv (winget e instalador oficial pelo PowerShell)
-  como opções A e B, com o erro que indica usar a B; como encerrar a app; a faixa do
-  demo.
-
-### Pendente
-- Investigar por que `tests/relatorio/test_exportar.py` leva ~3,5 min no job Windows do
-  CI (`docs/qualidade/evidencias.md`).
-
 ## [1.0.0] — 2026-10-14 — Sprint 8: Validação e lançamento
 
 ### Adicionado
@@ -48,9 +23,22 @@ Ajustes da validação no Windows Sandbox (Sprint 8, antes do merge).
   - pedidos que gravam (POST, PUT, PATCH, DELETE) vindos de outro site recebem 403
     (`Sec-Fetch-Site` ou `Origin`), contra CSRF a partir de outra aba do navegador.
 - Início com dois cliques: `iniciar.bat` → `python -m descoberta`
-  (`descoberta.iniciar`): sobe só em `127.0.0.1` (sem opção de host), avisa porta
-  ocupada, abre o navegador quando o servidor está pronto e instala só o que a app usa
-  (`uv run --no-dev --frozen`).
+  (`descoberta.iniciar`): sobe só em `127.0.0.1` (sem opção de host), abre o navegador
+  quando o servidor está pronto e instala só o que a app usa (`uv run --no-dev --frozen`).
+  - A janela explica como encerrar (fechar a janela ou `Ctrl+C`; fechar o navegador não
+    encerra).
+  - `Ctrl+C` encerra mostrando só "App encerrada. Pode fechar esta janela.", sem o
+    traceback do Python e sem a pergunta "Deseja finalizar o arquivo em lotes (S/N)?":
+    enquanto a app roda, o `Ctrl+C` vira uma tecla comum no console (sem o modo
+    `ENABLE_PROCESSED_INPUT`), lida pela própria app; conferido num console real.
+  - Com a porta já em uso pela própria app (rota `/_identidade`), avisa "A app já está
+    aberta", abre o navegador e a janela fecha sozinha em 5 s; porta ocupada por outro
+    programa continua sendo erro, com a sugestão de `--porta`.
+  - A janela só fica esperando uma tecla quando há erro (`if errorlevel 1 pause`).
+  - Lê o `.env`, se existir, e mostra isso na janela; avisa se encontrar `.env.txt`
+    (Bloco de Notas com as extensões ocultas).
+- Faixa discreta "Banco de demonstração" no alto de todas as telas quando o banco aberto
+  é o `demo.db` (`app.state.banco_demo`, lido pelo `base.html`).
 - Caso Roberto de ponta a ponta no navegador, num banco vazio
   (`tests/e2e/test_caso_roberto_ponta_a_ponta.py`): perfil, cliente, sessão, revisão sem
   pendências, relatório e versão registrada, com os números de referência na tela e no
@@ -83,11 +71,17 @@ Ajustes da validação no Windows Sandbox (Sprint 8, antes do merge).
   e-mail *noreply* nos commits).
 - Versão 1.0.0 no `pyproject.toml` e no pacote (estava em 0.1.0), com teste de que batem.
 - O comando de demonstração mostra o mesmo comando do README.
+- README, depois da instalação no Windows Sandbox: as duas formas de instalar o uv como
+  opções A (winget) e B (instalador oficial pelo PowerShell, para Windows sem winget),
+  com o erro que indica usar a B; como encerrar a app; a faixa do demo; o cuidado com o
+  `.env.txt`.
 - Especificação: Alembic, proteções locais, licenças e evidências no Sprint 8.
 
 ### Pendências
-- Gui: repetir a instalação num Windows novo (Windows Sandbox), revisar o relatório e a
-  proposta do Roberto, gravar o GIF e seguir `docs/publicar-repositorio.md`.
+- Gui: revisar o relatório e a proposta do Roberto, gravar o GIF e seguir
+  `docs/publicar-repositorio.md`. (Instalação no Windows Sandbox: feita, com o README.)
+- Investigar por que `tests/relatorio/test_exportar.py` leva ~3,5 min no job Windows do
+  CI (`docs/qualidade/evidencias.md`).
 
 ## [0.10.0] — 2026-10-12 — Sprint 7: LLM
 
