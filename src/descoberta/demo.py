@@ -46,12 +46,12 @@ from descoberta.repositorio import (
     criar_engine,
     criar_proposta,
     criar_sessao,
-    criar_tabelas,
     editar_item,
     excluir_item,
     itens_da_sessao,
     marcar_hipotese,
     marcar_sinal,
+    migrar,
     salvar_metricas,
     salvar_nota,
     salvar_perfil,
@@ -393,7 +393,7 @@ def popular_demo(caminho: Path | str = CAMINHO_DEMO, hoje: date | None = None) -
 
     engine = criar_engine(caminho)
     try:
-        criar_tabelas(engine)
+        migrar(engine)
         with Session(engine) as session:
             salvar_perfil(session, **CONSULTOR, logotipo=_logotipo_ficticio())
             cliente = criar_cliente(session, **CLIENTE)
@@ -486,9 +486,9 @@ def main(argumentos: list[str] | None = None) -> None:
     try:
         popular_demo(caminho)
     except PermissionError:
-        sys.exit(f"Não foi possível recriar {caminho}: feche a app (uvicorn) e tente de novo.")
+        sys.exit(f"Não foi possível recriar {caminho}: feche a app e tente de novo.")
     banco = caminho.as_posix()
-    rodar = "uv run uvicorn descoberta.web.app:app --reload"
+    rodar = "uv run --no-dev python -m descoberta"
     print(f"Banco de demonstração criado em {banco}. Para abrir a app com ele:")
     print(f'  PowerShell: $env:DESCOBERTA_BANCO = "{banco}"; {rodar}')
     print(f"  Bash:       DESCOBERTA_BANCO={banco} {rodar}")

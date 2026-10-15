@@ -43,7 +43,7 @@ def montar(tmp_path):
         caminho = tmp_path / "demo.db"
         sessao_id = popular_demo(caminho, hoje=date(2026, 10, 11))
         app = criar_app(caminho_banco=caminho, pasta_config=RAIZ / "config", provedor_llm=provedor)
-        cliente = TestClient(app, follow_redirects=False)
+        cliente = TestClient(app, base_url="http://127.0.0.1", follow_redirects=False)
         cliente.__enter__()
         abertos.append(cliente)
         return cliente, sessao_id, app

@@ -76,6 +76,8 @@ tests/
 - Testes rápidos, sem navegador: `uv run pytest -m "not e2e"`
 - Navegador dos testes e2e (uma vez por máquina): `uv run playwright install chromium`
 - Lint: `uv run ruff check . && uv run ruff format --check .`
+- Migração nova (depois de mudar um modelo): `uv run alembic upgrade head` e
+  `uv run alembic revision --autogenerate --rev-id NNNN -m "..."`; revisar o arquivo gerado.
 
 ## Não fazer
 - Não adicionar dependências sem justificar no plano do sprint.

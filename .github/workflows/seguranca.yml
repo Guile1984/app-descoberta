@@ -1,0 +1,52 @@
+name: Segurança
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 9 * * 1" # toda segunda, 6h em Brasília: vulnerabilidades novas aparecem sem commit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Dependências (inclusive as de desenvolvimento) com vulnerabilidades conhecidas.
+  pip-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+
+      - name: Exportar as versões exatas do uv.lock
+        run: uv export --frozen --all-groups --no-emit-project --format requirements-txt -o requisitos.txt
+
+      - name: pip-audit
+        # Confere exatamente o que está no uv.lock (com hashes), sem instalar nada.
+        run: uvx pip-audit==2.10.1 -r requisitos.txt --require-hashes --disable-pip --progress-spinner off
+
+  # Segredos no repositório e em TODO o histórico do Git (todas as branches).
+  gitleaks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VERSAO: 8.30.1
+      # SHA-256 do gitleaks_8.30.1_linux_x64.tar.gz, do checksums.txt da release oficial.
+      SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0 # o histórico inteiro, não só o último commit
+
+      - name: Baixar o gitleaks e conferir o hash
+        run: |
+          arquivo="gitleaks_${VERSAO}_linux_x64.tar.gz"
+          curl -sSfL -o "$arquivo" "https://github.com/gitleaks/gitleaks/releases/download/v${VERSAO}/${arquivo}"
+          echo "${SHA256}  ${arquivo}" | sha256sum --check
+          tar -xzf "$arquivo" gitleaks
+
+      - name: gitleaks (histórico completo)
+        # As exceções conferidas ficam em .gitleaks.toml. --redact: o log nunca mostra o valor.
+        run: ./gitleaks git . --log-opts="--all" --redact --no-banner --exit-code 1

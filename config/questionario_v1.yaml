@@ -1,5 +1,6 @@
 # Questionário da sessão de descoberta — versão 1.
 # Fonte: docs/modelo-descoberta.md. Validado por descoberta.questionario (Pydantic).
+# Conteúdo © 2026 Guilherme Ferraz Stauffer, sob CC BY 4.0 (LICENSE-METODOLOGIA.md).
 #
 # Convenções:
 # - ids das perguntas: b{bloco}.o{n} (obrigatória), b{bloco}.a{n} (aprofundamento),

@@ -5,7 +5,18 @@ combinando com o salvamento automático a cada campo da tela.
 """
 
 from ._comum import RegistroNaoEncontrado
-from .banco import CAMINHO_BANCO_PADRAO, criar_engine, criar_tabelas
+from .banco import (
+    CAMINHO_BANCO_PADRAO,
+    REVISAO_INICIAL,
+    EsquemaDivergente,
+    FalhaNaMigracao,
+    ResultadoMigracao,
+    criar_engine,
+    criar_tabelas,
+    migrar,
+    revisao_atual,
+    revisao_mais_recente,
+)
 from .clientes import (
     atualizar_cliente,
     criar_cliente,
@@ -186,6 +197,13 @@ __all__ = [
     "criar_proposta",
     "criar_sessao",
     "criar_tabelas",
+    "revisao_mais_recente",
+    "revisao_atual",
+    "migrar",
+    "ResultadoMigracao",
+    "FalhaNaMigracao",
+    "EsquemaDivergente",
+    "REVISAO_INICIAL",
     "descartar_rascunho",
     "desmarcar_sinal",
     "editar_anotacao",

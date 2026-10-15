@@ -17,6 +17,9 @@
   {% block scripts %}{% endblock %}
 </head>
 <body>
+  {% if request.app.state.banco_demo %}
+  <div class="faixa-demo" role="note">Banco de demonstração: dados fictícios. Para voltar aos seus dados, feche a app e abra pelo iniciar.bat.</div>
+  {% endif %}
   <header class="topo">
     <a href="/" class="marca">Descoberta</a>
     <nav class="acoes"><a href="/">Clientes</a><a href="/perfil">Perfil</a></nav>

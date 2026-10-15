@@ -37,7 +37,7 @@ def demo(tmp_path, falso):
     caminho = tmp_path / "demo.db"
     sessao_id = popular_demo(caminho, hoje=date(2026, 10, 11))
     app = criar_app(caminho_banco=caminho, pasta_config=RAIZ / "config", provedor_llm=falso)
-    with TestClient(app, follow_redirects=False) as cliente:
+    with TestClient(app, base_url="http://127.0.0.1", follow_redirects=False) as cliente:
         yield cliente, sessao_id, app
 
 
@@ -155,7 +155,10 @@ def test_fase_de_outra_sessao_ou_inexistente(demo):
 def test_sem_proposta(tmp_path, falso):
     caminho = tmp_path / "vazio.db"
     app = criar_app(caminho_banco=caminho, pasta_config=RAIZ / "config", provedor_llm=falso)
-    with TestClient(app, follow_redirects=False) as cliente, Session(app.state.engine) as banco:
+    with (
+        TestClient(app, base_url="http://127.0.0.1", follow_redirects=False) as cliente,
+        Session(app.state.engine) as banco,
+    ):
         cliente_db = criar_cliente(banco, nome="Ana", empresa="Padaria Sol")
         sessao = criar_sessao(
             banco, cliente_id=cliente_db.id, data=date(2026, 10, 9), versao_questionario=1

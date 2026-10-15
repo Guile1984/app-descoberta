@@ -1,5 +1,9 @@
 # Modelo de Descoberta — Apps de IA para PMEs
 
+> © 2026 Guilherme Ferraz Stauffer. Licenciado sob [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.pt-br):
+> pode ser usado e adaptado, inclusive comercialmente, com crédito ao autor. Veja
+> `LICENSE-METODOLOGIA.md`.
+
 ## Como usar o modelo
 
 A sessão de descoberta responde três perguntas antes de qualquer proposta: a dor é real, a IA é o caminho certo e os dados permitem fazê-la. O modelo é voltado a PMEs, onde quem decide costuma ser o dono, os dados vivem em planilhas, WhatsApp e ERP básico, o orçamento é curto e raramente há equipe de TI.

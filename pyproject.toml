@@ -1,11 +1,14 @@
 [project]
 name = "descoberta"
-version = "0.1.0"
+version = "1.0.0"
 description = "App local para conduzir sessões de descoberta de soluções de IA com PMEs."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE", "LICENSE-METODOLOGIA.md", "THIRD_PARTY_NOTICES.md", "src/descoberta/relatorio/fontes/LICENSE-DejaVu.txt"]
 authors = [{ name = "Guilherme Ferraz Stauffer" }]
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.16",
     "anthropic>=1",
     "fastapi>=0.142.4",
     "jinja2>=3.1.6",
@@ -42,7 +45,14 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM", "PT"]
+# S: regras de segurança do flake8-bandit (Sprint 8).
+select = ["E", "F", "I", "UP", "B", "SIM", "PT", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+# Nos testes: assert é o próprio pytest (S101); "0.0.0.0" aparece só para provar que a app
+# recusa (S104); random gera casos de teste, não segredos (S311); git é chamado para
+# conferir o que está versionado (S603, S607).
+"tests/**" = ["S101", "S104", "S311", "S603", "S607"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

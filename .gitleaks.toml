@@ -1,0 +1,11 @@
+# Configuração do gitleaks (segredos no repositório e em todo o histórico do Git).
+# Usa as regras padrão; as exceções abaixo são falsos positivos conferidos um a um.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Nome do provedor de LLM (claude, ollama ou desligado), não é chave"
+targetRules = ["generic-api-key"]
+regexTarget = "line"
+regexes = ['''DESCOBERTA_LLM_PROVEDOR\s*=\s*`?(claude|ollama|desligado)\b''']
