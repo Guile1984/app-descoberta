@@ -2,6 +2,31 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [Não lançado]
+
+Ajustes da validação no Windows Sandbox (Sprint 8, antes do merge).
+
+### Adicionado
+- Faixa discreta "Banco de demonstração" no alto de todas as telas quando o banco aberto
+  é o `demo.db` (`app.state.banco_demo`, lido pelo `base.html`).
+- Rota `/_identidade`, usada pelo inicializador para saber se a porta é da própria app.
+
+### Mudado
+- `iniciar.bat`/`python -m descoberta`: a janela explica como encerrar a app (fechar a
+  janela ou `Ctrl+C`; fechar o navegador não encerra). Com a porta já em uso pela
+  própria app, avisa "A app já está aberta" e só abre o navegador; o erro de porta
+  ocupada ficou só para outro programa.
+- `iniciar.bat`: mostra quando leu o `.env` e avisa se encontrar `.env.txt` (Bloco de
+  Notas com extensões ocultas). A leitura do `.env` já existia; conferida com
+  `uv run --env-file`.
+- README: as duas formas de instalar o uv (winget e instalador oficial pelo PowerShell)
+  como opções A e B, com o erro que indica usar a B; como encerrar a app; a faixa do
+  demo.
+
+### Pendente
+- Investigar por que `tests/relatorio/test_exportar.py` leva ~3,5 min no job Windows do
+  CI (`docs/qualidade/evidencias.md`).
+
 ## [1.0.0] — 2026-10-14 — Sprint 8: Validação e lançamento
 
 ### Adicionado

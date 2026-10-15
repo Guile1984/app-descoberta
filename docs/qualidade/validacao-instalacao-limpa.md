@@ -42,10 +42,14 @@ ZIP da branch baixado do GitHub (o mesmo caminho do passo 2 da instalação).
 
 ## Pendente (Gui)
 
-- [ ] Repetir os passos 1 a 4 e a demonstração num Windows realmente novo, sem o `uv`
-  (sugestão: **Windows Sandbox**, que vem no Windows 11 Pro e começa sempre limpo:
-  "Ativar ou desativar recursos do Windows" → Área Restrita do Windows). Anotar o tempo
-  total e qualquer passo que tenha gerado dúvida.
+- [x] Repetir os passos 1 a 4 e a demonstração num Windows realmente novo, sem o `uv`
+  (**Windows Sandbox**). Feito pelo Gui em 15/10/2026: o README funcionou do zero. O
+  `winget` não existia no Sandbox; só o instalador oficial do uv pelo PowerShell
+  funcionou (o README passou a mostrar as duas opções em destaque). Ajustes pedidos e
+  feitos: o `iniciar.bat` explica como encerrar e reconhece a app já aberta; faixa
+  "Banco de demonstração" em todas as telas; aviso de `.env.txt`.
+- [ ] Investigar a lentidão de `tests/relatorio/test_exportar.py` no job Windows do CI
+  (~3,5 min; veja `evidencias.md`, Testabilidade).
 - [ ] Ler o relatório e a proposta do Roberto gerados (PDF e DOCX), como cliente leria, e
   registrar o que mudaria. É o "relatório revisado" do critério de aceite do Sprint 8.
 - [ ] Gravar o GIF (`docs/roteiro-gif.md`).

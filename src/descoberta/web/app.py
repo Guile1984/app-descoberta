@@ -6,7 +6,8 @@ usam um banco temporário); `app` é a instância que o uvicorn roda:
     uv run uvicorn descoberta.web.app:app --reload
 
 O banco vem da variável de ambiente DESCOBERTA_BANCO (ex.: data/demo.db); sem ela, é o
-banco real em data/descoberta.db. O LLM (rascunhos depois da sessão) vem de config/llm.yaml
+banco real em data/descoberta.db. Com o banco de demonstração (demo.db), todas as telas
+mostram uma faixa avisando. O LLM (rascunhos depois da sessão) vem de config/llm.yaml
 e da variável DESCOBERTA_LLM_PROVEDOR; por padrão, fica desligado.
 """
 
@@ -15,10 +16,13 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from descoberta.demo import CAMINHO_DEMO
+from descoberta.iniciar import IDENTIDADE
 from descoberta.llm.configuracao import carregar_configuracao_llm
 from descoberta.llm.prompts import carregar_prompts
 from descoberta.repositorio import CAMINHO_BANCO_PADRAO, criar_engine, migrar
@@ -83,6 +87,8 @@ def criar_app(
     # é conferido antes da origem.
     app.add_middleware(SoDaPropriaApp)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=HOSTS_LOCAIS)
+    # Lido pelo base.html: a faixa "Banco de demonstração" aparece em todas as telas.
+    app.state.banco_demo = Path(caminho_banco).name == CAMINHO_DEMO.name
     app.mount("/static", StaticFiles(directory=PASTA_STATIC), name="static")
     app.include_router(clientes.router)
     app.include_router(perfil.router)
@@ -96,6 +102,11 @@ def criar_app(
     app.include_router(relatorio.router)
     app.include_router(rascunhos.router)
     app.include_router(proposta.router)
+
+    @app.get("/_identidade", include_in_schema=False)
+    async def identidade():
+        # O iniciar.bat pergunta aqui se a porta ocupada é da própria app (veja iniciar.py).
+        return PlainTextResponse(IDENTIDADE)
 
     @app.exception_handler(HTTPException)
     async def pagina_de_erro(request: Request, erro: HTTPException):

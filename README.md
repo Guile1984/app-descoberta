@@ -39,13 +39,17 @@ Você precisa de internet só na instalação. Não é preciso instalar o Python
 disso sozinho.
 
 **1. Instale o uv** (o programa que baixa e roda a app).
-Abra o menu Iniciar, digite **PowerShell**, abra e cole:
+Abra o menu Iniciar, digite **PowerShell**, abra e cole **um** dos dois comandos abaixo.
+
+**Opção A — pelo winget** (o instalador de programas do Windows):
 
 ```powershell
 winget install --id=astral-sh.uv -e
 ```
 
-Se o `winget` não existir no seu Windows, use este comando no lugar dele:
+**Opção B — pelo instalador oficial do uv** (use esta se aparecer *"winget não é
+reconhecido como nome de cmdlet"*: o winget não vem em todo Windows, como o Windows
+Sandbox e alguns computadores de empresa):
 
 ```powershell
 powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
@@ -65,12 +69,14 @@ ZIP numa pasta sua, por exemplo `Documentos\app-descoberta`. (Quem usa Git pode 
   bibliotecas (alguns minutos). Das próximas vezes, abre em segundos e sem internet.
 - O navegador abre sozinho em **http://127.0.0.1:8000**. Se não abrir, digite esse
   endereço no navegador.
+- Se a app já estiver aberta, dois cliques no `iniciar.bat` só abrem o navegador nela.
 
 **4. Preencha o seu perfil de consultor** (nome, empresa, CPF ou CNPJ, contato, cidade e
 logotipo opcional). Ele vai no relatório e na proposta e fica só no seu computador.
 
-**Para fechar a app**, feche a janela preta (ou tecle `Ctrl+C` nela). Seus dados ficam
-salvos em `data\descoberta.db`, na pasta da app.
+**Para fechar a app**, feche a janela preta (ou tecle `Ctrl+C` nela). **Fechar o navegador
+não fecha a app**: ela continua rodando enquanto a janela preta estiver aberta. Seus dados
+ficam salvos em `data\descoberta.db`, na pasta da app.
 
 ## Demonstração: o caso Roberto
 
@@ -89,6 +95,9 @@ uv run --no-dev python -m descoberta             # abre a app no navegador
 
 (`--no-dev` instala só o que a app usa, sem as ferramentas de teste, como o
 `iniciar.bat`.)
+
+Enquanto o banco de demonstração estiver aberto, uma faixa amarela **"Banco de
+demonstração"** aparece no alto de todas as telas.
 
 O que ver, nesta ordem:
 
@@ -138,7 +147,10 @@ para o Git) e preencha:
   baixe o modelo (`ollama pull llama3.1:8b`) e use `DESCOBERTA_LLM_PROVEDOR=ollama`.
 - Para desligar de novo: `DESCOBERTA_LLM_PROVEDOR=desligado` (ou em branco).
 
-O `iniciar.bat` lê o `.env` sozinho, se ele existir.
+O `iniciar.bat` lê o `.env` sozinho, se ele existir (a janela preta mostra
+"Configuracoes lidas do arquivo .env"). Feche a app e abra de novo depois de mudar o
+`.env`. Cuidado: com as extensões ocultas, o Bloco de Notas salva `.env.txt`; o nome
+precisa ser exatamente `.env` (o `iniciar.bat` avisa se encontrar o `.env.txt`).
 
 **Proteção dos dados (LGPD):**
 

@@ -25,6 +25,11 @@ h3 { font-size: 1rem; margin-top: 1.5rem; }
   display: flex; gap: 1.5rem; align-items: center;
   padding: 0.6rem 1.25rem; border-bottom: 1px solid var(--borda); background: var(--fundo-suave);
 }
+/* Banco de demonstração (demo.db): discreta, mas em todas as telas. */
+.faixa-demo {
+  padding: 0.2rem 1.25rem; font-size: 0.8rem; text-align: center;
+  background: var(--aviso-fundo); color: var(--texto); border-bottom: 1px solid var(--borda);
+}
 .marca { font-weight: 700; text-decoration: none; color: var(--texto); }
 .conteudo { padding: 1rem 1.25rem; max-width: 1400px; margin: 0 auto; }
 

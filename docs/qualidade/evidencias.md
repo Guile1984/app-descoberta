@@ -122,6 +122,10 @@ nada físico.
   falha (a acompanhar no CI).
 - **Falta:** cobertura de ramos; acompanhar a falha intermitente no CI; acelerar a suíte no
   Windows (por exemplo, testes em paralelo).
+- **Pendência:** investigar por que `tests/relatorio/test_exportar.py` leva cerca de
+  **3,5 min** no job Windows do CI (uma fatia grande dos ~20 min). Hipóteses a conferir
+  com `--durations`: geração de PDF/fontes repetida a cada teste, antivírus do runner
+  sobre os arquivos temporários, ou fixtures que poderiam ser de módulo.
 
 ### Portabilidade
 
