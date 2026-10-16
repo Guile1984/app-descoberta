@@ -11,6 +11,7 @@ import types
 import typing
 from fnmatch import fnmatch
 from pathlib import Path
+from urllib.parse import unquote
 
 import pytest
 import yaml
@@ -334,6 +335,41 @@ def test_readme_aponta_para_o_site_e_para_o_guia_de_producao():
     assert f"{SITE}explicacao/uso-em-producao/" in readme
     for arquivo in ("README.md", "SECURITY.md"):
         assert "Sprint 9" not in (RAIZ / arquivo).read_text(encoding="utf-8"), arquivo
+
+
+def test_readme_sem_gif_pendente_e_com_link_para_o_tutorial():
+    readme = (RAIZ / "README.md").read_text(encoding="utf-8")
+    assert "em breve" not in readme.lower()
+    assert f"{SITE}tutorial/primeira-sessao/" in readme
+
+
+def test_readme_com_os_badges_logo_abaixo_do_titulo():
+    linhas = (RAIZ / "README.md").read_text(encoding="utf-8").splitlines()
+    assert linhas[0].startswith("# ")
+    # Os badges ficam no bloco logo abaixo do título, antes do primeiro parágrafo.
+    topo = "\n".join(linhas[1 : linhas.index("", 2)])
+    repositorio = "https://github.com/Guile1984/app-descoberta"
+    workflows = sorted(p.name for p in (RAIZ / ".github" / "workflows").glob("*.yml"))
+    assert workflows == ["ci.yml", "docs.yml", "seguranca.yml"]
+    for workflow in workflows:
+        badge = f"{repositorio}/actions/workflows/{workflow}/badge.svg?branch=main"
+        assert badge in topo, workflow
+        assert f"({repositorio}/actions/workflows/{workflow})" in topo, workflow
+    assert "img.shields.io/badge/licen%C3%A7a-MIT-" in topo
+    assert "(LICENSE)" in topo
+    assert "img.shields.io/github/v/release/Guile1984/app-descoberta" in topo
+    assert f"({repositorio}/releases/latest)" in topo
+    # A versão do Python vem do requires-python do pyproject.toml, sem cópia no README.
+    assert "img.shields.io/python/required-version-toml" in topo
+    assert "app-descoberta/main/pyproject.toml" in unquote(topo)
+
+
+def test_readme_termina_com_o_rodape():
+    readme = (RAIZ / "README.md").read_text(encoding="utf-8").rstrip()
+    rodape = readme[readme.rindex("\n---\n") :]
+    for link in (f"({SITE})", "(CONTRIBUTING.md)", "(SECURITY.md)", "(LICENSE)"):
+        assert link in rodape, link
+    assert "Desenvolvido por [Guilherme Ferraz Stauffer](https://github.com/Guile1984)" in rodape
 
 
 def test_arquivos_da_comunidade():

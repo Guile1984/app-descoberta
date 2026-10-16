@@ -165,7 +165,7 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
 | 6b — Relatório | Relatório por template em versão cliente e versão interna (com sinais de alerta e anotações), capa, 12 seções, Anexo A (respostas), Anexo B (memória de cálculo com hipóteses destacadas) e termo de ciência e validação; exportação Markdown, DOCX, PDF; registro das versões enviadas com hash no rodapé. Usa `dominio.painel` (os mesmos números da tela) e ignora respostas de condicionais ocultas | Relatório do caso Roberto gerado offline nos três formatos |
 | 6c — Proposta comercial | Perfil do consultor (primeiro uso); Proposta Comercial separada do relatório, a partir da sessão e da revisão; Condições Gerais num modelo editável fora do código, com ajuste e exclusão por proposta; versões registradas com hash e cláusulas congeladas; aviso antes de propor com score "não seguir agora"; relatório e proposta num PDF só; títulos que não ficam sozinhos no pé da página | Proposta do caso Roberto gerada offline nos três formatos e registrada, sem alterar o relatório |
 | 7 — LLM | Provedor abstrato (API Claude e Ollama), anonimização com lista de pessoas citadas e prévia obrigatória, prompts versionados; rascunhos sugeridos para os textos narrativos da revisão e da proposta, numa tabela própria | Nenhum dado pessoal no payload enviado (teste automatizado) |
-| 8 — Validação e lançamento | Caso Roberto de ponta a ponta; escolha de licença; README para quem não programa, com GIF de demonstração; transparência sobre o desenvolvimento com Claude Code; limitações declaradas; SECURITY.md; aviso de uso local; verificações de segurança no CI; revisão de dados e segredos no histórico do Git; repositório público | Sessão simulada completa, relatório revisado e repositório público sem dados pessoais nem segredos no histórico |
+| 8 — Validação e lançamento | Caso Roberto de ponta a ponta; escolha de licença; README para quem não programa, com demonstração (link para o tutorial com capturas de tela; GIF opcional); transparência sobre o desenvolvimento com Claude Code; limitações declaradas; SECURITY.md; aviso de uso local; verificações de segurança no CI; revisão de dados e segredos no histórico do Git; repositório público | Sessão simulada completa, relatório revisado e repositório público sem dados pessoais nem segredos no histórico |
 | 9 — Documentação | Documentação no modelo Diátaxis (tutorial, guias práticos, referência e explicação, incluindo a metodologia do Modelo de Descoberta); site com MkDocs e tema Material no GitHub Pages; guia de uso em produção com modelo de ameaças; CONTRIBUTING; CI da documentação | Site publicado, compilando sem avisos e sem links quebrados |
 
 ### Sprint 6c — Proposta comercial
@@ -186,7 +186,7 @@ Ordem do núcleo para a interface. Cada sprint só fecha com todos os critérios
 
 - Caso Roberto de ponta a ponta: sessão simulada, revisão, relatório e versão registrada.
 - Escolha da licença do projeto (e conferência das licenças das dependências e da fonte DejaVu).
-- README para quem não programa: o que a app faz, como instalar e usar, com um GIF de demonstração.
+- README para quem não programa: o que a app faz, como instalar e usar, com uma demonstração: o link para o tutorial do site, com capturas de cada tela (o GIF ficou opcional; roteiro em `docs/roteiro-gif.md`).
 - Transparência: o projeto foi desenvolvido com Claude Code, sob direção e revisão do autor.
 - Limitações declaradas (o que a app não faz e os cuidados de uso).
 - `SECURITY.md`: política de relato de vulnerabilidades e escopo suportado.
