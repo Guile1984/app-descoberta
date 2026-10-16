@@ -43,7 +43,8 @@ jobs:
           arquivo="lychee-x86_64-unknown-linux-gnu.tar.gz"
           curl -sSfL -o "$arquivo" "https://github.com/lycheeverse/lychee/releases/download/lychee-v${LYCHEE_VERSAO}/${arquivo}"
           echo "${LYCHEE_SHA256}  ${arquivo}" | sha256sum --check
-          tar -xzf "$arquivo" lychee
+          # O binário fica numa pasta com o nome do arquivo: extrai só ele, sem a pasta.
+          tar -xzf "$arquivo" --strip-components=1 "${arquivo%.tar.gz}/lychee"
 
       - name: Links quebrados (lychee)
         # Links para arquivos do próprio repositório são conferidos nos arquivos locais: num
