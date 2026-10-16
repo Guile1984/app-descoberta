@@ -58,5 +58,5 @@ primeiros garantem que nada sensível fica exposto antes de abrir.
   `SECURITY.md` (aba *Security → Policy*).
 - [ ] Na aba *Security*, conferir que não há alertas abertos (Dependabot e secret
   scanning).
-- [ ] Gravar o GIF (`docs/roteiro-gif.md`) e publicar num PR (a `main` agora só aceita
-  PR).
+- [x] ~~Gravar o GIF~~: substituído pelo link para o tutorial do site, com capturas de
+  tela. O roteiro (`docs/roteiro-gif.md`) ficou como opcional.

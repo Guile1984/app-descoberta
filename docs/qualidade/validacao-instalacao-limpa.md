@@ -52,4 +52,5 @@ ZIP da branch baixado do GitHub (o mesmo caminho do passo 2 da instalação).
   (~3,5 min; veja `evidencias.md`, Testabilidade).
 - [ ] Ler o relatório e a proposta do Roberto gerados (PDF e DOCX), como cliente leria, e
   registrar o que mudaria. É o "relatório revisado" do critério de aceite do Sprint 8.
-- [ ] Gravar o GIF (`docs/roteiro-gif.md`).
+- [x] ~~Gravar o GIF~~: substituído pelo link para o tutorial do site, com capturas de
+  tela. O roteiro (`docs/roteiro-gif.md`) ficou como opcional.

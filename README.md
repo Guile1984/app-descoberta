@@ -1,5 +1,12 @@
 # App de Descoberta para IA
 
+[![CI](https://github.com/Guile1984/app-descoberta/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Guile1984/app-descoberta/actions/workflows/ci.yml)
+[![Segurança](https://github.com/Guile1984/app-descoberta/actions/workflows/seguranca.yml/badge.svg?branch=main)](https://github.com/Guile1984/app-descoberta/actions/workflows/seguranca.yml)
+[![Documentação](https://github.com/Guile1984/app-descoberta/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/Guile1984/app-descoberta/actions/workflows/docs.yml)
+[![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-blue)](LICENSE)
+[![Última versão](https://img.shields.io/github/v/release/Guile1984/app-descoberta?label=vers%C3%A3o)](https://github.com/Guile1984/app-descoberta/releases/latest)
+[![Python](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FGuile1984%2Fapp-descoberta%2Fmain%2Fpyproject.toml)](pyproject.toml)
+
 Uma app para o consultor conduzir, ao vivo, a **sessão de descoberta** com uma pequena ou
 média empresa que quer uma solução de inteligência artificial, e sair dela com o
 **Relatório de Descoberta** e a **Proposta Comercial** prontos para revisar e enviar.
@@ -7,9 +14,8 @@ média empresa que quer uma solução de inteligência artificial, e sair dela c
 📖 **Documentação completa:** <https://guile1984.github.io/app-descoberta/>, com o
 tutorial da primeira sessão, guias práticos, referência e as decisões do projeto.
 
-<!-- Quando o GIF estiver gravado (roteiro em docs/roteiro-gif.md), troque esta linha por:
-![Demonstração: sessão do caso Roberto, do primeiro bloco ao relatório](docs/img/demo.gif) -->
-> 🎬 Demonstração em vídeo (GIF): em breve.
+🎓 **Veja a app em ação:** o tutorial [Sua primeira sessão](https://guile1984.github.io/app-descoberta/tutorial/primeira-sessao/)
+conduz o caso Roberto do zero até o relatório e a proposta, com capturas de cada tela.
 
 > [!WARNING]
 > **Uso local, por uma pessoa só.** A app roda no seu computador e só aceita conexões
@@ -232,3 +238,12 @@ uv sync && uv run pytest -m "not e2e"     # instalar e rodar os testes rápidos
 
 Segurança: [SECURITY.md](SECURITY.md). Mudanças: [CHANGELOG.md](CHANGELOG.md). Código de
 conduta: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+---
+
+[Documentação](https://guile1984.github.io/app-descoberta/) ·
+[Como contribuir](CONTRIBUTING.md) ·
+[Segurança](SECURITY.md) ·
+[Licença](LICENSE)
+
+Desenvolvido por [Guilherme Ferraz Stauffer](https://github.com/Guile1984).

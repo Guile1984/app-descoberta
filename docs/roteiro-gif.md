@@ -1,5 +1,9 @@
 # Roteiro do GIF de demonstração
 
+**Opcional, não pendente.** No lugar do GIF, o README aponta para o tutorial
+[Sua primeira sessão](https://guile1984.github.io/app-descoberta/tutorial/primeira-sessao/),
+com capturas de cada tela. Este roteiro fica para quando valer a pena gravar um.
+
 GIF curto para o topo do README: mostra, em cerca de 75 segundos, a sessão do caso
 Roberto conduzida ao vivo até o relatório. Quem assiste deve entender três coisas: os
 cálculos aparecem enquanto o cliente fala, tudo se faz pelo teclado e o relatório sai
@@ -44,7 +48,8 @@ Total: cerca de 75 segundos.
   cada resultado importante parado por 2 s (cenas 3, 5 e 7).
 - Exporte em GIF com **no máximo 8 MB** (o GitHub mostra GIFs grandes, mas carregam
   devagar). Se passar disso: reduza para 12 quadros por segundo ou recorte a área.
-- Salve em `docs/img/demo.gif` e, no README, troque a linha "Demonstração em vídeo: em
-  breve" pela imagem que está no comentário logo acima dela.
+- Salve em `docs/img/demo.gif` e, no README, ponha a imagem logo acima do parágrafo
+  "Veja a app em ação" (mantenha o link para o tutorial):
+  `![Demonstração: sessão do caso Roberto, do primeiro bloco ao relatório](docs/img/demo.gif)`.
 - Confira o GIF quadro a quadro: só podem aparecer os dados fictícios do demo (Roberto,
   Construtora Alvorada, Ana Exemplo), nunca um cliente real, uma notificação ou outra aba.

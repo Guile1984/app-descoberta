@@ -39,6 +39,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
   atualização e desenvolvimento viraram resumos com link para os guias e o
   `CONTRIBUTING.md`.
 - README e `SECURITY.md` apontam para o guia de uso em produção.
+- Acabamento do README: badges logo abaixo do título (workflows de CI, Segurança e
+  Documentação, licença MIT, última release e versão do Python lida do `pyproject.toml`),
+  link para o tutorial no lugar do aviso "GIF em breve" e rodapé com documentação,
+  CONTRIBUTING, SECURITY, licença e autor; testes em `tests/test_documentacao.py`.
+- GIF de demonstração deixou de ser pendência: o roteiro (`docs/roteiro-gif.md`) ficou
+  como opcional, e as listas de pendências e a especificação foram ajustadas.
 - `scripts/revisar_historico.py` mostra à parte os contatos públicos de propósito (o
   e-mail do código de conduta).
 - pre-commit: `check-yaml` não lê o `mkdocs.yml` (tag `!!python/name`, conferida pelo
