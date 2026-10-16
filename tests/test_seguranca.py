@@ -7,6 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+import yaml
 
 RAIZ = Path(__file__).resolve().parents[1]
 # Montado em partes para este arquivo não conter o próprio padrão que procura.
@@ -100,10 +101,21 @@ def test_actions_do_ci_fixadas_pelo_hash():
     assert soltas == []
 
 
+# A única exceção: o job que publica o site no GitHub Pages precisa escrever no Pages e
+# provar ao GitHub de qual workflow veio (id-token). Nenhum job escreve no repositório.
+PERMISSOES_DE_JOB = {("docs.yml", "publicar"): {"pages": "write", "id-token": "write"}}
+
+
 def test_workflows_so_com_permissao_de_leitura():
     for workflow in (RAIZ / ".github" / "workflows").glob("*.yml"):
         texto = workflow.read_text(encoding="utf-8")
         assert "permissions:\n  contents: read" in texto, workflow.name
+        fluxo = yaml.safe_load(texto)
+        assert fluxo["permissions"] == {"contents": "read"}, workflow.name
+        for nome, job in fluxo["jobs"].items():
+            if "permissions" in job:
+                esperado = PERMISSOES_DE_JOB.get((workflow.name, nome))
+                assert job["permissions"] == esperado, f"{workflow.name}: job {nome}"
 
 
 def test_jobs_do_ci_tem_limite_de_tempo():

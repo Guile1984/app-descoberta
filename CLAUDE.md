@@ -76,6 +76,8 @@ tests/
 - Testes rápidos, sem navegador: `uv run pytest -m "not e2e"`
 - Navegador dos testes e2e (uma vez por máquina): `uv run playwright install chromium`
 - Lint: `uv run ruff check . && uv run ruff format --check .`
+- Documentação: `uv run --group docs mkdocs build --strict` (site em `docs/`, conferido
+  com o código por `tests/test_documentacao.py`); capturas: `uv run python scripts/capturar_telas.py`
 - Migração nova (depois de mudar um modelo): `uv run alembic upgrade head` e
   `uv run alembic revision --autogenerate --rev-id NNNN -m "..."`; revisar o arquivo gerado.
 

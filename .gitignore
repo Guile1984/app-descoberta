@@ -14,6 +14,9 @@ dist/
 htmlcov/
 coverage.xml
 
+# Site da documentação gerado pelo MkDocs (publicado pelo CI)
+site/
+
 # Dados locais (LGPD: nunca versionar)
 *.db
 *.sqlite

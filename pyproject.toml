@@ -32,6 +32,10 @@ dev = [
     "pytest-playwright>=0.9.0",
     "ruff",
 ]
+docs = [
+    "mkdocs>=1.6,<2",
+    "mkdocs-material>=9.6",
+]
 
 [build-system]
 requires = ["uv_build>=0.12,<0.13"]
