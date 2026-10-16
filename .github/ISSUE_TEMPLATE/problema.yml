@@ -1,0 +1,62 @@
+name: Problema
+description: Algo não funciona como a documentação diz.
+title: "[Problema] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado por relatar! **Não cole dados reais de clientes** (nomes, contatos, respostas,
+        relatórios): use os dados fictícios do banco de demonstração
+        (`uv run --no-dev python -m descoberta.demo`). Vulnerabilidades de segurança vão pelo
+        relato privado (veja o SECURITY.md), e não aqui.
+  - type: textarea
+    id: o_que_aconteceu
+    attributes:
+      label: O que aconteceu
+      description: O que você fez, o que esperava e o que aconteceu. Mensagens de erro ajudam muito.
+    validations:
+      required: true
+  - type: textarea
+    id: como_reproduzir
+    attributes:
+      label: Como reproduzir
+      description: Os passos, de preferência no banco de demonstração.
+      placeholder: |
+        1. Abri a sessão do Roberto no banco de demonstração
+        2. Fui ao bloco 4
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: versao
+    attributes:
+      label: Versão da app
+      description: "A primeira versão no CHANGELOG.md da pasta da app (por exemplo, 1.0.0), ou o commit, se você usa Git."
+    validations:
+      required: true
+  - type: dropdown
+    id: sistema
+    attributes:
+      label: Sistema
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS
+        - Linux
+        - Outro
+    validations:
+      required: true
+  - type: input
+    id: navegador
+    attributes:
+      label: Navegador
+      placeholder: Chrome 130, Edge 130…
+  - type: checkboxes
+    id: conferencias
+    attributes:
+      label: Conferências
+      options:
+        - label: Não há dados reais de clientes neste relato (só dados fictícios).
+          required: true
+        - label: Procurei nas issues abertas e não achei o mesmo problema.

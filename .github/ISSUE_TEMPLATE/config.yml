@@ -1,0 +1,9 @@
+# Sem issue em branco: cada relato usa um dos modelos desta pasta.
+blank_issues_enabled: false
+contact_links:
+  - name: Relatar uma vulnerabilidade de segurança
+    url: https://github.com/Guile1984/app-descoberta/security/advisories/new
+    about: Relato privado, visível só para o mantenedor. Não abra uma issue pública (veja o SECURITY.md).
+  - name: Documentação
+    url: https://guile1984.github.io/app-descoberta/
+    about: Tutorial, guias práticos, referência e explicações da app.

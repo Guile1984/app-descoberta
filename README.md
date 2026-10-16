@@ -4,6 +4,9 @@ Uma app para o consultor conduzir, ao vivo, a **sessão de descoberta** com uma 
 média empresa que quer uma solução de inteligência artificial, e sair dela com o
 **Relatório de Descoberta** e a **Proposta Comercial** prontos para revisar e enviar.
 
+📖 **Documentação completa:** <https://guile1984.github.io/app-descoberta/>, com o
+tutorial da primeira sessão, guias práticos, referência e as decisões do projeto.
+
 <!-- Quando o GIF estiver gravado (roteiro em docs/roteiro-gif.md), troque esta linha por:
 ![Demonstração: sessão do caso Roberto, do primeiro bloco ao relatório](docs/img/demo.gif) -->
 > 🎬 Demonstração em vídeo (GIF): em breve.
@@ -11,8 +14,8 @@ média empresa que quer uma solução de inteligência artificial, e sair dela c
 > [!WARNING]
 > **Uso local, por uma pessoa só.** A app roda no seu computador e só aceita conexões
 > dele mesmo (`127.0.0.1`). Ela não tem login nem HTTPS. **Não a exponha à rede** (outro
-> computador, celular, servidor na nuvem, `--host 0.0.0.0`) sem as medidas do guia de uso
-> em produção. Veja [SECURITY.md](SECURITY.md).
+> computador, celular, servidor na nuvem, `--host 0.0.0.0`) sem as medidas do [guia de uso
+> em produção](https://guile1984.github.io/app-descoberta/explicacao/uso-em-producao/). Veja [SECURITY.md](SECURITY.md).
 
 ## O que a app faz
 
@@ -115,6 +118,9 @@ nova do terminal, onde `DESCOBERTA_BANCO` não está definido).
 
 ## Uso no dia a dia
 
+Para aprender fazendo, siga o tutorial [Sua primeira sessão](https://guile1984.github.io/app-descoberta/tutorial/primeira-sessao/).
+Em resumo:
+
 - **Antes da sessão:** cadastre o cliente e abra uma sessão nova. Cada sessão guarda a
   versão do questionário usada.
 - **Durante a sessão:** cada campo salva sozinho ao sair dele. Use vírgula para decimais
@@ -135,85 +141,45 @@ nova do terminal, onde `DESCOBERTA_BANCO` não está definido).
 ### Rascunhos por LLM (opcional, depois da sessão)
 
 Na revisão e na proposta, um modelo de linguagem pode sugerir rascunhos dos textos
-narrativos. Você revisa e aceita ou descarta: nada muda no seu texto sem aceitar. O LLM
-nunca é usado durante a sessão ao vivo nem para cálculos, e a app funciona inteira sem
-ele.
+narrativos, que você aceita ou descarta. Vem **desligado**, e a app funciona inteira sem
+ele. Nunca é usado durante a sessão ao vivo nem para cálculos. Antes de qualquer envio, os
+dados pessoais viram marcadores (`[CLIENTE]`, `[PESSOA_1]`…), e a app mostra a prévia
+exata do que sai.
 
-**Vem desligado.** Para ativar, copie o arquivo `.env.example` para `.env` (que nunca vai
-para o Git) e preencha:
-
-- API da Anthropic: `DESCOBERTA_LLM_PROVEDOR=claude` e a sua chave em
-  `ANTHROPIC_API_KEY`. Modelo padrão: `claude-opus-5-5`, em `config/llm.yaml`.
-- Modelo local, sem nada sair do computador: instale o [Ollama](https://ollama.com),
-  baixe o modelo (`ollama pull llama3.1:8b`) e use `DESCOBERTA_LLM_PROVEDOR=ollama`.
-- Para desligar de novo: `DESCOBERTA_LLM_PROVEDOR=desligado` (ou em branco).
-
-O `iniciar.bat` lê o `.env` sozinho, se ele existir (a janela preta mostra
-"Configuracoes lidas do arquivo .env"). Feche a app e abra de novo depois de mudar o
-`.env`. Cuidado: com as extensões ocultas, o Bloco de Notas salva `.env.txt`; o nome
-precisa ser exatamente `.env` (o `iniciar.bat` avisa se encontrar o `.env.txt`).
-
-**Proteção dos dados (LGPD):**
-
-- Antes do envio, nomes, empresa, CPF/CNPJ, telefones, e-mails, endereços e cidade viram
-  marcadores (`[CLIENTE]`, `[PESSOA_1]`…); a troca é desfeita no seu computador, na
-  resposta.
-- Nomes citados de passagem (um funcionário do cliente) só são trocados se estiverem em
-  "Pessoas citadas": a app sugere os nomes que encontra; confira a lista.
-- Antes do primeiro rascunho, a app mostra a prévia exata do que sai e pede confirmação.
-- As anotações do consultor e os sinais de alerta não vão no pedido, a não ser que você
-  marque "Usar anotações internas como contexto".
-- Sem internet, sem chave ou com erro na API, a app avisa e continua com o seu texto e o
-  relatório por template.
-- Cada rascunho guarda o provedor, o modelo e a versão do prompt (`prompts/`).
+Para ativar (API da Anthropic ou um modelo local com o Ollama), copie o `.env.example` para
+`.env` e siga o guia [Configurar o LLM](https://guile1984.github.io/app-descoberta/guias/configurar-llm/). Como a
+anonimização funciona: [Privacidade, LGPD e anonimização](https://guile1984.github.io/app-descoberta/explicacao/privacidade-lgpd/).
 
 ## Cuidados com os dados: backup e criptografia
 
-Tudo o que você registra (clientes, sessões, relatórios, logotipo) fica num arquivo só:
-**`data\descoberta.db`**, na pasta da app. São dados pessoais dos seus clientes, então
-vale a LGPD.
+Tudo o que você registra fica num arquivo só: **`data\descoberta.db`**, na pasta da app.
+São dados pessoais dos seus clientes, então vale a LGPD.
 
-**Backup**
+- **Backup:** com a app **fechada**, copie o `data\descoberta.db` para um lugar
+  **criptografado**, depois de cada sessão importante e no mínimo uma vez por semana. Para
+  restaurar, com a app fechada, coloque a cópia de volta no lugar.
+- **Criptografia do disco:** ative o BitLocker (Windows) ou o FileVault (Mac), para ninguém
+  ler o banco tirando o disco de um notebook perdido.
 
-- Com a app **fechada**, copie o `data\descoberta.db` para outro lugar. Faça isso depois
-  de cada sessão importante e, no mínimo, uma vez por semana.
-- Guarde a cópia num pendrive ou HD externo **criptografado**, ou compacte-a com senha
-  antes de mandar para a nuvem (no [7-Zip](https://www.7-zip.org): formato 7z, criptografia
-  AES-256, marcando "Criptografar nomes de arquivos").
-- Para restaurar: com a app fechada, coloque a cópia de volta em `data\descoberta.db`.
-- Ao atualizar para uma versão nova da app, ela mesma faz uma cópia antes de mudar a
-  estrutura do banco (`data\descoberta.antes-....db`). Pode apagar essas cópias depois de
-  conferir que está tudo certo.
-
-**Criptografia do disco**
-
-Se o notebook for perdido ou roubado, a criptografia impede que alguém leia o banco
-tirando o disco do computador.
-
-- **Windows 11 Pro:** ative o **BitLocker** (menu Iniciar → "Gerenciar o BitLocker").
-- **Windows 11 Home:** veja se há **Criptografia do dispositivo** em Configurações →
-  Privacidade e segurança.
-- **Mac:** ative o **FileVault** (Ajustes do Sistema → Privacidade e Segurança).
-- Guarde a **chave de recuperação** fora do notebook (na sua conta Microsoft ou Apple, ou
-  impressa num lugar seguro). Sem ela, perder a senha é perder os dados.
+Passo a passo, inclusive como compactar com senha e restaurar com segurança:
+[Backup e restauração](https://guile1984.github.io/app-descoberta/guias/backup-e-restauracao/).
 
 ## Atualizar para uma versão nova
 
-1. Feche a app e faça um backup do `data\descoberta.db` (veja acima).
-2. Baixe o ZIP da versão nova e extraia numa pasta nova.
-3. Copie a pasta `data` (e o `.env`, se você usa o LLM) da pasta antiga para a nova.
-4. Abra pelo `iniciar.bat` da pasta nova. Se a versão nova mudar a estrutura do banco, a
-   app atualiza sozinha ao abrir, guardando uma cópia antes.
+Feche a app, faça um backup, extraia a versão nova numa pasta nova e copie para ela a pasta
+`data` (e o `.env`, se você usa o LLM). Se a versão nova mudar a estrutura do banco, a app
+atualiza sozinha ao abrir, guardando uma cópia antes. Detalhes:
+[Atualizar a app](https://guile1984.github.io/app-descoberta/guias/atualizar-a-app/).
 
 ## Limitações declaradas
 
 - **Um usuário, um computador.** Não há login, contas nem acesso simultâneo: a app foi
   feita para o consultor, no próprio notebook.
-- **Uso local.** Não deve ser exposta à rede sem as medidas do guia de uso em produção
-  (Sprint 9). Veja [SECURITY.md](SECURITY.md).
+- **Uso local.** Não deve ser exposta à rede sem as medidas do
+  [guia de uso em produção](https://guile1984.github.io/app-descoberta/explicacao/uso-em-producao/). Veja [SECURITY.md](SECURITY.md).
 - **Escalabilidade fora do escopo.** O banco é um arquivo SQLite; centenas de clientes e
-  sessões funcionam bem (veja `docs/qualidade/medicoes.json`), mas não há suporte a
-  equipes nem a servidor.
+  sessões funcionam bem (veja as [medições](https://guile1984.github.io/app-descoberta/qualidade/evidencias/)), mas não há
+  suporte a equipes nem a servidor.
 - **Os documentos são rascunhos para revisão.** Os cálculos seguem regras fixas e
   testadas, mas dependem dos números informados; o relatório e a proposta devem ser lidos
   antes do envio, e o modelo de proposta revisado por um advogado.
@@ -254,54 +220,15 @@ O que dá sustentação a isso:
 
 ## Para desenvolvedores
 
-Especificação: `docs/especificacao.md`. Instruções para o Claude Code: `CLAUDE.md`.
-Rode os comandos na raiz do projeto (a app lê `config/` e grava em `data/`).
+Como preparar o ambiente, rodar os testes e mandar uma contribuição:
+[CONTRIBUTING.md](CONTRIBUTING.md). Comandos e variáveis de ambiente:
+[referência](https://guile1984.github.io/app-descoberta/referencia/ambiente-e-comandos/). Arquitetura e decisões:
+[explicação](https://guile1984.github.io/app-descoberta/explicacao/arquitetura/). Especificação: `docs/especificacao.md`.
+Instruções para o Claude Code: `CLAUDE.md`.
 
 ```bash
-uv sync                                               # instalar
-uv run uvicorn descoberta.web.app:app --reload        # rodar recarregando a cada mudança
-uv run pytest --cov=descoberta                        # todos os testes (inclusive e2e)
-uv run pytest -m "not e2e"                            # testes rápidos, sem navegador
-uv run playwright install chromium                    # navegador dos e2e (uma vez)
-uv run ruff check . && uv run ruff format --check .   # lint (inclui as regras S)
-uv run pre-commit install                             # ativar os hooks no git
+uv sync && uv run pytest -m "not e2e"     # instalar e rodar os testes rápidos
 ```
 
-O banco vem de `DESCOBERTA_BANCO` (padrão: `data/descoberta.db`). O `uvicorn` escuta em
-`127.0.0.1` por padrão: não passe `--host 0.0.0.0`.
-
-**Migrações do banco (Alembic).** A app aplica as migrações sozinha ao ligar
-(`repositorio.banco.migrar`), com cópia de segurança antes. Depois de mudar um modelo em
-`repositorio/modelos.py`:
-
-```bash
-uv run alembic upgrade head                                   # data/alembic-dev.db, descartável
-uv run alembic revision --autogenerate --rev-id 0002 -m "o que mudou"
-```
-
-Revise o arquivo gerado em `src/descoberta/repositorio/migracoes/versions/` (o
-autogenerate não percebe, por exemplo, troca de nome de coluna) e rode os testes: o teste
-de "deriva" (`tests/repositorio/test_migracoes.py`) falha se modelos e migrações não
-baterem. Bancos de antes do Alembic são reconhecidos pela revisão `0001`.
-
-**Medições e verificações:**
-
-```bash
-uv run python scripts/medir_desempenho.py --saida docs/qualidade/medicoes.json
-uv run python scripts/revisar_historico.py    # dados pessoais em todo o histórico do Git
-```
-
-**E-mail dos commits.** Para não publicar o seu e-mail pessoal nos commits, use o
-endereço *noreply* do GitHub (em GitHub → Settings → Emails, marque "Keep my email
-addresses private" e copie o endereço `…@users.noreply.github.com` que aparece ali):
-
-```bash
-git config user.email "ID+usuario@users.noreply.github.com"   # só neste repositório
-git config --global user.email "ID+usuario@users.noreply.github.com"   # em todos
-```
-
-Na mesma página, "Block command line pushes that expose my email" impede um push com o
-e-mail pessoal por engano. Commits antigos não mudam (reescrever o histórico mudaria
-todos os hashes).
-
-Segurança: [SECURITY.md](SECURITY.md). Mudanças: [CHANGELOG.md](CHANGELOG.md).
+Segurança: [SECURITY.md](SECURITY.md). Mudanças: [CHANGELOG.md](CHANGELOG.md). Código de
+conduta: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).

@@ -8,8 +8,9 @@ login, HTTPS nem controle de acesso**, porque não foi feita para ser acessada p
 pessoas ou pela rede.
 
 **Não exponha a app à rede** (por exemplo, com `--host 0.0.0.0`, redirecionamento de
-porta, túnel ou servidor na nuvem) sem antes aplicar as medidas do guia de uso em
-produção (Sprint 9): autenticação, HTTPS, proteção contra CSRF completa, limite de
+porta, túnel ou servidor na nuvem) sem antes aplicar as medidas do
+[guia de uso em produção](https://guile1984.github.io/app-descoberta/explicacao/uso-em-producao/), que traz também o modelo de
+ameaças: autenticação, HTTPS, proteção contra CSRF completa, limite de
 requisições, criptografia do banco e dos backups, logs de auditoria e teste de intrusão
 profissional.
 
