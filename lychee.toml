@@ -1,0 +1,24 @@
+# Verificação de links do site da documentação (lychee), usada pelo CI
+# (.github/workflows/docs.yml) sobre o site já compilado:
+#   lychee --config lychee.toml --remap "<repositório>/(blob|tree)/main/(.*) file://<pasta>/$2" "site/**/*.html"
+# O --remap troca os links para arquivos do próprio repositório pelos arquivos locais: num
+# PR, um arquivo novo ainda não existe na main do GitHub.
+
+no_progress = true
+max_retries = 3
+retry_wait_time = 5
+timeout = 30
+# 429: o site limitou os pedidos (comum no GitHub); não quer dizer que o link quebrou.
+accept = ["200..=299", "429"]
+
+exclude = [
+  # O próprio site: só existe depois da primeira publicação (e é o que está sendo testado).
+  '^https://guile1984\.github\.io/app-descoberta',
+  # Links "editar esta página": abrem o editor do GitHub, que pede login.
+  '^https://github\.com/Guile1984/app-descoberta/edit/',
+  # Endereços da app no computador de quem lê, citados nos exemplos.
+  '^https?://(127\.0\.0\.1|localhost)',
+]
+
+# A página 404 do tema usa caminhos absolutos do site publicado.
+exclude_path = ['404.html$']

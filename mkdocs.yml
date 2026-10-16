@@ -1,0 +1,123 @@
+# Site da documentação (MkDocs + tema Material), publicado no GitHub Pages pelo
+# workflow .github/workflows/docs.yml. Para ver no seu computador:
+#   uv run --group docs mkdocs serve        (abre em http://127.0.0.1:8000)
+#   uv run --group docs mkdocs build --strict
+site_name: App de Descoberta para IA
+site_description: Documentação da app local para conduzir sessões de descoberta de IA com PMEs.
+site_author: Guilherme Ferraz Stauffer
+site_url: https://guile1984.github.io/app-descoberta/
+repo_url: https://github.com/Guile1984/app-descoberta
+repo_name: Guile1984/app-descoberta
+edit_uri: edit/main/docs/
+copyright: >-
+  Código em MIT; metodologia (Modelo de Descoberta) em CC BY 4.0 —
+  © 2026 Guilherme Ferraz Stauffer
+
+docs_dir: docs
+# Modo estrito: qualquer aviso (link quebrado, página faltando) vira erro na compilação.
+strict: true
+
+# Fora do site: anotações de trabalho do projeto.
+exclude_docs: |
+  roteiro-gif.md
+  publicar-repositorio.md
+
+# No site, mas fora do menu: anexos citados pelas páginas de explicação.
+not_in_nav: |
+  especificacao.md
+  qualidade/revisao-historico.md
+  qualidade/validacao-instalacao-limpa.md
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+theme:
+  name: material
+  language: pt-BR
+  # Sem Google Fonts: o site usa as fontes do sistema e a visita do leitor não passa pelo
+  # Google (coerente com a parte de privacidade).
+  font: false
+  icon:
+    logo: material/compass-outline
+    repo: fontawesome/brands/github
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-night
+        name: Usar o tema escuro
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: amber
+      toggle:
+        icon: material/weather-sunny
+        name: Usar o tema claro
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+
+plugins:
+  - search:
+      lang: pt
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - def_list
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.keys
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+nav:
+  - Início: index.md
+  - Tutorial:
+      - Sua primeira sessão: tutorial/primeira-sessao.md
+  - Guias práticos:
+      - Conduzir uma sessão ao vivo: guias/sessao-ao-vivo.md
+      - Revisão pós-sessão: guias/revisao-pos-sessao.md
+      - Gerar e registrar relatório e proposta: guias/relatorio-e-proposta.md
+      - Adaptar o questionário: guias/adaptar-questionario.md
+      - Adaptar as cláusulas da proposta: guias/adaptar-clausulas.md
+      - Configurar o LLM: guias/configurar-llm.md
+      - Backup e restauração: guias/backup-e-restauracao.md
+      - Atualizar a app: guias/atualizar-a-app.md
+  - Referência:
+      - Atalhos de teclado: referencia/atalhos.md
+      - Arquivos YAML: referencia/yaml.md
+      - Fórmulas, scores e faixas: referencia/formulas-e-scores.md
+      - Modelo de dados: referencia/modelo-de-dados.md
+      - Variáveis de ambiente e comandos: referencia/ambiente-e-comandos.md
+  - Explicação:
+      - A metodologia: explicacao/metodologia.md
+      - "Modelo de Descoberta (texto completo)": modelo-descoberta.md
+      - Arquitetura e decisões: explicacao/arquitetura.md
+      - Privacidade, LGPD e anonimização: explicacao/privacidade-lgpd.md
+      - Atributos de qualidade (ISO/IEC 25010): qualidade/evidencias.md
+      - Uso em produção e modelo de ameaças: explicacao/uso-em-producao.md

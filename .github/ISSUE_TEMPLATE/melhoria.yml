@@ -1,0 +1,47 @@
+name: Melhoria
+description: Uma ideia para a app, a metodologia ou a documentação.
+title: "[Melhoria] "
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Obrigado pela sugestão! Se precisar de um exemplo, use os dados fictícios do banco de
+        demonstração, e nunca dados reais de clientes.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Onde
+      options:
+        - Sessão ao vivo
+        - Revisão pós-sessão
+        - Relatório
+        - Proposta Comercial
+        - Rascunhos por LLM
+        - Questionário ou metodologia
+        - Instalação
+        - Documentação
+        - Outro
+    validations:
+      required: true
+  - type: textarea
+    id: problema
+    attributes:
+      label: Que problema isto resolve
+      description: Em que situação, numa sessão ou depois dela, isto faz falta?
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Como você imagina
+      description: Como deveria funcionar. Alternativas que você considerou também ajudam.
+    validations:
+      required: true
+  - type: checkboxes
+    id: conferencias
+    attributes:
+      label: Conferências
+      options:
+        - label: Não há dados reais de clientes nesta sugestão (só dados fictícios).
+          required: true

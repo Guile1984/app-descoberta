@@ -28,6 +28,10 @@ FICTICIOS = {
     "12.ABC.345/01DE-35",  # CNPJ alfanumérico de exemplo da Receita (demo)
     "(11) 90000-0000",  # telefone do consultor fictício (demo)
 }
+# Dados reais publicados de propósito, por escolha do autor: aparecem à parte no resultado.
+PUBLICOS = {
+    "guilherme.stauffer@hotmail.com",  # contato do CODE_OF_CONDUCT.md (Sprint 9)
+}
 
 
 def _git(*argumentos: str, entrada: bytes | None = None) -> bytes:
@@ -76,9 +80,11 @@ def main() -> int:
         for valor in detector.restantes(texto):
             achados[" ".join(valor.split())].update(caminhos)
 
-    conferir = {v: c for v, c in achados.items() if not ficticio(v)}
+    publicos = {v for v in achados if v in PUBLICOS}
+    conferir = {v: c for v, c in achados.items() if not ficticio(v) and v not in publicos}
     print(f"Versões de arquivo lidas: {len(blobs) - binarios} de texto, {binarios} binárias.")
-    print(f"Valores fictícios conhecidos: {len(achados) - len(conferir)}.")
+    print(f"Valores fictícios conhecidos: {len(achados) - len(conferir) - len(publicos)}.")
+    print(f"Contatos públicos de propósito: {', '.join(sorted(publicos)) or 'nenhum'}.")
     print(f"Para conferir à mão: {len(conferir)}.\n")
     for valor, caminhos in sorted(conferir.items()):
         print(f"- {valor!r}")

@@ -2,6 +2,48 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 
+## [Não lançado] — Sprint 9: Documentação
+
+### Adicionado
+- Site da documentação com MkDocs e o tema Material, em português, publicado no GitHub
+  Pages (<https://guile1984.github.io/app-descoberta/>) e organizado no modelo Diátaxis:
+  - **tutorial** "Sua primeira sessão": o caso Roberto do zero, num banco de treino, até
+    o relatório e a proposta registrados;
+  - **guias práticos:** sessão ao vivo, revisão pós-sessão, relatório e proposta, adaptar
+    o questionário, adaptar as cláusulas, configurar o LLM (API da Anthropic e Ollama),
+    backup e restauração, e atualizar a app (inclusive criar uma migração);
+  - **referência:** atalhos, os três YAML campo a campo, fórmulas, scores e faixas,
+    modelo de dados (todas as tabelas e colunas), variáveis de ambiente e comandos;
+  - **explicação:** a metodologia (CC BY 4.0), arquitetura e decisões com o porquê de
+    cada uma, privacidade, LGPD e anonimização, atributos de qualidade (ISO/IEC 25010,
+    texto final a partir de `docs/qualidade/evidencias.md`) e o guia de uso em produção,
+    com o modelo de ameaças (STRIDE) e a lista de medidas antes de expor a app à rede.
+- `tests/test_documentacao.py`: a documentação conferida com o código. Atalhos, campos
+  dos modelos Pydantic dos três YAML, tabelas e colunas do banco, variáveis de ambiente,
+  opções de linha de comando, faixas e critérios dos scores, duração da sessão, cláusulas
+  não removíveis, caminhos citados, páginas fora do menu, README e arquivos da comunidade.
+- CI da documentação (`.github/workflows/docs.yml`): `mkdocs build --strict` e links
+  quebrados com o lychee 0.24.2 (binário conferido por SHA-256; `lychee.toml`), em todo
+  push, PR e toda segunda; publicação no Pages só a partir da `main`, num job com as
+  únicas permissões de escrita do projeto (`pages` e `id-token`), conferidas por teste.
+- `scripts/capturar_telas.py`: refaz as capturas do tutorial (`docs/img/`) com o
+  Playwright, a partir do banco de demonstração.
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1, tradução oficial em
+  pt-BR), modelos de issue (problema e melhoria, sem issue em branco e com o relato
+  privado de vulnerabilidade) e modelo de PR.
+- Dependências novas, só no grupo `docs` (não vão com a app): `mkdocs` (BSD-2-Clause,
+  fixado abaixo da 2.0, incompatível com o tema e os plugins) e `mkdocs-material` (MIT).
+
+### Alterado
+- README como porta de entrada: aponta para o site, e as seções de LLM, backup,
+  atualização e desenvolvimento viraram resumos com link para os guias e o
+  `CONTRIBUTING.md`.
+- README e `SECURITY.md` apontam para o guia de uso em produção.
+- `scripts/revisar_historico.py` mostra à parte os contatos públicos de propósito (o
+  e-mail do código de conduta).
+- pre-commit: `check-yaml` não lê o `mkdocs.yml` (tag `!!python/name`, conferida pelo
+  próprio MkDocs).
+
 ## [1.0.0] — 2026-10-14 — Sprint 8: Validação e lançamento
 
 ### Adicionado
